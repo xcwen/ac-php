@@ -72,8 +72,9 @@ localhost:~/phptest/.tags$ tree .
 
 **if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
 
-if php file cannot pass from phpctags .
-*you can find any  error from \*Message\* buffer* fix it and next
+if php file cannot pass from `phpctags`.
+
+you can find any  error from *Message* buffer  fix it and next
 
 like this 
 ```

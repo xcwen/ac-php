@@ -1,11 +1,22 @@
 # ac-php
 emacs auto-complete for php
 
+
+use [phpctags](https://github.com/vim-php/phpctags) gen tags 
+
+and use `ac-php`  work with tags  
+
+ 
 ## Table of Contents
+
 
 * [Usage](#usage)
 
+
 ## Usage
+
+
+
 * install require package
 install `auto-complete-mode`, `php-mode` form elpa package  
 

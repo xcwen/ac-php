@@ -44,6 +44,15 @@
   "*Location of clang executable"
   :group 'auto-complete
   :type 'file)
+(defcustom ac-php-cscope 
+  (executable-find "cscope")
+  "*Location of cscope executable"
+  :group 'auto-complete
+  :type 'file)
+
+
+
+      
 
 
 (defvar ac-php-location-stack-index 0)
@@ -413,9 +422,10 @@
       (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
       (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
       ;;  TODO do cscope  
-      (message "rebuild cscope  data file " )
-      (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
-      (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") )
+      (when ac-php-cscope
+        (message "rebuild cscope  data file " )
+        (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
+        (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") ) )
       (message "build end.")
       )))
 

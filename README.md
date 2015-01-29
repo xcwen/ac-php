@@ -11,6 +11,8 @@ and use `ac-php`  work with tags
 
 
 * [Usage](#usage)
+* [rebuild tags](#rebuild-tags)
+* [FQA](#fqa)
 
 
 ## Usage
@@ -20,8 +22,8 @@ and use `ac-php`  work with tags
 * install require package
 install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
 
-* install phpctags 
-```
+* install [phpctags](https://github.com/vim-php/phpctags)
+```bash
 cd ~
 git clone https://github.com/vim-php/phpctags.git
 cd ~/phpctags/ && make 
@@ -53,3 +55,32 @@ mkdir .tags
 
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 
+## Rebuild Tags
+tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`
+```bash
+localhost:~/phptest/.tags$ tree .
+.
+├── tags-data.el
+└── tags_dir_jim
+    ├── a.tags
+    ├── testa.tags
+    └── testb.tags
+1 directory, 4 files
+```
+
+
+
+**if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
+
+if php file cannot pass from phpctags .
+*you can find any  error from \*Message\* buffer* fix it and next
+
+like this 
+```
+rebuild /home/jim/phptest/testa.php
+phpctags ERROR:PHPParser: Unexpected token '}' on line 14 - 
+```
+you need fix testa.php  error and re run `ac-php-remake-tags`
+
+
+## FQA

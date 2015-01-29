@@ -39,5 +39,5 @@ ac-php-show-tip ;; show define
 
 * example：
 
-![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/image/ac-php.gif)
+![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 

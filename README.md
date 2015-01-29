@@ -18,7 +18,7 @@ and use `ac-php`  work with tags
 
 
 * install require package
-install `auto-complete-mode`, `php-mode`  form elpa package
+install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
 
 * install phpctags 
 ```

@@ -44,7 +44,8 @@ mkdir .tags
 ))
 ```
 
-`ac-php-remake-tags` ;; if source is changed ,re run this commond for update tags
+`ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
+
 `ac-php-show-tip` ;; show define at point
 
 

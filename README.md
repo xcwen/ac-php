@@ -78,8 +78,7 @@ you can find any  error from `Messages` buffer  fix it and next
 
 like this 
 ```
-rebuild /home/jim/phptest/testa.php
-phpctags ERROR:PHPParser: Unexpected token '}' on line 14 - 
+phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on line 11 - 
 ```
 you need fix testa.php  error and re run `ac-php-remake-tags`
 

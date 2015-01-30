@@ -74,7 +74,7 @@ localhost:~/phptest/.tags$ tree .
 
 if php file cannot pass from `phpctags`.
 
-you can find any  error from *Message* buffer  fix it and next
+you can find any  error from `Messages` buffer  fix it and next
 
 like this 
 ```
@@ -82,6 +82,7 @@ rebuild /home/jim/phptest/testa.php
 phpctags ERROR:PHPParser: Unexpected token '}' on line 14 - 
 ```
 you need fix testa.php  error and re run `ac-php-remake-tags`
+
 
 
 ## FQA

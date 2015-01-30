@@ -322,11 +322,11 @@
            (cond
             ((string= tag-type "f") (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  ) function-list  ))
             ((string= tag-type "d") (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  ))
-            ((string= tag-type "c") ;;class
+            ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
              (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  ) function-list  )
              (setq other-data  (match-string 6  line-data ) )
              ;; add class-inherits
-             (when (string-match "^\tinherits:\\(\\w+\\)" other-data)
+             (when (string-match "^\tinherits:\\(\\w+\\)\\(,.*\\)*" other-data)
                (push  (list  tag-name   (match-string 1  other-data  )) inherit-list)))
             ((or (string= tag-type "p")  (string= tag-type "m") ) ;;class function member
              (setq other-data  (match-string 6  line-data ) )
@@ -336,9 +336,9 @@
                                   ""))
 
 
-             (when (string-match "^\tclass:\\(\\w+\\)\taccess:\\(.*\\)" other-data)
-               (setq class-name (match-string 1  other-data  ))
-               (setq access (match-string 2  other-data  ))
+             (when (string-match "^\t\\(\\(class\\)\\|\\(interface\\)\\):\\(\\w+\\)\taccess:\\(.*\\)" other-data)
+               (setq class-name (match-string 4  other-data  ))
+               (setq access (match-string 5  other-data  ))
                )
              ;;add class info 
              (when (not (assoc class-name class-list ))

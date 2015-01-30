@@ -2,7 +2,7 @@
 emacs auto-complete for php
 
 
-use [phpctags](https://github.com/vim-php/phpctags) gen tags 
+use [phpctags](https://github.com/xcwen/phpctags) gen tags 
 
 and use `ac-php`  work with tags 
 
@@ -22,10 +22,10 @@ and use `ac-php`  work with tags
 * install require package
 install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
 
-* install [phpctags](https://github.com/vim-php/phpctags)
+* install [phpctags](https://github.com/xcwen/phpctags)
 ```bash
 cd ~
-git clone https://github.com/vim-php/phpctags.git
+git clone https://github.com/xcwen/phpctags.git
 cd ~/phpctags/ && make 
 sudo cp phpctags /usr/bin/ 
 ```

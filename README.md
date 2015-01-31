@@ -57,18 +57,21 @@ mkdir .tags
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 
 ## Php extern for complete
-define class memeber type ,function   return type
+define class memeber type :
 
 `public  $v1;`  => `public /*::classtype */ $v1;`
 
-`public /*::Testa*/function get_v1()`  => ` public /*::classtype*/ function get_v1()`
+define class function   return type:
+
+`public  function get_v1()`  => ` public /*::classtype*/ function get_v1()`
+
+define variable: 
 
 `$value=new xxx();` => 
 ```php
 /*$value::classtype*/
 $value=new Testa();
 ```
-
 
 like this
 ```php
@@ -78,7 +81,7 @@ class Testa {
     public function set_v1($v){
         $v=trim($v);
         //define value type
-        /*$value::Testa*/
+        /*$v::Testa*/
         $v=new Testb();
         $this->v1=$v;
     }
@@ -87,6 +90,7 @@ class Testa {
     }
 }
 ```
+
 
 ## Rebuild Tags
 tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`

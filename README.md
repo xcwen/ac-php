@@ -11,6 +11,7 @@ and use `ac-php`  work with tags
 
 
 * [Usage](#usage)
+* [php extern for complete](#php-extern-for-complete)
 * [rebuild tags](#rebuild-tags)
 * [FQA](#fqa)
 
@@ -54,6 +55,38 @@ mkdir .tags
 * example：
 
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+
+## Php extern for complete
+define class memeber type ,function   return type
+
+`public  $v1;`  => `public /*::classtype */ $v1;`
+
+`public /*::Testa*/function get_v1()`  => ` public /*::classtype*/ function get_v1()`
+
+`$value=new xxx();` => 
+```php
+/*$value::classtype*/
+$value=new Testa();
+```
+
+
+like this
+```php
+class Testa {
+	public /*::Testb */ $v1;
+	public /*::Testb */ $v2;
+    public function set_v1($v){
+        $v=trim($v);
+        //define value type
+        /*$value::Testa*/
+        $v=new Testb();
+        $this->v1=$v;
+    }
+    public /*::Testa*/function get_v1(){
+        $this->get_v1("ss");
+    }
+}
+```
 
 ## Rebuild Tags
 tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`

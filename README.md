@@ -41,10 +41,12 @@ mkdir .tags
 
 ```elisp
 (add-hook 'php-mode-hook '(lambda ()
-    (require 'auto-complete-php)
-    (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-    (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-))
+							(auto-complete-mode t)  
+							(setq ac-sources  '(ac-source-php ) )
+							(require 'auto-complete-php)
+							(define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
+							(define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+							))
 ```
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**

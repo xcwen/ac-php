@@ -789,8 +789,8 @@
 
 
 
-(defvar ac-template-start-point nil)
-(defvar ac-template-candidates (list "ok" "no" "yes:)"))
+(defvar ac-php-template-start-point nil)
+(defvar ac-php-template-candidates (list "ok" "no" "yes:)"))
 
 (defun ac-php-action ()
   (interactive)
@@ -826,14 +826,77 @@
     (cond (candidates
            (setq candidates (delete-dups candidates))
            (setq candidates (nreverse candidates))
-           (setq ac-template-candidates candidates)
-           (setq ac-template-start-point (point))
-           (ac-complete-template)
+           (setq ac-php-template-candidates candidates)
+           (setq ac-php-template-start-point (point))
+           (ac-complete-php-template)
 
            (unless (cdr candidates) ;; unless length > 1
              (message (replace-regexp-in-string "\n" "   ;    " help))))
           (t
-           (message (replace-regexp-in-string "\n" "   ;    " help))))))
+           (message "xxxxx")
+           (message (replace-regexp-in-string "\n" "   ;    " help)))
+          )))
+
+(defun ac-php-template-candidate ()
+  ac-php-template-candidates)
+
+(defun ac-php-template-action ()
+  (interactive)
+  (unless (null ac-php-template-start-point)
+    (let ((pos (point)) sl (snp "")
+          (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
+      (cond ((string= s "")
+             ;; function ptr call
+             (setq s (cdr ac-last-completion))
+             (setq s (replace-regexp-in-string "^(\\|)$" "" s))
+             (setq sl (ac-clang-split-args s))
+             (cond ((featurep 'yasnippet)
+                    (dolist (arg sl)
+                      (setq snp (concat snp ", ${" arg "}")))
+                    (condition-case nil
+                        (yas/expand-snippet (concat "("  (substring snp 2) ")")
+                                            ac-php-template-start-point pos) ;; 0.6.1c
+                      (error
+                       ;; try this one:
+                       (ignore-errors (yas/expand-snippet
+                                       ac-php-template-start-point pos
+                                       (concat "("  (substring snp 2) ")"))) ;; work in 0.5.7
+                       )))
+                   ((featurep 'snippet)
+                    (delete-region ac-php-template-start-point pos)
+                    (dolist (arg sl)
+                      (setq snp (concat snp ", $${" arg "}")))
+                    (snippet-insert (concat "("  (substring snp 2) ")")))
+                   (t
+                    (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))
+             (t
+             (unless (string= s "()")
+               (setq s (replace-regexp-in-string "{#" "" s))
+               (setq s (replace-regexp-in-string "#}" "" s))
+               (cond ((featurep 'yasnippet)
+                      (setq s (replace-regexp-in-string "<#" "${" s))
+                      (setq s (replace-regexp-in-string "#>" "}" s))
+                      (setq s (replace-regexp-in-string ", \\.\\.\\." "}, ${..." s))
+                      (condition-case nil
+                          (yas/expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
+                        (error
+                         ;; try this one:
+                         (ignore-errors (yas/expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
+                         )))
+                     ((featurep 'snippet)
+                      (delete-region ac-php-template-start-point pos)
+                      (setq s (replace-regexp-in-string "<#" "$${" s))
+                      (setq s (replace-regexp-in-string "#>" "}" s))
+                      (setq s (replace-regexp-in-string ", \\.\\.\\." "}, $${..." s))
+                      (snippet-insert s))
+                     (t
+                      (message "Dude! You are too out! Please install a yasnippet or a snippet script:)")))))))))
+
+
+(defun ac-php-template-prefix ()
+  ac-php-template-start-point)
+
+
 (defun ac-php-prefix ()
   (or (ac-prefix-symbol)
       (let ((c (char-before)))
@@ -857,3 +920,12 @@
     (cache)
     (symbol . "p")))
 
+
+(ac-define-source php-template
+  '((candidates . ac-php-template-candidate)
+    (prefix . ac-php-template-prefix)
+    (requires . 0)
+    (action . ac-php-template-action)
+    (document . ac-php-document)
+    (cache)
+    (symbol . "t")))

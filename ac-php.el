@@ -128,7 +128,7 @@
            (let ((offset (string-to-number (match-string-no-properties 2 location))))
              (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
              ;;(run-hooks ac-php-after-find-file-hook)
-             (goto-char (1+ pos))
+             (goto-char (1+ offset))
              t))
           (t
            (if (string-match "^ +\\(.*\\)$" location)
@@ -222,7 +222,7 @@
 
 
 (defun ac-php-get-class-at-point( )
-  (let (line-txt    key-list   tmp-key-list frist-class-name  frist-key  ret-str )
+  (let (line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str )
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (1+ (point )) ))
@@ -282,7 +282,7 @@
 
       (setq  output-list (ac-php-get-class-member-list  class-list inherit-list  class-name ) )
 
-      (mapcar (lambda (x)
+      (mapc (lambda (x)
                 (setq key-word (nth 1 x ))
                 (setq key-word (propertize key-word 'ac-php-help  (nth 2  x ) ))
                 (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
@@ -446,7 +446,7 @@
 (defun ac-php-remake-tags ()
   " reset tags , if  php source  is changed  "
   (interactive)
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg)  
+  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list)  
 
     (message "remake %s" tags-dir )
     (if (not ac-php-executable ) (message "no find cmd:  phpctags,  put it in /usr/bin/  and restart emacs "   ) )
@@ -488,21 +488,21 @@
         (setq cmd "cat" )
         (while temp-list  
           (setq  cmd (concat cmd  " " (car  temp-list  )  ))
-          (setq temp-list (cdr  temp-list))))
+          (setq temp-list (cdr  temp-list)))
 
-      ;;(message "%s" cmd)
-      (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
-      (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
-      ;;  TODO do cscope  
-      (when ac-php-cscope
-        (message "rebuild cscope  data file " )
+        ;;(message "%s" cmd)
         (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
-        (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") ) )
-      (if last-phpctags-errmsg
-          (princ last-phpctags-errmsg )
-        (message "BUILD SUCCESS.")
-        ) 
-      )))
+        (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
+        ;;  TODO do cscope  
+        (when ac-php-cscope
+          (message "rebuild cscope  data file " )
+          (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
+          (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") ) )
+        (if last-phpctags-errmsg
+            (princ last-phpctags-errmsg )
+          (message "BUILD SUCCESS.")
+          ) 
+        ))))
 
 (defun ac-php-save-data (file data)
   (with-temp-file file
@@ -608,7 +608,7 @@
 
 (defun ac-php-get-class-name-by-key-list ( tags-data key-list-str )
   "DOCSTRING"
-  (let ( class-name  first-key  ( key-list (split-string key-list-str "\\." ) ) )
+  (let ( class-name  frist-key  ( key-list (split-string key-list-str "\\." ) ) )
     (setq frist-key (nth 0 key-list))
     (setq class-name "")
     (if (not ( string-match "\\\\" frist-key) ) ;no find namespace fix
@@ -743,7 +743,7 @@
 
 (defun ac-php-show-tip	(&optional prefix)
   (interactive "P")
-  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    class-name return-type access doc  cmd complete-cmd  find-flag)
+  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    class-name return-type access doc  cmd complete-cmd  find-flag tags-data )
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
@@ -841,7 +841,6 @@
            (unless (cdr candidates) ;; unless length > 1
              (message (replace-regexp-in-string "\n" "   ;    " help))))
           (t
-           (message "xxxxx")
            (message (replace-regexp-in-string "\n" "   ;    " help)))
           )))
 
@@ -862,19 +861,14 @@
                     (dolist (arg sl)
                       (setq snp (concat snp ", ${" arg "}")))
                     (condition-case nil
-                        (yas/expand-snippet (concat "("  (substring snp 2) ")")
+                        (yas-expand-snippet (concat "("  (substring snp 2) ")")
                                             ac-php-template-start-point pos) ;; 0.6.1c
                       (error
                        ;; try this one:
-                       (ignore-errors (yas/expand-snippet
+                       (ignore-errors (yas-expand-snippet
                                        ac-php-template-start-point pos
                                        (concat "("  (substring snp 2) ")"))) ;; work in 0.5.7
                        )))
-                   ((featurep 'snippet)
-                    (delete-region ac-php-template-start-point pos)
-                    (dolist (arg sl)
-                      (setq snp (concat snp ", $${" arg "}")))
-                    (snippet-insert (concat "("  (substring snp 2) ")")))
                    (t
                     (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))
              (t
@@ -886,17 +880,12 @@
                       (setq s (replace-regexp-in-string "#>" "}" s))
                       (setq s (replace-regexp-in-string ", \\.\\.\\." "}, ${..." s))
                       (condition-case nil
-                          (yas/expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
+                          (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
                         (error
                          ;; try this one:
-                         (ignore-errors (yas/expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
+                         (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
                          )))
-                     ((featurep 'snippet)
-                      (delete-region ac-php-template-start-point pos)
-                      (setq s (replace-regexp-in-string "<#" "$${" s))
-                      (setq s (replace-regexp-in-string "#>" "}" s))
-                      (setq s (replace-regexp-in-string ", \\.\\.\\." "}, $${..." s))
-                      (snippet-insert s))
+
                      (t
                       (message "Dude! You are too out! Please install a yasnippet or a snippet script:)")))))))))
 

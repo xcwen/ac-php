@@ -22,14 +22,16 @@ and use `ac-php`  work with tags
 
 * install require package
 install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
-
-* install [phpctags](https://github.com/xcwen/phpctags)
+install `php5-cli` command  for phpctags
 ```bash
-cd ~
-git clone https://github.com/xcwen/phpctags.git
-cd ~/phpctags/ && make 
-sudo cp phpctags /usr/bin/ 
+localhost:~/$ sudo apt-get install php5-cli 
+localhost:~/$ php --version
+PHP 5.5.9-1ubuntu4.6 (cli) (built: Feb 13 2015 19:17:11) 
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
+    with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
 ```
+
 
 * mkdir ".tags"  in root of project
 

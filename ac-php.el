@@ -44,11 +44,9 @@
 (require 'auto-complete)
 (require 'popup)
 
-(defcustom ac-php-executable
-  (executable-find "phpctags")
-  "*Location of clang executable"
-  :group 'auto-complete
-  :type 'file)
+(defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
+
+
 
 (defcustom ac-php-cscope 
   (executable-find "cscope")

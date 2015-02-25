@@ -20,9 +20,9 @@ and use `ac-php`  work with tags
 
 
 
-* install require package
+* install from melpa  
 
-install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
+install [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)
 
 install `php5-cli` command  for phpctags
 ```bash 

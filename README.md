@@ -22,6 +22,7 @@ and use `ac-php`  work with tags
 
 * install require package
 install `auto-complete-mode`, `php-mode`  form [elpa package](https://github.com/milkypostman/melpa)
+
 install `php5-cli` command  for phpctags
 ```bash
 localhost:~/$ sudo apt-get install php5-cli 

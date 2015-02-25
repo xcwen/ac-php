@@ -41,9 +41,9 @@ mkdir .tags
 
 ```elisp
 (add-hook 'php-mode-hook '(lambda ()
-							(auto-complete-mode t)  
+							(auto-complete-mode t)
 							(setq ac-sources  '(ac-source-php ) )
-							(require 'auto-complete-php)
+							(require 'ac-php)
 							(define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
 							(define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
 							))

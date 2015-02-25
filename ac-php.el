@@ -1,12 +1,15 @@
-;;; auto-complete-php.el --- Auto Completion source for php for GNU Emacs
+;;; ac-php.el --- Auto Completion source for php for GNU Emacs
 
 ;; Copyright (C) 2014  jim 
 
-;; Author: xcwenn@qq.com 
-;; Keywords: completion, convenience
-;; Version: 20140409.352
-;; X-Original-Version: 0.1i
-;; Package-Requires: ((auto-complete "1.3.1"))
+
+;; Author: xcwenn@qq.com [https://github.com/xcwen]
+;; URL: https://github.com/xcwen/ac-php
+;; Keywords: completion, convenience, intellisense 
+;; Version: 20150224
+;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
+
+
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,20 +24,22 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; 参考 auto-complete-clang (补全), rtags (跳转堆栈 ac-php-location-stack-index )
+;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index )
 
 ;;; Commentary: 
-;;
-;; Auto Completion source for php. Most of codes are taken from
+;; Auto Completion source for php. 
+;; Only support  Linux , not support Windows
+;; More info and **example** at : https://github.com/xcwen/ac-php 
+;; 
 
 ;;; Code:
 
 
-(provide 'auto-complete-php)
+(provide 'ac-php)
 
 
 ;;load sys-data
-(require 'auto-complete-php-sys-data)
+(require 'ac-php-sys-data)
 
 (require 'auto-complete)
 (require 'popup)
@@ -730,7 +735,6 @@
 
 (defun ac-php-show-tip	(&optional prefix)
   (interactive "P")
-  ;;检查是类还是 符号 
   (let ( key-str-list  line-txt cur-word val-name class-name output-vec    class-name return-type access doc  cmd complete-cmd  find-flag)
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
@@ -777,7 +781,6 @@
               (dolist (function-str ac-php-sys-function-list )
                 (when (string= function-str cur-function)
                   (setq function-info (get-text-property 0 'ac-php-help  function-str ) )
-                  ;;显示信息
                   (popup-tip (concat "[system]:" (ac-php-clean-document function-info)))
                   (return )))
               

@@ -19,12 +19,7 @@ and use `ac-php`  work with tags
 ## Usage
 
 
-
-* install from melpa  
-
-install [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)
-
-install `php5-cli` command  for phpctags
+* install `php5-cli` command  for phpctags
 ```bash 
  #UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
@@ -33,6 +28,31 @@ PHP 5.5.9-1ubuntu4.6 (cli) (built: Feb 13 2015 19:17:11)
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
     with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
+```
+
+
+
+* install ac-php from melpa
+
+save it as ~/.emacs  then restart emacs  and open php file to test
+```elisp
+  (setq package-archives
+        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+  (package-initialize)
+  (unless (package-installed-p 'ac-php )
+    (package-refresh-contents)
+    (package-install 'ac-php )
+    )
+  (require 'cl)
+  (require 'php-mode)
+  (add-hook 'php-mode-hook '(lambda ()
+                              (auto-complete-mode t)
+                              (require 'ac-php)
+                              (setq ac-sources  '(ac-source-php ) )
+                              (yas-global-mode 1)
+                              (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
+                              (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+                              ))
 ```
 
 

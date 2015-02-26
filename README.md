@@ -1,4 +1,4 @@
-# ac-php
+# ac-php   [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)
 emacs auto-complete for php
 
 

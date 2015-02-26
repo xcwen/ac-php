@@ -6,7 +6,7 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Version: 20150225
+;; Version: 20150226
 ;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
 
 
@@ -53,6 +53,7 @@
 (require 'ac-php-sys-data)
 
 (require 'auto-complete)
+(require 'php-mode)
 (require 'popup)
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))

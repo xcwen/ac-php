@@ -105,6 +105,7 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 
 `ac-php-show-tip` ;; show define at point
 
+`ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
 
 
 

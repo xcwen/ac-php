@@ -34,26 +34,6 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 
 * install ac-php from melpa
 
-save it as ~/.emacs  then restart emacs  and open php file to test
-```elisp
-  (setq package-archives
-        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
-  (package-initialize)
-  (unless (package-installed-p 'ac-php )
-    (package-refresh-contents)
-    (package-install 'ac-php )
-    )
-  (require 'cl)
-  (require 'php-mode)
-  (add-hook 'php-mode-hook '(lambda ()
-                              (auto-complete-mode t)
-                              (require 'ac-php)
-                              (setq ac-sources  '(ac-source-php ) )
-                              (yas-global-mode 1)
-                              (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-                              (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-                              ))
-```
 
 
 * mkdir ".tags"  in root of project
@@ -80,9 +60,31 @@ mkdir .tags
 `ac-php-show-tip` ;; show define at point
 
 
-* example：
-
+* TEST：
+example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+
+save it as `~/.emacs`   then restart emacs  and  test in `phptest` dir
+```elisp
+  (setq package-archives
+        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+  (package-initialize)
+  (unless (package-installed-p 'ac-php )
+    (package-refresh-contents)
+    (package-install 'ac-php )
+    )
+  (require 'cl)
+  (require 'php-mode)
+  (add-hook 'php-mode-hook '(lambda ()
+                              (auto-complete-mode t)
+                              (require 'ac-php)
+                              (setq ac-sources  '(ac-source-php ) )
+                              (yas-global-mode 1)
+                              (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
+                              (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+                              ))
+```
+
 
 ## Php extern for complete
 define class memeber type :

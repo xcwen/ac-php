@@ -268,11 +268,12 @@
             (setq frist-key (nth 0 key-list))
             (setq frist-key (ac-php-clean-namespace-name frist-key) )
             (setq frist-class-name  frist-key  )
-            (when (string= frist-key "parent" ) 
+            (cond
+             ((string= frist-key "parent" ) 
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ".__parent__" ) ))
-            (when (string= frist-key "self" ) 
-              (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ) )))
-
+             ((string= frist-key "self" ) 
+              (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ) ))
+             (t (setq frist-class-name nil))))
 
         (progn
           (setq key-list (split-string line-txt "->" ))

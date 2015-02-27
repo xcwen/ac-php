@@ -873,6 +873,16 @@
            (message (replace-regexp-in-string "\n" "   ;    " help)))
           )))
 
+(defun ac-php-cscope-find-egrep-pattern (symbol)
+  "auto set  cscope-initial-directory and  Run egrep over the cscope database."
+  (interactive (list
+                (let (cscope-no-mouse-prompts)
+                  (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))
+                ))
+  (setq cscope-initial-directory  (concat (ac-php-get-tags-dir) ".tags" )  )
+  (cscope-find-egrep-pattern symbol)
+  )
+
 (defun ac-php-template-candidate ()
   ac-php-template-candidates)
 

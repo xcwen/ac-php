@@ -160,7 +160,7 @@ class Testa {
 ## Rebuild Tags
 tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`
 ```bash
-localhost:~/phptest/.tags$ tree .
+localhost:~/ac-php/phptest/.tags$ tree .
 .
 ├── tags-data.el
 └── tags_dir_jim

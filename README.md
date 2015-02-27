@@ -20,13 +20,13 @@ and use `ac-php`  work with tags
 ##  Test
 * install `php5-cli` command  for phpctags
 ```bash 
- #UBUNTU
+\#UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
-localhost:~/$ php --version
-PHP 5.5.9-1ubuntu4.6 (cli) (built: Feb 13 2015 19:17:11) 
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
-    with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
+```
+* install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
+```bash 
+\#UBUNTU
+localhost:~/$ sudo apt-get install cscope
 ```
 
 * example:
@@ -71,14 +71,16 @@ emacs ~/ac-php/phptest/testb.php
 
 * install `php5-cli` command  for phpctags
 ```bash 
- #UBUNTU
+\#UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
-localhost:~/$ php --version
-PHP 5.5.9-1ubuntu4.6 (cli) (built: Feb 13 2015 19:17:11) 
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
-    with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
 ```
+* install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
+```bash 
+\#UBUNTU
+localhost:~/$ sudo apt-get install cscope
+```
+
+
 
 * install `ac-php` from melpa
 ```elisp
@@ -91,14 +93,15 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 * emacs php-mode function  define
 
 ```elisp
-(add-hook 'php-mode-hook '(lambda ()
-                            (auto-complete-mode t)
-                            (require 'ac-php)
-                            (setq ac-sources  '(ac-source-php ) )
-							(yas-global-mode 1)
-							(define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-							(define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-							))
+  (add-hook 'php-mode-hook
+            '(lambda ()
+               (auto-complete-mode t)
+               (require 'ac-php)
+               (setq ac-sources  '(ac-source-php ) )
+               (yas-global-mode 1)
+               (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
+               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+               ))
 ```
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
@@ -115,7 +118,7 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 cd /project/to/path #  root dir of project
 mkdir .tags
 ```
-* done 
+* DONE 
 
 
 ## Php extern for complete

@@ -10,14 +10,64 @@ and use `ac-php`  work with tags
 ## Table of Contents
 
 
+* [Test](#test)
 * [Usage](#usage)
 * [php extern for complete](#php-extern-for-complete)
 * [rebuild tags](#rebuild-tags)
 * [FQA](#fqa)
 
 
-## Usage
+##  Test
+* install `php5-cli` command  for phpctags
+```bash 
+ #UBUNTU
+localhost:~/$ sudo apt-get install php5-cli 
+localhost:~/$ php --version
+PHP 5.5.9-1ubuntu4.6 (cli) (built: Feb 13 2015 19:17:11) 
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
+    with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
+```
 
+* example:
+![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+
+```bash
+\#backup old .emacs
+cp ~/.emacs ~/.emacs.bak
+```
+
+save it as `~/.emacs`
+```elisp
+  (setq package-archives
+        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+  (package-initialize)
+  (unless (package-installed-p 'ac-php )
+    (package-refresh-contents)
+    (package-install 'ac-php )
+    )
+  (require 'cl)
+  (require 'php-mode)
+  (add-hook 'php-mode-hook
+            '(lambda ()
+               (auto-complete-mode t)
+               (require 'ac-php)
+               (setq ac-sources  '(ac-source-php ) )
+               (yas-global-mode 1)
+               (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
+               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+               ))
+```
+
+```bash
+cd ~/
+git clone https://github.com/xcwen/ac-php/
+\#test php files in ~/ac-php/phptest
+\#open file for test
+emacs ~/ac-php/phptest/testb.php
+```
+
+# Usage
 
 * install `php5-cli` command  for phpctags
 ```bash 
@@ -30,18 +80,14 @@ Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
     with Zend OPcache v7.0.3, Copyright (c) 1999-2014, by Zend Technologies
 ```
 
-
-
-* install ac-php from melpa
-
-
-
-* mkdir ".tags"  in root of project
-
-``` bash
-cd /project/to/path #  root dir of project
-mkdir .tags
+* install `ac-php` from melpa
+```elisp
+  (setq package-archives
+        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
 ```
+
+"M-x" :`package-list-packages`  find  `ac-php` install
+
 * emacs php-mode function  define
 
 ```elisp
@@ -60,30 +106,15 @@ mkdir .tags
 `ac-php-show-tip` ;; show define at point
 
 
-* TEST：
-example:
-![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 
-save it as `~/.emacs`   then restart emacs  and  test in `phptest` dir
-```elisp
-  (setq package-archives
-        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
-  (package-initialize)
-  (unless (package-installed-p 'ac-php )
-    (package-refresh-contents)
-    (package-install 'ac-php )
-    )
-  (require 'cl)
-  (require 'php-mode)
-  (add-hook 'php-mode-hook '(lambda ()
-                              (auto-complete-mode t)
-                              (require 'ac-php)
-                              (setq ac-sources  '(ac-source-php ) )
-                              (yas-global-mode 1)
-                              (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-                              (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-                              ))
+
+* mkdir ".tags"  in root of project
+
+``` bash
+cd /project/to/path #  root dir of project
+mkdir .tags
 ```
+* done 
 
 
 ## Php extern for complete

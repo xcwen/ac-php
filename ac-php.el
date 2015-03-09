@@ -251,10 +251,11 @@
 
 
 (defun ac-php-get-class-at-point( )
-  (let (line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str )
+  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str )
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (1+ (point )) ))
+    (setq old-line-txt line-txt)
     
     (setq line-txt (replace-regexp-in-string "\\<return\\>\\|\\<echo\\>" "" line-txt  ))
     (setq line-txt (replace-regexp-in-string ".*[=(,.]" "" line-txt  ))
@@ -273,7 +274,9 @@
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ".__parent__" ) ))
              ((string= frist-key "self" ) 
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ) ))
-             (t (setq frist-class-name nil))))
+             ((string-match  "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt  )  (setq frist-class-name nil))
+
+             ))
 
         (progn
           (setq key-list (split-string line-txt "->" ))
@@ -665,6 +668,7 @@
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
     (setq key-str-list (ac-php-get-class-at-point ))
+    (message "==== %s" key-str-list)
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  

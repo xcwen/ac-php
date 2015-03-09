@@ -184,6 +184,4 @@ phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on l
 ```
 you need fix testa.php  error and re run `ac-php-remake-tags`
 
-
-
 ## FQA

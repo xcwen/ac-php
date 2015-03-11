@@ -284,12 +284,13 @@
           (setq frist-key (ac-php-clean-namespace-name frist-key) )
 
           (save-excursion
-            (re-search-backward (concat  frist-key"::" ) 0 t 1) 
+            (re-search-backward (concat  frist-key"[\t ]*::" ) 0 t 1) 
             (setq key-line-txt (buffer-substring-no-properties
                                 (line-beginning-position)
                                 (line-end-position )))
-            (if (string-match ( concat  frist-key (concat "::\\(" ac-php-word-re-str "\\)" )) key-line-txt)
-                (setq  frist-class-name  (ac-php-clean-namespace-name (match-string  1 key-line-txt)))))
+            (if (string-match ( concat  frist-key (concat "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )) key-line-txt)
+                (setq  frist-class-name  (ac-php-clean-namespace-name (match-string  1 key-line-txt)))
+              ))
 
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))

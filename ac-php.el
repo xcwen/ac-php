@@ -422,7 +422,27 @@
               ) 
           (cond
            ((string= tag-type "f") (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  ) function-list  ))
-           ((string= tag-type "d") (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  ))
+           ((string= tag-type "d")
+
+
+            (setq other-data  (match-string 6  line-data ) )
+
+
+            (if (string-match (concat "^\tclass:\\(" ac-php-word-re-str "\\)") other-data)
+                (progn ;class
+                (setq class-name (match-string 1  other-data  ))
+                (setq doc  tag-name )
+                (setq return-type "" )
+                (setq access "public" )
+
+                (when (not (assoc class-name class-list ))
+                  (push (list class-name nil ) class-list))
+
+                (push (list tag-type tag-name doc file-pos return-type  class-name   access ) (cadr (assoc  class-name class-list ) ) )
+                )
+              (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  ))
+
+            )
            ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
 
             (setq other-data  (match-string 6  line-data ) )
@@ -955,7 +975,6 @@
                (and (eq ?: c) (eq ?: (char-before (1- (point))))))
 
           (point)))))
-
 
 (ac-define-source php
   '((candidates . ac-php-candidate)

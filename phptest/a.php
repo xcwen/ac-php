@@ -2,9 +2,7 @@
 //define type in comment 
 
 /*$t::Testb */
-/*$t::Testa */
-
-/*t::Testa */
+$ss="$t::Testa";
 $t->v2->get_v1("ssss");
 $t=new Testa();
 $t->set_v1("22");

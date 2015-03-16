@@ -205,6 +205,11 @@
   "ac-php-check-in-string-or-comment"
   (if  (nth 8 (syntax-ppss pos))  nil  t )
   ) 
+(defun ac-php-check-not-in-comment (pos)
+  "ac-php-check-in-string-or-comment"
+  (if  (nth 4 (syntax-ppss pos))  nil  t )
+  ) 
+
 
 (defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  )
   "DOCSTRING"
@@ -215,7 +220,7 @@
         (if (re-search-backward  re-str  0 t 1)
             (progn
               (when (if in-comment-flag
-                        (not (ac-php-check-not-in-string-or-comment (point) ) )
+                        (not (ac-php-check-not-in-comment (point) ) )
                       (ac-php-check-not-in-string-or-comment (point))) 
                 (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
                 (when (string-match   re-str    line-txt)

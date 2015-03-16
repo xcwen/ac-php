@@ -4,4 +4,3 @@
 !_TAG_PROGRAM_NAME	phpctags	//
 !_TAG_PROGRAM_URL	https://github.com/techlivezheng/phpctags	/official site/
 !_TAG_PROGRAM_VERSION	0.5.1	//
-t	/home/jim/phptest/a.php	/^$t=new Testa();$/;"	v	line:4

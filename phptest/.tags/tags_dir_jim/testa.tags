@@ -4,9 +4,7 @@
 !_TAG_PROGRAM_NAME	phpctags	//
 !_TAG_PROGRAM_URL	https://github.com/techlivezheng/phpctags	/official site/
 !_TAG_PROGRAM_VERSION	0.5.1	//
-Testa	/home/jim/phptest/testa.php	/^class Testa {$/;"	c	line:2
-get_v1	/home/jim/phptest/testa.php	/^    public function get_v1(){$/;"	m	line:8	class:Testa	access:public
-set_v1	/home/jim/phptest/testa.php	/^    public function set_v1($v){$/;"	m	line:4	class:Testa	access:public
-v	/home/jim/phptest/testa.php	/^        $v=trim($v);$/;"	v	line:5	method:Testa::set_v1
-v1	/home/jim/phptest/testa.php	/^        $this->v1=$v;$/;"	v	line:6	method:Testa::set_v1
-v1	/home/jim/phptest/testa.php	/^    public $v1; $/;"	p	line:3	class:Testa	access:public
+Testa	/home/jim/ac-php/phptest/testa.php	/^class Testa {$/;"	c	line:2
+get_v1	/home/jim/ac-php/phptest/testa.php	/^    public function get_v1(){$/;"	m	line:9	class:Testa	access:public
+set_v1	/home/jim/ac-php/phptest/testa.php	/^    public function set_v1($v){$/;"	m	line:4	class:Testa	access:public
+v1	/home/jim/ac-php/phptest/testa.php	/^    public $v1; $/;"	p	line:3	class:Testa	access:public

@@ -205,7 +205,8 @@
   "ac-php-check-in-string-or-comment"
   (if  (nth 8 (syntax-ppss pos))  nil  t )
   ) 
-(defun ac-php-get-syntax-backward ( re-str  pos  )
+
+(defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  )
   "DOCSTRING"
   (let (line-txt ret-str find-pos need-find-flag )  
     (setq need-find-flag t )
@@ -213,7 +214,9 @@
       (while  need-find-flag
         (if (re-search-backward  re-str  0 t 1)
             (progn
-              (when (ac-php-check-not-in-string-or-comment (point)) 
+              (when (if in-comment-flag
+                        (not (ac-php-check-not-in-string-or-comment (point) ) )
+                      (ac-php-check-not-in-string-or-comment (point))) 
                 (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
                 (when (string-match   re-str    line-txt)
                   (setq  ret-str  (match-string pos line-txt))
@@ -223,6 +226,7 @@
         )
       )
     ret-str ))
+
 
 
 (defun ac-php-get-cur-class-name ()
@@ -283,14 +287,8 @@
           (setq frist-key (nth 0 key-list))
           (setq frist-key (ac-php-clean-namespace-name frist-key) )
 
-          (save-excursion
-            (re-search-backward (concat  frist-key"[\t ]*::" ) 0 t 1) 
-            (setq key-line-txt (buffer-substring-no-properties
-                                (line-beginning-position)
-                                (line-end-position )))
-            (if (string-match ( concat  frist-key (concat "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )) key-line-txt)
-                (setq  frist-class-name  (ac-php-clean-namespace-name (match-string  1 key-line-txt)))
-              ))
+          (setq  frist-class-name
+                (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "$" frist-key "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )  1   t )))
 
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))

@@ -3,7 +3,7 @@ class Testb  extends Testa{
     //define v2 type is Testa in comment
 
     /**
-     * @var   Test\Testa 
+     * @var   \Test\Testa 
      */
 	public $v2;
 

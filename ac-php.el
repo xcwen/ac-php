@@ -123,6 +123,9 @@
 (defun ac-php-current-location (&optional offset)
   (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
           (line-number-at-pos offset) (1+ (- (or offset (point)) (point-at-bol)))))
+(defun ac-php--string=-ignore-care( str1 str2  )
+  (not (integer-or-marker-p ( compare-strings  str1  0 nil str2  0 nil t ))  )
+  )
 
 (defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
   (if (file-exists-p file-or-buffer)
@@ -607,20 +610,18 @@
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
   (let ((tmp-class class-name ) (check-class-list (list  (ac-php-clean-namespace-name class-name))) (ret ) find-flag )
-    (while (setq  tmp-class (nth 1 (assoc (ac-php-clean-namespace-name tmp-class) inherit-list  )) )
+    (while (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )) )
       (push  (ac-php-clean-namespace-name tmp-class) check-class-list )
       )
     (setq check-class-list (nreverse check-class-list ) )
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
-        (setq  class-member-list  (nth 1 (assoc  opt-class class-list  ))) 
+        (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t ))) 
         (dolist (member-info class-member-list)
-          (when (string= (nth 1 member-info ) member  )
+          (when (ac-php--string=-ignore-care (nth 1 member-info ) member    )
             (setq ret  member-info)
             (setq find-flag t)
-            (return)
-            )
-          )
+            (return)))
         (if find-flag (return) )
         ))
     ret))
@@ -646,6 +647,7 @@
 
 (defun ac-php-get-class-name-by-key-list-pri ( tags-data key-list-str )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
+    (message "========= key-list :%s" key-list-str)
     (dolist (item key-list )
       (if (string= cur-class "" )
           (setq cur-class item)
@@ -702,7 +704,6 @@
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
     (setq key-str-list (ac-php-get-class-at-point ))
-    (message "==== %s" key-str-list)
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  
@@ -734,8 +735,7 @@
               (let ((function-list (nth 1 tags-data )  ))
 
                 (dolist (function-item function-list )
-                  (when (string=  (nth 1 function-item )  cur-word)
-
+                  (when (ac-php--string=-ignore-care (nth 1 function-item )  cur-word  )
                     (setq jump-pos  (concat (ac-php-get-tags-dir)  (nth 3 function-item)   ))
                     (ac-php-location-stack-push)
                     (ac-php-goto-location jump-pos )
@@ -748,8 +748,8 @@
             (progn
               
               (dolist (function-str ac-php-sys-function-list )
-                (when (string= function-str cur-word)
-
+                (when (ac-php--string=-ignore-care    function-str cur-word)
+                ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
                   (php-search-documentation cur-word  )
                   (return )))
 

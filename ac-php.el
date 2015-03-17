@@ -604,14 +604,11 @@
     ))
 
 
-
-
-
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
-  (let ((tmp-class class-name ) (check-class-list (list class-name)) (ret ) find-flag )
-    (while (setq  tmp-class (nth 1 (assoc tmp-class inherit-list  )) )
-      (push tmp-class check-class-list )
+  (let ((tmp-class class-name ) (check-class-list (list  (ac-php-clean-namespace-name class-name))) (ret ) find-flag )
+    (while (setq  tmp-class (nth 1 (assoc (ac-php-clean-namespace-name tmp-class) inherit-list  )) )
+      (push  (ac-php-clean-namespace-name tmp-class) check-class-list )
       )
     (setq check-class-list (nreverse check-class-list ) )
     (let (  class-member-list )
@@ -626,8 +623,8 @@
           )
         (if find-flag (return) )
         ))
-    ret
-    ))
+    ret))
+
 
 (defun ac-php-get-class-member-list (class-list inherit-list  class-name  )
   "DOCSTRING"

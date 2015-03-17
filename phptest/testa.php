@@ -5,11 +5,6 @@ namespace Test;
 class Testa {
 
 
-    /**
-     * HTTP Cookies
-     * @var Testb
-     */
-    public $v1; 
     
     const  DIR="sss";
     public function set_v1($v){

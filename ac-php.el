@@ -445,10 +445,10 @@
                 (setq return-type "" )
                 (setq access "public" )
 
-                (when (not (assoc class-name class-list ))
+                (when (not (assoc-string class-name class-list t ))
                   (push (list class-name nil ) class-list))
 
-                (push (list tag-type tag-name doc file-pos return-type  class-name   access ) (cadr (assoc  class-name class-list ) ) )
+                (push (list tag-type tag-name doc file-pos return-type  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
                 )
               (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  ))
 
@@ -484,7 +484,7 @@
               (setq access (match-string 3  other-data  ))
               )
             ;;add class info 
-            (when (not (assoc class-name class-list ))
+            (when (not (assoc-string class-name class-list t ))
               (push (list class-name nil ) class-list))
             ;;add member & function 
 
@@ -493,7 +493,7 @@
               (setq doc (ac-php-gen-el-func tag-name doc) ))
 
             ;;push TAG item into list 
-            (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc  class-name class-list ) ) ))
+            (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc-string  class-name class-list  t) ) ))
 
            ))))
     (list class-list function-list inherit-list )))
@@ -543,7 +543,7 @@
 
         (push obj-file-name cur-obj-list )
         ;;check change time
-        (setq obj-item (assoc obj-file-name obj-tags-list ))
+        (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
         (when (or (not obj-item) (< (nth 1 obj-item) src-time ) )
           ;;gen tags file
           (message "rebuild %s" file-name )
@@ -630,13 +630,13 @@
 (defun ac-php-get-class-member-list (class-list inherit-list  class-name  )
   "DOCSTRING"
   (let ((tmp-class class-name ) (check-class-list (list class-name)) (ret ) find-flag )
-    (while (setq  tmp-class (nth 1 (assoc tmp-class inherit-list  )) )
+    (while (setq  tmp-class (nth 1 (assoc-string tmp-class inherit-list  t)) )
       (push tmp-class check-class-list )
       )
     (setq check-class-list (nreverse check-class-list ) )
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
-        (setq  class-member-list  (nth 1 (assoc  opt-class class-list  ))) 
+        (setq  class-member-list  (nth 1 (assoc-string  opt-class class-list  t ))) 
         (if ret 
             (nconc ret class-member-list   )
           (setq ret class-member-list  ))
@@ -647,7 +647,6 @@
 
 (defun ac-php-get-class-name-by-key-list-pri ( tags-data key-list-str )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
-    (message "========= key-list :%s" key-list-str)
     (dolist (item key-list )
       (if (string= cur-class "" )
           (setq cur-class item)
@@ -656,7 +655,7 @@
 
           (if (string= item "__parent__" )
               (progn
-                (setq cur-class (nth 1 (assoc cur-class inherit-list  ))  ) 
+                (setq cur-class (nth 1 (assoc-string cur-class inherit-list  t ))  ) 
                 (if (not cur-class) (setq cur-class "") ))
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))

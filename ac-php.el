@@ -292,8 +292,15 @@
           (setq frist-key (nth 0 key-list))
           (setq frist-key (ac-php-clean-namespace-name frist-key) )
 
-          (setq  frist-class-name
-                (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "$" frist-key "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )  1   t )))
+          ;;check for new define   @var $v  class_type 
+          (setq frist-class-name  (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\(" ac-php-word-re-str "\\)" )  1   t )))
+
+          ;;check for old define  $v:: class_type 
+          (unless frist-class-name 
+            (setq  frist-class-name
+                   (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "$" frist-key "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )  1   t )))
+            )
+
 
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
@@ -457,10 +464,16 @@
 
            ((or (string= tag-type "p")  (string= tag-type "m") ) ;;class function member
             (setq other-data  (match-string 6  line-data ) )
+
             ;;get  return type
             (setq return-type  (if (string-match (concat ".*::[ \t]*\\("ac-php-word-re-str "\\).*")  doc)
                                    (ac-php-clean-namespace-name (match-string 1  doc  ) )
                                  ""))
+
+            ;;  check in type field
+            (when  (string= return-type "" )
+              (when (string-match  (concat  ".*\ttype:\\(" ac-php-word-re-str "\\).*" ) other-data)
+                (setq return-type  (match-string 1  other-data  ))))
 
 
             (when (string-match (concat "^\t\\(class\\|interface\\):\\(" ac-php-word-re-str "\\)\taccess:\\(\\w+\\)") other-data)
@@ -754,12 +767,12 @@
                     (line-beginning-position)
                     (line-end-position )))
     (if  (string-match ( concat  "$" cur-word ) line-txt)
-        (let ((class-name "`<...>`" ) )
+        (let ((class-name "<...>" ) )
           (when (string-match (concat  cur-word"[\t ]*=[\t ]*new[\t ]+\\("  ac-php-word-re-str "\\)" ) line-txt)
             (setq class-name (match-string 1 line-txt)))
-          (kill-new (concat "\t/*$" cur-word "::" class-name " */\n") )
+          (kill-new (concat "\t/**  @var  $" cur-word " " class-name "  */\n") )
           )
-      (kill-new (concat "\tpublic /*::"cur-word" */ $" cur-word ";\n") ))))
+      (kill-new (concat "\t/** \n\t *\n\t * @var  " cur-word "\n\t */\n\tpublic   $" cur-word ";\n") ))))
 
 (defun ac-php-location-stack-forward ()
   (interactive)

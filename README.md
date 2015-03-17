@@ -121,36 +121,58 @@ mkdir .tags
 * DONE 
 
 
-## Php extern for complete
+## Php Doc for complete  
 define class memeber type :
 
-`public  $v1;`  => `public /*::classtype */ $v1;`
+`public  $v1;`  =>
+``` php
+/**
+ * @var classtype
+ */
+public $v1;
+```
 
 define class function   return type:
 
-`public  function get_v1()`  => ` public /*::classtype*/ function get_v1()`
+`public  function get_v1()`  =>
+```php
+/**
+ * @return classtype 
+ */
+public function get_v1()
+```
 
 define variable: 
 
-`$value=new xxx();` => 
+`$value=new Testa ();` => 
 ```php
-/*$value::classtype*/
+/** @var $value  Testa */
 $value=new Testa();
 ```
 
 like this
 ```php
 class Testa {
-	public /*::Testb */ $v1;
-	public /*::Testb */ $v2;
+    /**
+     * @var Testb; 
+     */
+	public  $v1;
+    /**
+     * @var \Test\TestC; 
+     */
+	public  $v2;
     public function set_v1($v){
         $v=trim($v);
         //define value type
-        /*$v::Testa*/
+        /** @var $v Testb*/
         $v=new Testb();
         $this->v1=$v;
     }
-    public /*::Testa*/function get_v1(){
+    /**
+     * 
+     * @return  \Test\TestC; 
+     */
+    public function get_v1(){
         $this->get_v1("ss");
     }
 }

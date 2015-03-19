@@ -186,10 +186,13 @@
         (setq tag-type (get-text-property 0 'ac-php-tag-type item))
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
-        (if  (or (string= tag-type "p") ( string= tag-type "m") )
-            (format "%s\n\t[  type]:%s\n\t[access]:%s" doc  return-type access   )
-          doc
-          )
+        (cond
+         ( (or (string= tag-type "p") ( string= tag-type "m") )
+          (format "%s\n\t[  type]:%s\n\t[access]:%s" doc  return-type access   ) )
+         (return-type 
+          (format "%s  %s " return-type doc   ) )
+         (t
+          doc))
         ))
   )
 
@@ -262,11 +265,15 @@
 
 
 
-(defun ac-php-get-class-at-point( )
+(defun ac-php-get-class-at-point( &optional pos  )
+
   (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str )
+    ;; default use cur point 
+    (unless  pos (setq pos (point) ))
+
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
-                    (1+ (point )) ))
+                    (1+ pos ) ))
     (setq old-line-txt line-txt)
     
     (setq line-txt (replace-regexp-in-string "\\<return\\>\\|\\<echo\\>" "" line-txt  ))
@@ -362,6 +369,7 @@
             (when (string-prefix-p  ac-prefix (nth 1 function-item )  )
               (setq key-word (nth  1 function-item ))
               (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+              (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
               (push key-word ret-list  )
               )))
       )
@@ -431,7 +439,13 @@
 
               ) 
           (cond
-           ((string= tag-type "f") (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  ) function-list  ))
+           ((string= tag-type "f")
+            ;;  check in type field
+            (setq other-data  (match-string 6  line-data ) )
+            (when (string-match  (concat  ".*\ttype:\\(" ac-php-word-re-str "\\).*" ) other-data)
+              (setq return-type  (match-string 1  other-data  )))
+
+            (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  return-type ) function-list  ))
            ((string= tag-type "d")
 
 
@@ -629,6 +643,7 @@
 
 (defun ac-php-get-class-member-list (class-list inherit-list  class-name  )
   "DOCSTRING"
+  (setq  class-name (ac-php-clean-namespace-name  class-name) )
   (let ((tmp-class class-name ) (check-class-list (list class-name)) (ret ) find-flag )
     (while (setq  tmp-class (nth 1 (assoc-string tmp-class inherit-list  t)) )
       (push tmp-class check-class-list )
@@ -762,10 +777,25 @@
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
+    (message "11111111")
     (if  (string-match ( concat  "$" cur-word ) line-txt)
         (let ((class-name "<...>" ) )
           (when (string-match (concat  cur-word"[\t ]*=[\t ]*new[\t ]+\\("  ac-php-word-re-str "\\)" ) line-txt)
             (setq class-name (match-string 1 line-txt)))
+          (when (string-match (concat  cur-word"[\t ]*=.*(" ) line-txt)
+            ;;call function
+            (let (key-str-list  pos) 
+              (save-excursion
+                (re-search-forward "(")
+                (re-search-backward "[^ \t]")
+                (setq pos (1- (point)) )
+                )
+              (when pos (setq key-str-list (ac-php-get-class-at-point pos ) ))
+
+              (when key-str-list
+                (setq class-name (ac-php-get-class-name-by-key-list  (ac-php-get-tags-data) key-str-list )))
+              ))
+
           (kill-new (concat "\t/**  @var  $" cur-word " " class-name "  */\n") )
           )
       (kill-new (concat "\t/** \n\t *\n\t * @var  " cur-word "\n\t */\n\tpublic   $" cur-word ";\n") ))))

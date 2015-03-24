@@ -1,13 +1,20 @@
 <?php
 class Testb  extends Testa{
-    //define v2 type is Testa in comment
 
+    //define v2 type is Testa in phpdoc
     /**
      * @var   \Test\Testa 
      */
 	public $v2;
 
+    /** 
+	 *
+	 * @return  Test\Testa 
+	 */
+
     public function get_v2(){
-        $this->v2->get_v1();
+        return $this->v2;
+        
     }
+
 }

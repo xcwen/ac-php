@@ -96,9 +96,13 @@
 
 
 
+;;data 
+(defvar ac-php-tag-last-data nil)
+(defvar ac-php-tag-last-data-time 0)
 
 
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
+
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)
 
@@ -598,14 +602,22 @@
       (prin1 data))))
 
 (defun ac-php-load-data (file)
-  (with-temp-buffer
-    (insert-file-contents file)
-    (read (current-buffer))))
+  (let  ((file-attr   (file-attributes  file ) ) last-time)
+    (when file-attr
+      (setq last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
+      (when (>  last-time ac-php-tag-last-data-time    )
+
+        (with-temp-buffer
+          (insert-file-contents file)
+          (setq ac-php-tag-last-data (read (current-buffer))))
+        (message "load  tag data from file")
+        (setq ac-php-tag-last-data-time  last-time ))))
+  ac-php-tag-last-data)
 
 (defun ac-php-get-tags-data ()
   (let ((tags-file   (ac-php-get-tags-file )))
     (if tags-file
-        (ac-php-load-data  (ac-php-get-tags-file) )
+        (ac-php-load-data  tags-file  )
       nil))) 
 
 ;;; ==============END
@@ -782,23 +794,24 @@
         (let ((class-name "<...>" ) )
           (when (string-match (concat  cur-word"[\t ]*=[\t ]*new[\t ]+\\("  ac-php-word-re-str "\\)" ) line-txt)
             (setq class-name (match-string 1 line-txt)))
-          (when (string-match (concat  cur-word"[\t ]*=.*(" ) line-txt)
+          (when (string-match (concat  cur-word"[\t ]*=.*[(;]" ) line-txt)
             ;;call function
             (let (key-str-list  pos) 
               (save-excursion
-                (re-search-forward "(")
+                (re-search-forward "[(;]")
                 (re-search-backward "[^ \t]")
                 (setq pos (1- (point)) )
                 )
               (when pos (setq key-str-list (ac-php-get-class-at-point pos ) ))
 
-              (when key-str-list
-                (setq class-name (ac-php-get-class-name-by-key-list  (ac-php-get-tags-data) key-str-list )))
-              ))
+              (if  key-str-list ;;class-name
+                  (setq class-name (ac-php-get-class-name-by-key-list  (ac-php-get-tags-data) key-str-list ))
+                (progn ;;function TODO
 
-          (kill-new (concat "\t/**  @var  $" cur-word " " class-name "  */\n") )
-          )
-      (kill-new (concat "\t/** \n\t *\n\t * @var  " cur-word "\n\t */\n\tpublic   $" cur-word ";\n") ))))
+                  ))))
+
+          (kill-new (concat "\n\t/**  @var  $" cur-word " " class-name "  */\n") ))
+      (kill-new (concat "\n\t/** \n\t *\n\t * @var  " cur-word "\n\t */\n\tpublic   $" cur-word ";\n") ))))
 
 (defun ac-php-location-stack-forward ()
   (interactive)

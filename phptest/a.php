@@ -5,4 +5,6 @@
 $ta->set_v1("ss");
 /**  @var  $tb  Testb  */
 $Tb->V2->Set_v1("ss");
-$tb->get_v2("ss");
+
+/**  @var  $v Test\Testa  */
+$v=$tb->get_v2("ss");

@@ -212,7 +212,9 @@ if show:
 no find .tags dir in path list :/home/jim/phptest/ 
 ```
 
-mk .tags dir  like this:
+you need *mkdir ".tags" in root of project*
+
+like this:
 
 `mkdir /home/jim/phptest/.tags`
 

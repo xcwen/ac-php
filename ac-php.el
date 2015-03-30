@@ -97,8 +97,7 @@
 
 
 ;;data 
-(defvar ac-php-tag-last-data nil)
-(defvar ac-php-tag-last-data-time 0)
+(defvar ac-php-tag-last-data-list nil) ;;(("/home/xxx/projecj/.tags".(  1213141011  data )   ))
 
 
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
@@ -602,17 +601,18 @@
       (prin1 data))))
 
 (defun ac-php-load-data (file)
-  (let  ((file-attr   (file-attributes  file ) ) last-time)
+  (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
     (when file-attr
-      (setq last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
-      (when (>  last-time ac-php-tag-last-data-time    )
-
+      (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
+      (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
+        
+      (when (or (null conf-last-time) (> file-last-time conf-last-time ))
         (with-temp-buffer
           (insert-file-contents file)
-          (setq ac-php-tag-last-data (read (current-buffer))))
-        (message "load  tag data from file")
-        (setq ac-php-tag-last-data-time  last-time ))))
-  ac-php-tag-last-data)
+          (setq  file-data  (read (current-buffer))))
+        (assq-delete-all  file   ac-php-tag-last-data-list )
+        (push (list file file-last-time  file-data ) ac-php-tag-last-data-list  )))
+    (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
 
 (defun ac-php-get-tags-data ()
   (let ((tags-file   (ac-php-get-tags-file )))

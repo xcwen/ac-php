@@ -104,11 +104,25 @@ localhost:~/$ sudo apt-get install cscope
                ))
 ```
 
+*  other command
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
 
 `ac-php-show-tip` ;; show define at point
 
 `ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
+
+
+`ac-php-gen-def` ;;  gen value define at point  
+
+example:
+
+`php
+$value=new Testa ();
+`
+point at `$value` then m-x:  `ac-php-gen-def `  will gen : ` /** @var $value  Testa */ `
+
+then you can  yank/paste it 
+
 
 
 

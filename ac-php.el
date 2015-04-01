@@ -600,31 +600,26 @@
           (print-circle t))  ; Allow circular data
       (prin1 data))))
 
-;; (defun ac-php-load-data (file)
-;;   (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
-;;     (when file-attr
-;;       (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
-;;       (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
-        
-;;       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
-;;         (with-temp-buffer
-;;           (insert-file-contents file)
-;;           (setq  file-data  (read (current-buffer))))
-;;         (assq-delete-all  file   ac-php-tag-last-data-list )
-;;         (push (list file file-last-time  file-data ) ac-php-tag-last-data-list  )))
-;;     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
-
 (defun ac-php-load-data (file)
-  (with-temp-buffer
-    (insert-file-contents file)
-    (read (current-buffer))))
+  (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
+    (when file-attr
+      (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
+      (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
+        
+      (when (or (null conf-last-time) (> file-last-time conf-last-time ))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (setq  file-data  (read (current-buffer))))
+        (assq-delete-all  file   ac-php-tag-last-data-list )
+        (push (list file file-last-time  file-data ) ac-php-tag-last-data-list  )))
+    (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
 
 
-(defun ac-php-get-tags-data ()
-  (let ((tags-file   (ac-php-get-tags-file )))
-    (if tags-file
-        (ac-php-load-data  tags-file  )
-      nil))) 
+;; (defun ac-php-get-tags-data ()
+;;   (let ((tags-file   (ac-php-get-tags-file )))
+;;     (if tags-file
+;;         (ac-php-load-data  tags-file  )
+;;       nil))) 
 
 ;;; ==============END
 
@@ -669,10 +664,10 @@
     (setq check-class-list (nreverse check-class-list ) )
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
-        (setq  class-member-list  (nth 1 (assoc-string  opt-class class-list  t ))) 
+        (setq  class-member-list  (copy-tree (nth 1 (assoc-string  opt-class class-list  t ))))  ;;copy-tree : will not change tags-data
         (if ret 
-            (nconc ret class-member-list   )
-          (setq ret class-member-list  ))
+            (nconc ret class-member-list)
+          (setq ret class-member-list  ) )
         ))
     ret
     ))

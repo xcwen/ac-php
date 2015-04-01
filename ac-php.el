@@ -335,10 +335,10 @@
   (let ( ret-list key-word output-list  class-name  (class-list (nth 0 tags-data)) (inherit-list (nth 2 tags-data))  )
     (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
     (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
+
     (progn
 
       (setq  output-list (ac-php-get-class-member-list  class-list inherit-list  class-name ) )
-
       (mapc (lambda (x)
                 (setq key-word (nth 1 x ))
                 (setq key-word (propertize key-word 'ac-php-help  (nth 2  x ) ))
@@ -600,19 +600,25 @@
           (print-circle t))  ; Allow circular data
       (prin1 data))))
 
-(defun ac-php-load-data (file)
-  (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
-    (when file-attr
-      (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
-      (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
+;; (defun ac-php-load-data (file)
+;;   (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
+;;     (when file-attr
+;;       (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
+;;       (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
         
-      (when (or (null conf-last-time) (> file-last-time conf-last-time ))
-        (with-temp-buffer
-          (insert-file-contents file)
-          (setq  file-data  (read (current-buffer))))
-        (assq-delete-all  file   ac-php-tag-last-data-list )
-        (push (list file file-last-time  file-data ) ac-php-tag-last-data-list  )))
-    (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
+;;       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
+;;         (with-temp-buffer
+;;           (insert-file-contents file)
+;;           (setq  file-data  (read (current-buffer))))
+;;         (assq-delete-all  file   ac-php-tag-last-data-list )
+;;         (push (list file file-last-time  file-data ) ac-php-tag-last-data-list  )))
+;;     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
+
+(defun ac-php-load-data (file)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (read (current-buffer))))
+
 
 (defun ac-php-get-tags-data ()
   (let ((tags-file   (ac-php-get-tags-file )))

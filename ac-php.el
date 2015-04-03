@@ -615,11 +615,11 @@
     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
 
 
-;; (defun ac-php-get-tags-data ()
-;;   (let ((tags-file   (ac-php-get-tags-file )))
-;;     (if tags-file
-;;         (ac-php-load-data  tags-file  )
-;;       nil))) 
+(defun ac-php-get-tags-data ()
+  (let ((tags-file   (ac-php-get-tags-file )))
+    (if tags-file
+        (ac-php-load-data  tags-file  )
+      nil))) 
 
 ;;; ==============END
 

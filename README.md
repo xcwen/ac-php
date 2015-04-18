@@ -12,7 +12,7 @@ and use `ac-php`  work with tags
 
 * [Test](#test)
 * [Usage](#usage)
-* [php extern for complete](#php-extern-for-complete)
+* [php Doc for complete](#php-doc-for-complete)
 * [rebuild tags](#rebuild-tags)
 * [FQA](#fqa)
 

@@ -12,7 +12,7 @@ and use `ac-php`  work with tags
 
 * [Test](#test)
 * [Usage](#usage)
-* [php Doc for complete](#php-doc-for-complete)
+* [php extern for complete](#php-extern-for-complete)
 * [rebuild tags](#rebuild-tags)
 * [FQA](#fqa)
 
@@ -23,10 +23,18 @@ and use `ac-php`  work with tags
 \#UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
 ```
+
 * install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
 ```bash 
 \#UBUNTU
 localhost:~/$ sudo apt-get install cscope
+```
+  FOR *MAC OSX INSTALL *
+```bash
+ brew  install homebrew/php/php56
+```
+```bash
+ brew  install cscope 
 ```
 
 * example:

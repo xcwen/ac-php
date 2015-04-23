@@ -9,7 +9,7 @@ and use `ac-php`  work with tags
  
 ## Table of Contents
 
-
+* [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
 * [php extern for complete](#php-extern-for-complete)
@@ -17,7 +17,8 @@ and use `ac-php`  work with tags
 * [FQA](#fqa)
 
 
-##  Test
+##  Install 
+### UBUNTU
 * install `php5-cli` command  for phpctags
 ```bash 
 \#UBUNTU
@@ -29,13 +30,25 @@ localhost:~/$ sudo apt-get install php5-cli
 \#UBUNTU
 localhost:~/$ sudo apt-get install cscope
 ```
-  FOR *MAC OSX INSTALL *
+### MAC OSX 
 ```bash
  brew  install homebrew/php/php56
 ```
 ```bash
  brew  install cscope 
 ```
+### check `php`,`cscope`  existed 
+```bash
+localhost:~$ php --version
+PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53) 
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
+localhost:~$ cscope --version
+cscope: version 15.8a
+```
+
+
+##  Test
 
 * example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
@@ -76,19 +89,6 @@ emacs ~/ac-php/phptest/testb.php
 ```
 
 # Usage
-
-* install `php5-cli` command  for phpctags
-```bash 
-\#UBUNTU
-localhost:~/$ sudo apt-get install php5-cli 
-```
-* install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
-```bash 
-\#UBUNTU
-localhost:~/$ sudo apt-get install cscope
-```
-
-
 
 * install `ac-php` from melpa
 ```elisp

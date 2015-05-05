@@ -24,7 +24,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index )
+;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
 
 ;;; Commentary: 
 ;; Auto Completion source for php. 
@@ -220,9 +220,130 @@
   ) 
 
 
+(defun ac-php-split-string-with-separator(str regexp &optional replacement omit-nulls)
+  "this function is a tool like split-string,
+  but it treat separator as an element of returned list
+  for example (ac-php-split-string-with-separator abc.def.g \"\\.\" \".\")
+  will return '(\"abc\" \".\" \"def\" \".\" \"g\" )"
+  (when str
+    (let (split-list  substr match-end)
+      (if  (string-match regexp str)
+          (progn
+            (while (string-match regexp  str)
+              (setq match-end (match-end 0))
+              (setq  substr (substring-no-properties str 0 (- match-end 1)))
+              (when (or (not omit-nulls) (> (length substr ) 0))
+                (setq split-list (append split-list (list  substr))) )
+              (setq split-list (append split-list (list (or replacement regexp))))
+              (setq str (substring-no-properties str  match-end)))
+            (when (or (not omit-nulls) (> (length str ) 0))
+              (setq split-list (append split-list (list str)))))
+        (setq split-list (list str)))
+      split-list)))
+
+(defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
+" System.getProperty(str.substring(3)).to
+first ajc-split-line-4-complete-method will split this line to
+'System' '.' 'getProperty' '(' 'str' '.' 'substring' '(' '3' ')' ')' '.' 'to'
+this function will remove anything between ( and )  ,so only
+'System'  '.' 'getProperty'  '.'  'to'  is left "
+  (let* (  (stack-list)(ele) (reverse-current-line-split-list  (reverse splited-line-items)) (parse-finished))
+    (setq ele (pop reverse-current-line-split-list))
+    (while  (and ele (not parse-finished))
+      (if  (or (string-equal ";" ele) (string-equal "(" ele )) (setq parse-finished t);; parse finished ,exit the  loop
+          (if (string-equal ")" ele)
+              (let ((e)(right-stack))
+                (push ele  right-stack)
+                (setq e (pop reverse-current-line-split-list))
+                (while (and e (  > (length right-stack) 0))
+                  (if (string-equal "(" e ) (pop right-stack))
+                  (if (string-equal ")" e ) (push e right-stack))
+                  (setq e (pop reverse-current-line-split-list)))
+                (if e    (push e reverse-current-line-split-list)))
+              (push ele stack-list)
+            ))
+      (setq ele (pop reverse-current-line-split-list)))
+    (setq stack-list stack-list)
+      ))
+(defun ac-php-get-key-list-at-point( )
+    )
+
+(defun ac-php-split-line-4-complete-method(line-string  )
+  "this function is used to complete method ,first this function will split line-string to small items
+for example : suppose line-string is
+System.getProperty(str.substring(3)).to
+then this function split it to
+'System' '.' 'getProperty' '(' 'str' '.' 'substring' '(' '3' ')' ')' '.' 'to' "
+  (save-excursion
+    (let (  (stack-list nil))
+        (setq line-string  (replace-regexp-in-string   "\\\\\"" "'"       line-string))
+        (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
+        (setq line-string  (replace-regexp-in-string   "->" "."       line-string))
+        (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
+        (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))
+        (setq line-string  (replace-regexp-in-string   "\\breturn\\b" ""  line-string))
+        (setq line-string  (replace-regexp-in-string   "\\becho\\b" ""  line-string))
+        (setq line-string  (replace-regexp-in-string   "\\bprint\\b" ""  line-string))
+        (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
+        (while (string-match "=\\(.*\\)" line-string)
+          (setq line-string (match-string-no-properties 1 line-string)))
+       ;;split line-string with "." ,but add "." as an element at its position in list
+      (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))
+       ;;split each element  with "(" ,but add "(" as an element at its position in list
+      ;;and merge all the list in a list
+      (let ((ele)(tmp-list))
+           (dolist (ele stack-list)
+            (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "("  "("  t))))
+           (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele ")"  ")"  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "\\["  "("  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "]"  ")"  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "{"  "("  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "}"  ")"  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "<"  "("  t))))
+        (setq stack-list tmp-list))
+      (let((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele ">"  ")"  t))))
+        (setq stack-list tmp-list))
+            (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele ","  ";"  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele ";"  ";"  t))))
+        (setq stack-list tmp-list))
+      (let ((ele)(tmp-list))
+        (dolist (ele stack-list)
+          (setq tmp-list (append tmp-list (split-string ele "[ \t]+"  t))))
+        (setq stack-list tmp-list))
+      (setq stack-list stack-list )
+      ))
+  )
+
+
 (defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  )
   "DOCSTRING"
-  (let (line-txt ret-str find-pos need-find-flag )  
+  (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search )  
+    (setq  old-case-fold-search case-fold-search )
     (setq need-find-flag t )
     (save-excursion
       (while  need-find-flag
@@ -239,6 +360,7 @@
           )
         )
       )
+    (setq   case-fold-search old-case-fold-search )
     ret-str ))
 
 
@@ -267,28 +389,33 @@
   ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  ))
 
 
+(defun ac-php-trim-string (string)
+  "Remove white spaces in beginning and ending of STRING.
+White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
+(replace-regexp-in-string "\\`[ \t\n]*" "" (replace-regexp-in-string "[ \t\n]*\\'" "" string))
+)
+
 
 (defun ac-php-get-class-at-point( &optional pos  )
 
-  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str )
+  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str frist-key-str  )
     ;; default use cur point 
     (unless  pos (setq pos (point) ))
 
-    (setq line-txt (buffer-substring-no-properties
+    (setq line-txt (ac-php-trim-string (buffer-substring-no-properties
                     (line-beginning-position)
-                    (1+ pos ) ))
+                     pos  )))
+
     (setq old-line-txt line-txt)
-    
-    (setq line-txt (replace-regexp-in-string "\\<return\\>\\|\\<echo\\>" "" line-txt  ))
-    (setq line-txt (replace-regexp-in-string ".*[=(,.]" "" line-txt  ))
-    (setq line-txt (replace-regexp-in-string "^[^a-zA-Z\\\\]*" "" line-txt  ))
-    (setq line-txt (replace-regexp-in-string "[\t $]" "" line-txt  ))
-    (when (not (string=  line-txt "")  )
+
+    (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
+                    (ac-php-split-line-4-complete-method line-txt ))) 
+    (when  key-list  
+      (setq frist-key-str (nth 0  key-list) )
       ;;检查 :: 
-      (if (and (string-match  "::"  line-txt ) (not (string-match  "\\/\\*"  line-txt ) ))
+      (if (and (string-match  "::"  frist-key-str  ) (not (string-match  "\\/\\*"  line-txt ) ))
           (progn 
-            (setq key-list (split-string line-txt "::" ))
-            (setq frist-key (nth 0 key-list))
+            (setq frist-key (substring-no-properties  frist-key-str  0 -2  ) ) 
             (setq frist-key (ac-php-clean-namespace-name frist-key) )
             (setq frist-class-name  frist-key  )
             (cond
@@ -297,14 +424,10 @@
              ((string= frist-key "self" ) 
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ) ))
              ((string-match  "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt  )  (setq frist-class-name nil))
-
              ))
-
         (progn
-          (setq key-list (split-string line-txt "->" ))
-          (setq frist-key (nth 0 key-list))
-          (setq frist-key (ac-php-clean-namespace-name frist-key) )
-
+          (setq frist-key  frist-key-str )
+          (setq frist-key (ac-php-clean-namespace-name frist-key))
           ;;check for new define   @var $v  class_type 
           (setq frist-class-name  (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\(" ac-php-word-re-str "\\)" )  1   t )))
 
@@ -323,11 +446,13 @@
     (if frist-class-name 
         (progn
           (setq ret-str  (concat frist-class-name ))
+
           (dolist (field-value (cdr key-list) )
-            (setq ret-str  (concat  ret-str "." field-value )))
+            ;;(when  (not (string= "." field-value)) 
+            (setq ret-str  (concat  ret-str  field-value )))
+          ;;)
           ret-str
           )
-      ;;(message "no find class from %s" frist-key )
       nil)))
 
 (defun ac-php-candidate-class ( tags-data key-str-list  )
@@ -790,7 +915,6 @@
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
-    (message "11111111")
     (if  (string-match ( concat  "$" cur-word ) line-txt)
         (let ((class-name "<...>" ) )
           (when (string-match (concat  cur-word"[\t ]*=[\t ]*new[\t ]+\\("  ac-php-word-re-str "\\)" ) line-txt)

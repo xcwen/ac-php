@@ -184,18 +184,26 @@ class Testa {
      */
 	public  $v2;
     public function set_v1($v){
+
+        //for complete system function 
         $v=trim($v);
         //define value type
         /** @var $v Testb*/
         $v=new Testb();
+
+
+        //for complete memeber 
         $this->v1=$v;
+
+        //for complete function  return type  
+        $this-> get_v2()->testC();
     }
     /**
      * 
      * @return  \Test\TestC; 
      */
-    public function get_v1(){
-        $this->get_v1("ss");
+    public function get_v2(){
+        $this->v2;
     }
 }
 ```

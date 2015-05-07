@@ -421,7 +421,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
             (cond
              ((string= frist-key "parent" ) 
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ".__parent__" ) ))
-             ((string= frist-key "self" ) 
+             ((or (string= frist-key "self" ) (string= frist-key "static" )   )
               (setq frist-class-name (concat (ac-php-get-cur-full-class-name) ) ))
              ((string-match  "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt  )  (setq frist-class-name nil))
              ))
@@ -451,9 +451,10 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
             ;;(when  (not (string= "." field-value)) 
             (setq ret-str  (concat  ret-str  field-value )))
           ;;)
-          ret-str
-          )
-      nil)))
+          ret-str)
+      (if (>(length   key-list ) 1) "null" nil) )))
+
+
 
 (defun ac-php-candidate-class ( tags-data key-str-list  )
   ;;得到变量
@@ -925,7 +926,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
               (save-excursion
                 (re-search-forward "[(;]")
                 (re-search-backward "[^ \t]")
-                (setq pos (1- (point)) )
+                (setq pos (point) )
                 )
               (when pos (setq key-str-list (ac-php-get-class-at-point pos ) ))
 

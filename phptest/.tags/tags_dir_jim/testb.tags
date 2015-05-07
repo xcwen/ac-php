@@ -4,6 +4,7 @@
 !_TAG_PROGRAM_NAME	phpctags	//
 !_TAG_PROGRAM_URL	https://github.com/techlivezheng/phpctags	/official site/
 !_TAG_PROGRAM_VERSION	0.5.1	//
-Testb	/home/jim/ac-php/phptest/testb.php	/^class Testb  extends Testa{$/;"	c	line:2	inherits:Testa
-get_v2	/home/jim/ac-php/phptest/testb.php	/^    public function get_v2(){$/;"	m	line:15	class:Testb	access:public	type:Test\Testa
-v2	/home/jim/ac-php/phptest/testb.php	/^	public $v2;$/;"	p	line:8	class:Testb	access:public	type:\Test\Testa
+Testb	/home/jim/ac-php/phptest/testb.php	/^class Testb  extends Testa{$/;"	c	line:3	inherits:Testa
+get_tt	/home/jim/ac-php/phptest/testb.php	/^    public function get_tt(){$/;"	m	line:20	class:Testb	access:public
+get_v2	/home/jim/ac-php/phptest/testb.php	/^    public function get_v2(){$/;"	m	line:16	class:Testb	access:public	type:Test\Testa
+v2	/home/jim/ac-php/phptest/testb.php	/^	public $v2;$/;"	p	line:9	class:Testb	access:public	type:\Test\Testa

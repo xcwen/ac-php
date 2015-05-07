@@ -112,13 +112,17 @@ emacs ~/ac-php/phptest/testb.php
                ))
 ```
 
-*  other command
+*  command
+
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
+
+`ac-php-find-symbol-at-point`   ;goto define
+
+`ac-php-location-stack-back`    ;go back
 
 `ac-php-show-tip` ;; show define at point
 
 `ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
-
 
 `ac-php-gen-def` ;;  gen value define at point  
 
@@ -130,6 +134,14 @@ $value=new Testa ();
 point at `$value` then m-x:  `ac-php-gen-def `  will gen : ` /** @var $value  Testa */ `
 
 then you can  yank/paste it 
+
+LIKE this: 
+
+`$value=new Testa ();` => 
+```php
+/** @var $value  Testa */
+$value=new Testa();
+```
 
 
 
@@ -222,8 +234,6 @@ localhost:~/ac-php/phptest/.tags$ tree .
 1 directory, 4 files
 ```
 
-
-
 **if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
 
 if php file cannot pass from `phpctags`.
@@ -251,10 +261,6 @@ like this:
 or
 
 `mkdir /home/jim/.tags `
-
-or
-
-`mkdir /home/.tags`
 
 
 ## FQA

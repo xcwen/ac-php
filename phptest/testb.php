@@ -1,4 +1,5 @@
 <?php
+
 class Testb  extends Testa{
 
     //define v2 type is Testa in phpdoc
@@ -14,7 +15,11 @@ class Testb  extends Testa{
 
     public function get_v2(){
         return $this->v2;
-        
+    }
+
+    public function get_tt(){
+        $testv=$this->get_v2();
+        static::get_v2();
     }
 
 }

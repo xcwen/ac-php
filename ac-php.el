@@ -79,12 +79,11 @@
 ;;load sys-data
 (require 'ac-php-sys-data)
 
-(require 'auto-complete)
-(require 'php-mode)
-(require 'popup)
+(if (featurep 'auto-complete) (require 'auto-complete) )
+(if (featurep 'php-mode-map)  (require 'php-mode) )
+(if (featurep 'popup) (require 'popup) )
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
-
 
 
 (defcustom ac-php-cscope 
@@ -752,7 +751,13 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
 (defun ac-php-get-tags-dir  ()
   "DOCSTRING"
   (let (tags-dir tags-file) 
-    (setq tags-dir (file-name-directory (buffer-file-name)  ))
+    (when (buffer-file-name) 
+      (setq tags-dir (file-name-directory (buffer-file-name)  ))
+    )
+
+    (unless tags-dir
+      (setq tags-dir ( expand-file-name  default-directory) ))
+
     (while (not (or (file-exists-p  (concat tags-dir  ".tags" )) (string= tags-dir "/") ))
       (setq tags-dir  ( file-name-directory (directory-file-name  tags-dir ) ) ))
     (if (string= tags-dir "/") (setq tags-dir nil )   )
@@ -1154,23 +1159,25 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
 
           (point)))))
 
-(ac-define-source php
-  '((candidates . ac-php-candidate)
-    (candidate-face . ac-php-candidate-face)
-    (selection-face . ac-php-selection-face)
-    (prefix . ac-php-prefix)
-    (requires . 0)
-    (document . ac-php-document)
-    (action . ac-php-action)
-    (cache)
-    (symbol . "p")))
+(when (featurep 'auto-complete) 
+  
+  (ac-define-source php
+    '((candidates . ac-php-candidate)
+      (candidate-face . ac-php-candidate-face)
+      (selection-face . ac-php-selection-face)
+      (prefix . ac-php-prefix)
+      (requires . 0)
+      (document . ac-php-document)
+      (action . ac-php-action)
+      (cache)
+      (symbol . "p")))
 
 
-(ac-define-source php-template
-  '((candidates . ac-php-template-candidate)
-    (prefix . ac-php-template-prefix)
-    (requires . 0)
-    (action . ac-php-template-action)
-    (document . ac-php-document)
-    (cache)
-    (symbol . "t")))
+  (ac-define-source php-template
+    '((candidates . ac-php-template-candidate)
+      (prefix . ac-php-template-prefix)
+      (requires . 0)
+      (action . ac-php-template-action)
+      (document . ac-php-document)
+      (cache)
+      (symbol . "t"))))

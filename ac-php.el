@@ -703,7 +703,6 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
           (let ( cmd cmd-output   )
             (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
             (setq cmd-output (shell-command-to-string  cmd) )
-            (message "cmd-output:%s" cmd)
             
             (when (> (length cmd-output) 3)
               (princ (concat "phpctags ERROR:" cmd-output ))

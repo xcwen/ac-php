@@ -690,7 +690,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
         (setq  file-name (nth  0 file-item )  )
         (setq src-time  (nth 1 file-item ) )
         (setq obj-file-name   (substring file-name  tags-dir-len   ) )
-        (setq obj-file-name (replace-regexp-in-string "/" "-" obj-file-name ))
+        (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
         (setq obj-file-name (replace-regexp-in-string "\\.php$" ".tags" obj-file-name ))
         (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
 
@@ -700,8 +700,10 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
         (when (or (not obj-item) (< (nth 1 obj-item) src-time ) )
           ;;gen tags file
           (message "rebuild %s" file-name )
-          (let (cmd-output   )
-            (setq cmd-output (shell-command-to-string (concat ac-php-executable  " -f " obj-file-name " "  file-name  )) )
+          (let ( cmd cmd-output   )
+            (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
+            (setq cmd-output (shell-command-to-string  cmd) )
+            (message "cmd-output:%s" cmd)
             
             (when (> (length cmd-output) 3)
               (princ (concat "phpctags ERROR:" cmd-output ))

@@ -407,8 +407,21 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
 
     (setq old-line-txt line-txt)
 
-    (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
-                    (ac-php-split-line-4-complete-method line-txt ))) 
+    (if (ac-php-check-not-in-string-or-comment pos)
+        (progn
+          (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
+                          (ac-php-split-line-4-complete-method line-txt ))) 
+
+          (if (not (and (stringp (nth 1 key-list ) )
+                        (string= "."  (nth 1 key-list )  )
+                        ))
+              (setq  key-list nil )))
+      (setq  key-list (list (ac-php-get-cur-word ))))
+
+
+    ;;check  in phpdoc 
+
+
     (when  key-list  
       (setq frist-key-str (nth 0  key-list) )
       ;;检查 :: 
@@ -929,10 +942,11 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
             ;;call function
             (let (key-str-list  pos) 
               (save-excursion
-                (re-search-forward "[(;]")
+                (re-search-forward "[;]")
                 (re-search-backward "[^ \t]")
                 (setq pos (point) )
                 )
+
               (when pos (setq key-str-list (ac-php-get-class-at-point pos ) ))
 
               (if  key-str-list ;;class-name

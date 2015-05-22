@@ -18,7 +18,7 @@ class Testa {
     }
 
     public function get_v1(){
-        return $v1;
+        return $this->v1;
         //$this->set_v1(1);
     }
 }

@@ -412,14 +412,12 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt ))) 
 
+          ;; out of function like : class Testb  extends test\Testa[point]
           (if (not (and (stringp (nth 1 key-list ) )
                         (string= "."  (nth 1 key-list )  )
                         ))
               (setq  key-list nil )))
       (setq  key-list (list (ac-php-get-cur-word ))))
-
-
-    ;;check  in phpdoc 
 
 
     (when  key-list  

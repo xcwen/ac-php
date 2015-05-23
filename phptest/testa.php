@@ -14,7 +14,6 @@ class Testa {
     public function set_v1($v){
         $v=trim($v);
         $this->v1=$v;
-
     }
 
     public function get_v1(){

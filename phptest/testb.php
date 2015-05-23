@@ -19,6 +19,7 @@ class Testb  extends test\Testa{
 
     public function get_tt(){
 
+
         $testv=$this->get_v2()->v1;
 
         static::get_v2();

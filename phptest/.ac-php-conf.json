@@ -1,0 +1,7 @@
+{
+    "phps-path-filter-list"  :  [
+        "./*.php",
+        "dir1/*",
+        "dir2/Exception/*"
+    ] 
+}

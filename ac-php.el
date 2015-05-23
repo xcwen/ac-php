@@ -7,7 +7,7 @@
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
 ;; Version: 20150226
-;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1"))
+;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1") (s "1"))
 
 
 
@@ -75,6 +75,10 @@
 
 (provide 'ac-php)
 
+
+(require 'json)
+(require 's)
+(require 'f)
 
 ;;load sys-data
 (require 'ac-php-sys-data)
@@ -518,7 +522,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
     ret-list
     ))
 ;;; ==============BEGIN
-(defun ac-php-find-php-files ( work-dir regex )
+(defun ac-php-find-php-files ( work-dir regex also-find-subdir )
   "get all php file list"
   (let (results sub-results files file-name file-dir-flag file-change-time file-change-unixtime )
     (setq files (directory-files-and-attributes work-dir t))
@@ -545,11 +549,12 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
                     ;;(not (string= ".."   (file-name-base file-name)  ))
                     (not (string= "."  (substring (file-name-base file-name)  0 1 ))) ;; not start with "."
                     ) 
-        (setq sub-results  (ac-php-find-php-files file-name regex ) )
+        (when also-find-subdir
+          (setq sub-results  (ac-php-find-php-files file-name regex also-find-subdir ) )
 
-        (if results
-            (nconc results sub-results)
-          (setq results sub-results))
+          (if results
+              (nconc results sub-results)
+            (setq results sub-results)))
         ))
     results 
     ))
@@ -668,6 +673,31 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
     (if tags-dir
         (concat   tags-dir ".tags/tags-data.el"  )
       nil)))
+(defun ac-php--get-php-files-from-config (work-dir)
+  (let ( conf-list   filter-array  filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  )
+    (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
+    (setq conf-list (json-read-file  config-file-name  ) )
+    (setq filter-array  (cdr (assoc-string "php-path-filter-list" conf-list )) )
+    (if  filter-array  
+        (progn
+          (setq filter-length (length filter-array  ))
+
+          (setq filter-index 0)
+          (while (< filter-index  filter-length )
+            (setq filter-item ( aref  filter-array  filter-index) )
+            (setq also-find-subdir (not (s-ends-with?  "/*.php" filter-item   ) ))
+            
+
+            ;;(setq ret-list (append ret-list  (ac-php-find-php-files tags-dir "^[^#]+\\.php$" t ) ) )
+            
+            (setq filter-index (1+ filter-index )) 
+            ))
+      (progn
+        (message "need define  `php-path-filter-list` in  file[%s]  " config-file-name )
+        ))
+    ret-list 
+    )
+  )
 
 (defun ac-php-remake-tags ()
   " reset tags , if  php source  is changed  "
@@ -682,8 +712,8 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
       (setq obj-tags-dir (concat tags-dir ".tags/tags_dir_" (getenv "USER") "/" ))
       (if (not (file-directory-p obj-tags-dir ))
           (mkdir obj-tags-dir))
-      (setq file-list (ac-php-find-php-files tags-dir "^[^#]+\\.php$" ) )
-      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.tags$" ) )
+      (setq file-list (ac-php-find-php-files tags-dir "^[^#]+\\.php$" t ) )
+      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.tags$" t ) )
       
       (dolist (file-item file-list )
 

@@ -211,11 +211,11 @@
 
 (defun ac-php-check-not-in-string-or-comment (pos)
   "ac-php-check-in-string-or-comment"
-  (if  (nth 8 (syntax-ppss pos))  nil  t )
+  (save-excursion (if  (nth 8 (syntax-ppss pos))  nil  t ))
   ) 
 (defun ac-php-check-not-in-comment (pos)
   "ac-php-check-in-string-or-comment"
-  (if  (nth 4 (syntax-ppss pos))  nil  t )
+  (save-excursion (if  (nth 4 (syntax-ppss pos))  nil  t ))
   ) 
 
 

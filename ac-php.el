@@ -366,7 +366,7 @@ then this function split it to
 
 (defun ac-php-get-cur-class-name ()
   "DOCSTRING"
-  ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\)*class[ \t]+\\(\\w+\\)" 2 ))
+  ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\)*class[ \t]+\\([a-zA-Z0-9_]+\\)" 2 ))
 (defun ac-php-clean-namespace-name (namespace-name)
     (if (and namespace-name  ( string=  (substring-no-properties  namespace-name 0 1  ) "\\" ) )
         ( substring-no-properties namespace-name 1 )
@@ -561,7 +561,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
       (when (and
              (> (length line-data ) 0)
              (not (string= (substring line-data 0 1 ) "!" ) )
-             (string-match "^\\(\\w+\\)\t\\(.*\\)\t/\\^\\(.+\\)\\$/;\"\t\\(\\w\\)\tline:\\([0-9]+\\)\\(.*\\)" line-data)
+             (string-match "^\\([a-zA-Z0-9_]+\\)\t\\(.*\\)\t/\\^\\(.+\\)\\$/;\"\t\\([a-zA-Z0-9_]\\)\tline:\\([0-9]+\\)\\(.*\\)" line-data)
              )
 
 
@@ -632,7 +632,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
                 (setq return-type  (match-string 1  other-data  ))))
 
 
-            (when (string-match (concat "^\t\\(class\\|interface\\):\\(" ac-php-word-re-str "\\)\taccess:\\(\\w+\\)") other-data)
+            (when (string-match (concat "^\t\\(class\\|interface\\):\\(" ac-php-word-re-str "\\)\taccess:\\([a-zA-Z0-9_]+\\)") other-data)
               (setq class-name (match-string 2  other-data  ))
               (setq access (match-string 3  other-data  ))
               )

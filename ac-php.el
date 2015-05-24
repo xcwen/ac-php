@@ -717,23 +717,21 @@ then this function split it to
           ;;sort
           (setq filter-path-list ( sort filter-path-list  'string<))
 
+
           ;;check contains
           (let (tmp-union-list check-error-flag) 
             (dolist ( filter-item-name filter-path-list )
               (setq check-error-flag nil)
-              (when  (not (or  ( f-parent-of? work-dir filter-item-name  )
-                               (f-same? work-dir filter-item-name  ) 
-                               ))
+              (when  (not (s-starts-with?   work-dir filter-item-name ))
                 (progn
                   (setq check-error-flag t)
-                  (message "CONFIG FILTER WARRING : [%s] most in work-dir [%s] "
-                           (ac-ph--get-config-path-noti-str work-dir filter-item-name )
+                  (message "CONFIG FILTER WARRING : [%s] [%s] most in work-dir [%s] "
+                           filter-item-name (ac-ph--get-config-path-noti-str work-dir filter-item-name )
                             work-dir )))
 
               (unless check-error-flag 
                 (dolist (tmp-item tmp-union-list)
-                  (when  (or (f-parent-of? tmp-item  filter-item-name  )
-                             (f-same? tmp-item filter-item-name  ) )
+                  (when (s-starts-with?  tmp-item filter-item-name )
                     (progn
                       (setq check-error-flag t)
                       (message "CONFIG FILTER WARRING : [%s] in [%s] "

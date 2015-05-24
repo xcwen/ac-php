@@ -285,8 +285,8 @@ for exmaple:
       "inc"
     ],
     "php-path-list": [
-      "./dir1"
-      "./dir2"
+      "./dir1",
+      "./dir2",
       "./dir3/dir32/"
     ],
     "php-path-list-without-subdir": [

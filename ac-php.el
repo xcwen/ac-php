@@ -87,6 +87,12 @@
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
+(defvar ac-php-debug-flag nil)
+
+(defmacro ac-php--debug (  fmt-str &rest args )
+  `(if ac-php-debug-flag
+       (message (concat "[AC-PHP-DEBUG]:" ,fmt-str ) ,@args )
+       ))
 
 (defcustom ac-php-cscope 
   (executable-find "cscope")
@@ -557,11 +563,13 @@ then this function split it to
   "gen-el-data"
   (let ( class-list function-list inherit-list (file-start-pos project-dir-len ) (count 0 ) )
     (dolist (line-data tags-lines)
+      (ac-php--debug "DO line:%s"  line-data   ) 
       (when (and
              (> (length line-data ) 0)
              (not (string= (substring line-data 0 1 ) "!" ) )
              (string-match "^\\([a-zA-Z0-9_]+\\)\t\\(.*\\)\t/\\^\\(.+\\)\\$/;\"\t\\([a-zA-Z0-9_]\\)\tline:\\([0-9]+\\)\\(.*\\)" line-data)
              )
+        
 
 
         (let (
@@ -576,6 +584,7 @@ then this function split it to
               access
 
               ) 
+          (ac-php--debug "Matching type[%s]  " tag-type ) 
           (cond
            ((string= tag-type "f")
             ;;  check in type field

@@ -84,7 +84,7 @@
 (require 'ac-php-sys-data)
 
 (if (featurep 'auto-complete) (require 'auto-complete) )
-(if (featurep 'php-mode-map)  (require 'php-mode) )
+(if (featurep 'php-mode)  (require 'php-mode) )
 (if (featurep 'popup) (require 'popup) )
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
@@ -95,7 +95,15 @@
   "*Location of cscope executable"
   :group 'auto-complete
   :type 'file)
+(defface ac-php-candidate-face
+  '((t (:background "lightgray" :foreground "navy")))
+  "Face for php candidate"
+  :group 'auto-complete)
 
+(defface ac-php-selection-face
+  '((t (:background "navy" :foreground "white")))
+  "Face for the php selected candidate."
+  :group 'auto-complete)
 
 
 
@@ -120,6 +128,7 @@
           (nbutlast ac-php-location-stack (- (length ac-php-location-stack) ac-php-max-bookmark-count))))))
 
 
+;;function 
 (defun ac-php-goto-line-col (line column)
   (goto-char (point-min))
   (forward-line (1- line))
@@ -130,7 +139,8 @@
   (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
           (line-number-at-pos offset) (1+ (- (or offset (point)) (point-at-bol)))))
 (defun ac-php--string=-ignore-care( str1 str2  )
-  (not (integer-or-marker-p ( compare-strings  str1  0 nil str2  0 nil t ))  )
+  (s-equals?(s-upcase str1 ) (s-upcase str2 ))
+  ;;(not (integer-or-marker-p ( compare-strings  str1  0 nil str2  0 nil t ))  )
   )
 
 (defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
@@ -203,15 +213,6 @@
   )
 
 
-(defface ac-php-candidate-face
-  '((t (:background "lightgray" :foreground "navy")))
-  "Face for php candidate"
-  :group 'auto-complete)
-
-(defface ac-php-selection-face
-  '((t (:background "navy" :foreground "white")))
-  "Face for the php selected candidate."
-  :group 'auto-complete)
 
 (defun ac-php-check-not-in-string-or-comment (pos)
   "ac-php-check-in-string-or-comment"
@@ -392,11 +393,6 @@ then this function split it to
   ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  ))
 
 
-(defun ac-php-trim-string (string)
-  "Remove white spaces in beginning and ending of STRING.
-White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
-(replace-regexp-in-string "\\`[ \t\n]*" "" (replace-regexp-in-string "[ \t\n]*\\'" "" string))
-)
 
 
 (defun ac-php-get-class-at-point( &optional pos  )
@@ -405,7 +401,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
     ;; default use cur point 
     (unless  pos (setq pos (point) ))
 
-    (setq line-txt (ac-php-trim-string (buffer-substring-no-properties
+    (setq line-txt (s-trim (buffer-substring-no-properties
                     (line-beginning-position)
                      pos  )))
 
@@ -673,31 +669,100 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
     (if tags-dir
         (concat   tags-dir ".tags/tags-data.el"  )
       nil)))
-(defun ac-php--get-php-files-from-config (work-dir)
-  (let ( conf-list   filter-array  filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  )
+(defun ac-ph--get-config-path-noti-str ( work-dir path-str)
+  (if  (s-ends-with? "*.php" path-str )
+      (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) work-dir) )
+    (format "php-path-list->%s" (f-relative path-str work-dir ))))
+
+(defun ac-php--get-php-files-from-config (work-dir )
+  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
     (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
-    (setq conf-list (json-read-file  config-file-name  ) )
-    (setq filter-array  (cdr (assoc-string "php-path-filter-list" conf-list )) )
-    (if  filter-array  
-        (progn
-          (setq filter-length (length filter-array  ))
-
-          (setq filter-index 0)
-          (while (< filter-index  filter-length )
-            (setq filter-item ( aref  filter-array  filter-index) )
-            (setq also-find-subdir (not (s-ends-with?  "/*.php" filter-item   ) ))
-            
-
-            ;;(setq ret-list (append ret-list  (ac-php-find-php-files tags-dir "^[^#]+\\.php$" t ) ) )
-            
-            (setq filter-index (1+ filter-index )) 
-            ))
-      (progn
-        (message "need define  `php-path-filter-list` in  file[%s]  " config-file-name )
+    (unless (f-exists?  config-file-name )
+      (let ((old-config-value json-encoding-pretty-print) )
+        (setq  json-encoding-pretty-print  t)
+        (f-write-text  (json-encode '(:filter
+                                      (
+                                       :php-file-ext-list ("php" "inc")
+                                                          :php-path-list (".")
+                                                          :php-path-list-without-subdir [] 
+                                                          ))) 'utf-8 config-file-name  )
+        (setq  json-encoding-pretty-print  old-config-value)
         ))
+
+    
+    
+    (setq conf-list (json-read-file  config-file-name  ) )
+    (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
+    
+
+    (if  filter-info
+        (progn
+          ;;get ext list
+          (setq ext-list   (cdr (assoc-string "php-file-ext-list" filter-info)) )
+          (unless ext-list (setq ext-list '["php" "inc"]))
+          (setq ext-re-str
+                (s-concat  "^[^#]+\\.\\("
+                           (s-join "\\|"
+                                   (mapcar
+                                    (lambda(ext) (s-concat "\\(" ext "\\)"   )  )
+                                    ext-list ) ) "\\)$" ))
+          
+          (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
+                                             (cdr (assoc-string "php-path-list"  filter-info))
+                                             )))
+
+          (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
+                                             (cdr (assoc-string "php-path-list-without-subdir" filter-info))
+                                             )))
+          ;;sort
+          (setq filter-path-list ( sort filter-path-list  'string<))
+
+          ;;check contains
+          (let (tmp-union-list check-error-flag) 
+            (dolist ( filter-item-name filter-path-list )
+              (setq check-error-flag nil)
+              (when  (not (or  ( f-parent-of? work-dir filter-item-name  )
+                               (f-same? work-dir filter-item-name  ) 
+                               ))
+                (progn
+                  (setq check-error-flag t)
+                  (message "CONFIG FILTER WARRING : [%s] most in work-dir [%s] "
+                           (ac-ph--get-config-path-noti-str work-dir filter-item-name )
+                            work-dir )))
+
+              (unless check-error-flag 
+                (dolist (tmp-item tmp-union-list)
+                  (when  (or (f-parent-of? tmp-item  filter-item-name  )
+                             (f-same? tmp-item filter-item-name  ) )
+                    (progn
+                      (setq check-error-flag t)
+                      (message "CONFIG FILTER WARRING : [%s] in [%s] "
+                           (ac-ph--get-config-path-noti-str work-dir filter-item-name )
+                           (ac-ph--get-config-path-noti-str work-dir tmp-item ))
+                      ))))
+
+              (unless check-error-flag
+                  (push filter-item-name tmp-union-list )))
+
+            (setq filter-path-list  tmp-union-list))
+
+          (dolist ( filter-item-name filter-path-list )
+            (let (opt-dir also-find-subdir)
+              (if (s-ends-with? "*.php" filter-item-name)
+                  (progn
+                    (setq opt-dir (f-parent  filter-item-name ) )
+                    (setq also-find-subdir nil))
+                (progn
+                  (setq opt-dir filter-item-name  )
+                  (setq also-find-subdir t  ))
+                )
+              (setq ret-list (append ret-list (ac-php-find-php-files opt-dir ext-re-str also-find-subdir ) ) )
+
+              ))
+          )
+      (message "need define  `filter` in  file[%s]  " config-file-name ))
     ret-list 
-    )
-  )
+    ))
 
 (defun ac-php-remake-tags ()
   " reset tags , if  php source  is changed  "
@@ -705,14 +770,14 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
   (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list)  
 
     (message "remake %s" tags-dir )
-    (if (not ac-php-executable ) (message "no find cmd:  phpctags,  put it in /usr/bin/  and restart emacs "   ) )
+    (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
     (when (and tags-dir  ac-php-executable )
       (setq tags-dir-len (length tags-dir) )
       (setq obj-tags-dir (concat tags-dir ".tags/tags_dir_" (getenv "USER") "/" ))
       (if (not (file-directory-p obj-tags-dir ))
           (mkdir obj-tags-dir))
-      (setq file-list (ac-php-find-php-files tags-dir "^[^#]+\\.php$" t ) )
+      (setq file-list (ac-php--get-php-files-from-config tags-dir  ) )
       (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.tags$" t ) )
       
       (dolist (file-item file-list )
@@ -721,7 +786,7 @@ White space here is any of: space, tab, emacs newline (line feed, ASCII 10)."
         (setq src-time  (nth 1 file-item ) )
         (setq obj-file-name   (substring file-name  tags-dir-len   ) )
         (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
-        (setq obj-file-name (replace-regexp-in-string "\\.php$" ".tags" obj-file-name ))
+        (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".tags" obj-file-name ))
         (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
 
         (push obj-file-name cur-obj-list )

@@ -13,8 +13,7 @@ and use `ac-php`  work with tags
 * [Test](#test)
 * [Usage](#usage)
 * [php extern for complete](#php-extern-for-complete)
-* [rebuild tags](#rebuild-tags)
-* [FQA](#fqa)
+* [tags](#tags)
 
 
 ##  Install 
@@ -221,7 +220,7 @@ class Testa {
 ```
 
 
-## Rebuild Tags
+## Tags
 tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`
 ```bash
 localhost:~/ac-php/phptest/.tags$ tree .
@@ -234,6 +233,89 @@ localhost:~/ac-php/phptest/.tags$ tree .
 1 directory, 4 files
 ```
 
+### Configue PHP file Search 
+at  `.tags` location dir ,  run `ac-php-remake-tags`  will gen `.ac-php-conf.json` if it's not find ;
+
+like this
+
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "."
+    ],
+    "php-path-list-without-subdir": []
+  }
+}
+```
+`php-file-ext-list` : file extern name list;
+
+`php-path-list`:  find php files *recursion*  ;
+
+`php-path-list-without-subdir`:  find php files  *no recursion* no find php from subdir  ;
+
+for exmaple:
+
+```
+├── dir1
+│   ├── 1.php
+│   └── dir11
+│       └── 11.php
+├── dir2
+│   └── 2.php
+└── dir3
+    ├── 3.php
+    ├── dir31
+    │   └── 31.php
+    ├── dir32
+    │   └── 32.php
+    └── dir33
+        └── 33.php
+```
+
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "./dir1"
+      "./dir2"
+      "./dir3/dir32/"
+    ],
+    "php-path-list-without-subdir": [
+      "./dir3"
+     ]
+  }
+}
+```
+ 
+filter result is:
+ 
+```
+├── dir1
+│   ├── 1.php
+│   └── dir11
+│       └── 11.php
+├── dir2
+│   └── 2.php
+└── dir3
+    ├── 3.php
+    ├── dir32
+    │   └── 32.php
+```
+
+`31.php` `32.php` will not gen tags;
+
+
+
+### Rebuild Tags 
 **if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
 
 if php file cannot pass from `phpctags`.
@@ -263,4 +345,3 @@ or
 `mkdir /home/jim/.tags `
 
 
-## FQA

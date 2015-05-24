@@ -1,7 +1,12 @@
 {
-    "phps-path-filter-list"  :  [
-        "./*.php",
-        "dir1/*",
-        "dir2/Exception/*"
-    ] 
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "."
+    ],
+    "php-path-list-without-subdir": []
+  }
 }

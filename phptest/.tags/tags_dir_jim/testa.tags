@@ -7,6 +7,6 @@
 DIR	/home/jim/ac-php/phptest/testa.php	/^    const  DIR="sss";$/;"	d	line:13	class:Test\Testa
 Test	/home/jim/ac-php/phptest/testa.php	/^namespace Test;$/;"	n	line:3
 Testa	/home/jim/ac-php/phptest/testa.php	/^class Testa {$/;"	c	line:5	namespace:Test
-get_v1	/home/jim/ac-php/phptest/testa.php	/^    public function get_v1(){$/;"	m	line:20	class:Test\Testa	access:public
+get_v1	/home/jim/ac-php/phptest/testa.php	/^    public function get_v1(){$/;"	m	line:19	class:Test\Testa	access:public
 set_v1	/home/jim/ac-php/phptest/testa.php	/^    public function set_v1($v){$/;"	m	line:14	class:Test\Testa	access:public
 v1	/home/jim/ac-php/phptest/testa.php	/^    public $v1;$/;"	p	line:11	class:Test\Testa	access:public	type:string

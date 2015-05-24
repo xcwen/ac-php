@@ -563,7 +563,7 @@ then this function split it to
   "gen-el-data"
   (let ( class-list function-list inherit-list (file-start-pos project-dir-len ) (count 0 ) )
     (dolist (line-data tags-lines)
-      (ac-php--debug "DO line:%s"  line-data   ) 
+      (ac-php--debug "DO line:[%s]"  line-data   ) 
       (when (and
              (> (length line-data ) 0)
              (not (string= (substring line-data 0 1 ) "!" ) )

@@ -314,7 +314,7 @@ filter result is:
     │   └── 32.php
 ```
 
-`31.php` `32.php` will not gen tags;
+`31.php` `33.php` will not gen tags;
 
 
 

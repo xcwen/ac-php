@@ -377,7 +377,9 @@ then this function split it to
   "DOCSTRING"
   ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\)*class[ \t]+\\([a-zA-Z0-9_]+\\)" 2 ))
 (defun ac-php-clean-namespace-name (namespace-name)
-    (if (and namespace-name  ( string=  (substring-no-properties  namespace-name 0 1  ) "\\" ) )
+  (if (and (stringp namespace-name)
+           (> (length namespace-name)   1)
+           ( string=  (substring-no-properties  namespace-name 0 1  ) "\\" ) )
         ( substring-no-properties namespace-name 1 )
       namespace-name))
 

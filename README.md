@@ -234,7 +234,10 @@ localhost:~/ac-php/phptest/.tags$ tree .
 ```
 
 ### Configue PHP file Search 
-at  `.tags` location dir ,  run `ac-php-remake-tags`  will gen `.ac-php-conf.json` if it's not find ;
+
+config file name  is `.ac-php-conf.json`  it's at  `.tags` location dir ,
+
+when run `ac-php-remake-tags`  will gen `.ac-php-conf.json` if it's not find ;
 
 like this
 

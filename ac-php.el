@@ -722,7 +722,10 @@ then this function split it to
           (let (tmp-union-list check-error-flag) 
             (dolist ( filter-item-name filter-path-list )
               (setq check-error-flag nil)
-              (when  (not (s-starts-with?   work-dir filter-item-name ))
+              (when  (not
+                      (or (f-same?   work-dir filter-item-name )
+                          (s-starts-with?   work-dir filter-item-name ) )
+                          )
                 (progn
                   (setq check-error-flag t)
                   (message "CONFIG FILTER WARRING : [%s] [%s] most in work-dir [%s] "

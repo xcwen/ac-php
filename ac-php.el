@@ -659,6 +659,23 @@ then this function split it to
             (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc-string  class-name class-list  t) ) ))
 
            ))))
+    ;;reset inherit-list
+    (setq  inherit-list (mapcar (lambda (inherit-item )
+                                  (let (
+                                        (class-name (nth 0 inherit-item))
+                                        (parent-name (nth 1 inherit-item)) cur-namespace check-classname )
+                                    (if  (s-matches? "\\\\" parent-name )
+                                        inherit-item
+                                      (progn
+                                        (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
+                                        ;;check class in namespace
+                                        (setq check-classname (concat cur-namespace "\\" parent-name ) )
+                                        (when (assoc-string check-classname class-list t )
+                                          (setq parent-name  check-classname))
+                                        (list class-name parent-name )
+                                        ))
+                                    )) inherit-list  ))
+    
     (list class-list function-list inherit-list )))
 
 (defun  ac-php-gen-el-func ( func-name doc)
@@ -949,6 +966,8 @@ then this function split it to
       )
     cur-class
     ))
+(defun ac-php--get-namespace-from-classname (classname)
+  (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
 (defun ac-php-get-class-name-by-key-list ( tags-data key-list-str )
   "DOCSTRING"

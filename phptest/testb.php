@@ -1,8 +1,8 @@
 <?php
 namespace Test; 
-use  Test\Testa as Ta ;
+//use  Test\Testa as Ta ;
 
-class Testb  extends Ta{
+class Testb  extends Testa {
 
     //define v2 type is Testa in phpdoc
     /**
@@ -21,8 +21,12 @@ class Testb  extends Ta{
 
     public function get_tt(){
 
-        $testv=$this->get_v2()->v1;
+        /**  @var  $testv Test\Testa  */
+        //$this->
+        $testv=$this->get_v2();
+        $testv->set_v1("ss");
         static::get_v2();
+
     }
 
 }

@@ -664,7 +664,7 @@ then this function split it to
                                   (let (
                                         (class-name (nth 0 inherit-item))
                                         (parent-name (nth 1 inherit-item)) cur-namespace check-classname )
-                                    (if  (s-matches? "\\\\" parent-name )
+                                    (if (s-index-of "\\" parent-name )
                                         inherit-item
                                       (progn
                                         (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
@@ -675,6 +675,9 @@ then this function split it to
                                         (list class-name parent-name )
                                         ))
                                     )) inherit-list  ))
+    ;;reset return type
+    
+
     
     (list class-list function-list inherit-list )))
 
@@ -953,7 +956,15 @@ then this function split it to
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))
               (setq cur-class (if  member-info
-                                  (nth 4 member-info)
+                                  (let (tmp-class cur-namespace check-classname)
+                                    (setq tmp-class (nth 4 member-info) )
+                                    (if (s-index-of "\\" tmp-class )
+                                        tmp-class
+                                      (progn
+                                        (setq cur-namespace (ac-php--get-namespace-from-classname cur-class))
+                                        (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
+                                        (if (assoc-string check-classname class-list t )
+                                            check-classname tmp-class ))))
                                 ""))
 
               ))

@@ -19,9 +19,9 @@ class Testb  extends Testc {
         return $this->v2;
     }
 
-    public function get_tt(){
 
-        /**  @var  $testv Test\Testa  */
+
+    public function get_tt(){
         $testv=$this->get_v2();
         $testv->set_v1("ss");
         static::get_v2();

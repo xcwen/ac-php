@@ -1302,6 +1302,9 @@ then this function split it to
                       (setq s (replace-regexp-in-string "<#" "${" s))
                       (setq s (replace-regexp-in-string "#>" "}" s))
                       (setq s (replace-regexp-in-string ", \\.\\.\\." "}, ${..." s))
+                      
+                      (when (string= "(${})" s) (setq s "()"))
+
                       (condition-case nil
                           (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
                         (error

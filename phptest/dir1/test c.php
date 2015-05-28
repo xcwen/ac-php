@@ -2,22 +2,22 @@
 
 namespace Test;
 
-class Testa {
+class TestD {
 
 
     /**
      * @var   string 
      */
-    public $v1;
+    public $v4;
     
     const  DIR="sss";
-    public function set_v1($v){
+    public function set_v4($v){
         $v=trim($v);
-        $this->v1=$v;
+        $this->v4=$v;
     }
 
-    public function get_v1(){
-        return $this->v1;
+    public function get_v4(){
+        return $this->v4;
         //$this->set_v1(1);
     }
 }

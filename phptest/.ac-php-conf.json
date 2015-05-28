@@ -1,0 +1,12 @@
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "."
+    ],
+    "php-path-list-without-subdir": []
+  }
+}

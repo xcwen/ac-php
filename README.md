@@ -9,25 +9,45 @@ and use `ac-php`  work with tags
  
 ## Table of Contents
 
-
+* [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
 * [php extern for complete](#php-extern-for-complete)
-* [rebuild tags](#rebuild-tags)
-* [FQA](#fqa)
+* [tags](#tags)
 
 
-##  Test
+##  Install 
+### UBUNTU
 * install `php5-cli` command  for phpctags
 ```bash 
 \#UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
 ```
+
 * install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
 ```bash 
 \#UBUNTU
 localhost:~/$ sudo apt-get install cscope
 ```
+### MAC OSX 
+```bash
+ brew  install homebrew/php/php56
+```
+```bash
+ brew  install cscope 
+```
+### check `php`,`cscope`  existed 
+```bash
+localhost:~$ php --version
+PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53) 
+Copyright (c) 1997-2014 The PHP Group
+Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
+localhost:~$ cscope --version
+cscope: version 15.8a
+```
+
+
+##  Test
 
 * example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
@@ -69,19 +89,6 @@ emacs ~/ac-php/phptest/testb.php
 
 # Usage
 
-* install `php5-cli` command  for phpctags
-```bash 
-\#UBUNTU
-localhost:~/$ sudo apt-get install php5-cli 
-```
-* install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
-```bash 
-\#UBUNTU
-localhost:~/$ sudo apt-get install cscope
-```
-
-
-
 * install `ac-php` from melpa
 ```elisp
   (setq package-archives
@@ -104,13 +111,17 @@ localhost:~/$ sudo apt-get install cscope
                ))
 ```
 
-*  other command
+*  command
+
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
+
+`ac-php-find-symbol-at-point`   ;goto define
+
+`ac-php-location-stack-back`    ;go back
 
 `ac-php-show-tip` ;; show define at point
 
 `ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
-
 
 `ac-php-gen-def` ;;  gen value define at point
 
@@ -122,6 +133,14 @@ $value=new Testa ();
 point at `$value` then m-x:  `ac-php-gen-def `  will gen : ` /** @var $value  Testa */ `
 
 then you can  yank/paste it 
+
+LIKE this: 
+
+`$value=new Testa ();` => 
+```php
+/** @var $value  Testa */
+$value=new Testa();
+```
 
 
 
@@ -176,24 +195,32 @@ class Testa {
      */
 	public  $v2;
     public function set_v1($v){
+
+        //for complete system function 
         $v=trim($v);
         //define value type
         /** @var $v Testb*/
         $v=new Testb();
+
+
+        //for complete memeber 
         $this->v1=$v;
+
+        //for complete function  return type  
+        $this-> get_v2()->testC();
     }
     /**
      * 
      * @return  \Test\TestC; 
      */
-    public function get_v1(){
-        $this->get_v1("ss");
+    public function get_v2(){
+        $this->v2;
     }
 }
 ```
 
 
-## Rebuild Tags
+## Tags
 tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`
 ```bash
 localhost:~/ac-php/phptest/.tags$ tree .
@@ -206,8 +233,92 @@ localhost:~/ac-php/phptest/.tags$ tree .
 1 directory, 4 files
 ```
 
+### Configue PHP file Search 
+
+config file name  is `.ac-php-conf.json`  it's at  `.tags` location dir ,
+
+when run `ac-php-remake-tags`  will gen `.ac-php-conf.json` if it's not find ;
+
+like this
+
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "."
+    ],
+    "php-path-list-without-subdir": []
+  }
+}
+```
+`php-file-ext-list` : file extern name list;
+
+`php-path-list`:  find php files *recursion*  ;
+
+`php-path-list-without-subdir`:  find php files  *no recursion* no find php from subdir  ;
+
+for exmaple:
+
+```
+├── dir1
+│   ├── 1.php
+│   └── dir11
+│       └── 11.php
+├── dir2
+│   └── 2.php
+└── dir3
+    ├── 3.php
+    ├── dir31
+    │   └── 31.php
+    ├── dir32
+    │   └── 32.php
+    └── dir33
+        └── 33.php
+```
+
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "./dir1",
+      "./dir2",
+      "./dir3/dir32/"
+    ],
+    "php-path-list-without-subdir": [
+      "./dir3"
+     ]
+  }
+}
+```
+ 
+filter result is:
+ 
+```
+├── dir1
+│   ├── 1.php
+│   └── dir11
+│       └── 11.php
+├── dir2
+│   └── 2.php
+└── dir3
+    ├── 3.php
+    ├── dir32
+    │   └── 32.php
+```
+
+`31.php` `33.php` will not gen tags;
 
 
+
+### Rebuild Tags 
 **if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
 
 if php file cannot pass from `phpctags`.
@@ -236,9 +347,4 @@ or
 
 `mkdir /home/jim/.tags `
 
-or
 
-`mkdir /home/.tags`
-
-
-## FQA

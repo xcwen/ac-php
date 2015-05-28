@@ -397,6 +397,12 @@ then this function split it to
   ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  ))
 
 
+(defun ac-php-get-use-as-name (pkg-name )
+  "DOCSTRING"
+  (or ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str pkg-name "\\)") 1  nil  )
+      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+" pkg-name) 1 nil ) )
+  )
+
 
 
 (defun ac-php-get-class-at-point( &optional pos  )
@@ -455,6 +461,19 @@ then this function split it to
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
           )))
+    ;;fix use-as-name
+    (if frist-class-name  
+        (let (tmp-name cur-namespace split-arr  cur-class-name )
+          (setq split-arr (s-split "\\\\" frist-class-name ) )
+          (when (= 2 (length split-arr))
+            (setq cur-namespace (nth 0 split-arr) )
+            (setq cur-class-name (nth 1 split-arr) )
+            (setq tmp-name (ac-php-get-use-as-name  cur-namespace ) )
+            (when tmp-name (setq frist-class-name  (concat tmp-name "\\" cur-class-name ) ) )
+            )))
+
+
+    
 
     
     (if frist-class-name 

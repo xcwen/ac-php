@@ -400,7 +400,7 @@ then this function split it to
 (defun ac-php-get-use-as-name (pkg-name )
   "DOCSTRING"
   (or ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str pkg-name "\\)") 1  nil  )
-      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+" pkg-name) 1 nil ) )
+      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" pkg-name) 1 nil ) )
   )
 
 

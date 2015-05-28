@@ -1277,8 +1277,12 @@ then this function split it to
              (setq s (replace-regexp-in-string "^(\\|)$" "" s))
              (setq sl (ac-clang-split-args s))
              (cond ((featurep 'yasnippet)
+                    
                     (dolist (arg sl)
-                      (setq snp (concat snp ", ${" arg "}")))
+                      (if  (string= arg ""  )
+                          (setq snp (concat snp ", "))
+                        (setq snp (concat snp ", ${" arg "}"))))
+
                     (condition-case nil
                         (yas-expand-snippet (concat "("  (substring snp 2) ")")
                                             ac-php-template-start-point pos) ;; 0.6.1c

@@ -82,7 +82,7 @@
 (require 'ac-php-sys-data)
 
 (if (featurep 'auto-complete) (require 'auto-complete) )
-(if (featurep 'php-mode)  (require 'php-mode) )
+(if (featurep 'php-mode)  (require 'php-mode))
 (if (featurep 'popup) (require 'popup) )
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
@@ -273,8 +273,6 @@ this function will remove anything between ( and )  ,so only
       (setq ele (pop reverse-current-line-split-list)))
     (setq stack-list stack-list)
       ))
-(defun ac-php-get-key-list-at-point( )
-    )
 
 (defun ac-php-split-line-4-complete-method(line-string  )
   "this function is used to complete method ,first this function will split line-string to small items

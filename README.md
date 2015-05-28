@@ -123,7 +123,7 @@ emacs ~/ac-php/phptest/testb.php
 
 `ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
 
-`ac-php-gen-def` ;;  gen value define at point  
+`ac-php-gen-def` ;;  gen value define at point
 
 example:
 

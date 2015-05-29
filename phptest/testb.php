@@ -5,6 +5,9 @@ namespace Test;
 class Testb  extends Testc {
 
     //define v2 type is Testa in phpdoc
+    
+	/** @var  $v8 \Test\Testa  */
+	/** @var  $v5 \Test\Testa  */
     /**
      * @var   \Test\Testa 
      */
@@ -15,8 +18,10 @@ class Testb  extends Testc {
 	 * @return  Testa 
 	 */
 
-    public function get_v2(){
+    public function get_v2(mixed $kdafdd){
         return $this->v2;
+        $this->v2->set_v1("ss");
+        $this->v8->set_v1("sss");
     }
 
 

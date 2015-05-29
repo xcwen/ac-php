@@ -165,6 +165,11 @@ define class memeber type :
 public $v1;
 ```
 
+if you won't define `public $v1 ` you can define with comment ,like this =>
+```
+/** @var  $v1 \Test\Testa  */
+```
+
 define class function   return type:
 
 `public  function get_v1()`  =>
@@ -186,6 +191,7 @@ $value=new Testa();
 like this
 ```php
 class Testa {
+    /** @var  $v8 \Test\Testa  */
     /**
      * @var Testb; 
      */
@@ -206,8 +212,12 @@ class Testa {
         //for complete memeber 
         $this->v1=$v;
 
+
         //for complete function  return type  
         $this-> get_v2()->testC();
+
+        //for complete field from comment
+        $this->v8->testA();
     }
     /**
      * 

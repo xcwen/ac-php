@@ -129,7 +129,8 @@
     (unless (string= bm (nth 0 ac-php-location-stack))
       (push bm ac-php-location-stack)
       (if (> (length ac-php-location-stack) ac-php-max-bookmark-count)
-          (nbutlast ac-php-location-stack (- (length ac-php-location-stack) ac-php-max-bookmark-count))))))
+          (nbutlast ac-php-location-stack (- (length ac-php-location-stack) ac-php-max-bookmark-count)))))
+  )
 
 
 ;;function 
@@ -186,7 +187,7 @@
            (if (string-match "^ +\\(.*\\)$" location)
                (setq location (match-string-no-properties 1 location)))
            (ac-php-find-file-or-buffer location other-window)))
-    (ac-php-location-stack-push)
+    ;;(ac-php-location-stack-push)
     ))
 
 
@@ -1044,7 +1045,8 @@ then this function split it to
                             (progn
                               (setq jump-pos  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  ))
                               (ac-php-location-stack-push)
-                              (ac-php-goto-location jump-pos ))
+                              (ac-php-goto-location jump-pos )
+                              (ac-php-location-stack-push))
                           (message "no find %s.%s " class-name cur-word  )
                           ))
                     ;;(message "no find class  from key-list %s " key-str-list  )
@@ -1061,6 +1063,7 @@ then this function split it to
                     (setq jump-pos  (concat (ac-php-get-tags-dir)  (nth 3 function-item)   ))
                     (ac-php-location-stack-push)
                     (ac-php-goto-location jump-pos )
+                    (ac-php-location-stack-push)
                     (setq find-flag t)
                     (return )))
                 )

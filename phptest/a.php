@@ -18,3 +18,4 @@ $v=$tb->get_v2("ss");
 
 /**  @var  $k string  */
 $k=$tb->get_v2()->v1;
+array_merge("ss","ssdf");

@@ -8,17 +8,19 @@ class Testb  extends Testc {
     
 	/** @var  $v8 \Test\Testa  */
 	/** @var  $v5 \Test\Testa  */
+
     /**
      * @var   \Test\Testa 
      */
 	public $v2;
+
 
     /** 
 	 *
 	 * @return  Testa 
 	 */
 
-    public function get_v2(mixed $kdafdd){
+    public function get_v2(){
         return $this->v2;
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
@@ -30,7 +32,6 @@ class Testb  extends Testc {
         $testv=$this->get_v2();
         $testv->set_v1("ss");
         static::get_v2();
-
     }
 
 }

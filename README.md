@@ -121,7 +121,11 @@ emacs ~/ac-php/phptest/testb.php
 
 `ac-php-show-tip` ;; show define at point
 
-`ac-php-cscope-find-egrep-pattern` ;; find current-word in project 
+`ac-php-cscope-find-egrep-pattern` ;; find current-word in project  
+
+need: (setq ac-php-use-cscope-flag  t ) 
+
+
 
 `ac-php-gen-def` ;;  gen value define at point
 

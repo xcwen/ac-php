@@ -4,9 +4,7 @@
       "php",
       "inc"
     ],
-    "php-path-list": [
-      "."
-    ],
+    "php-path-list": ["./"],
     "php-path-list-without-subdir": []
   }
 }

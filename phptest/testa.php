@@ -12,6 +12,7 @@ class Testa {
     
     const  DIR="sss";
     public function set_v1($v){
+
         $v=trim($v);
         $this->v1=$v;
     }

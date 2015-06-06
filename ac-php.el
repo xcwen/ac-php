@@ -87,12 +87,15 @@
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
+
 (defvar ac-php-debug-flag nil)
 
 (defmacro ac-php--debug (  fmt-str &rest args )
   `(if ac-php-debug-flag
        (message (concat "[AC-PHP-DEBUG]:" ,fmt-str ) ,@args )
        ))
+
+(defvar ac-php-use-cscope-flag nil)
 
 (defcustom ac-php-cscope 
   (executable-find "cscope")
@@ -840,7 +843,7 @@ then this function split it to
         (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
         (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
         ;;  TODO do cscope  
-        (when ac-php-cscope
+        (when (and ac-php-cscope  ac-php-use-cscope-flag )
           (message "rebuild cscope  data file " )
           (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
           (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") ) )
@@ -1238,8 +1241,14 @@ then this function split it to
                 (let (cscope-no-mouse-prompts)
                   (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))
                 ))
-  (setq cscope-initial-directory  (concat (ac-php-get-tags-dir) ".tags" )  )
-  (cscope-find-egrep-pattern symbol)
+
+  (if ac-php-use-cscope-flag
+      (progn
+        (setq cscope-initial-directory  (concat (ac-php-get-tags-dir) ".tags" )  )
+        (cscope-find-egrep-pattern symbol)
+        )
+    (message "need  config: (setq ac-php-use-cscope-flag t)  ")
+    )
   )
 
 (defun ac-php-template-candidate ()

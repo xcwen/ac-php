@@ -9,7 +9,7 @@ $ta->set_v1("ss");
 
 $v=$tb->get_v2()->v1;
 
-
+$tb->
 /**  @var  $ta \Test\Testa  */
 $ta= new \Test\Testa();
 
@@ -18,5 +18,3 @@ $v=$tb->get_v2("ss");
 
 /**  @var  $k string  */
 $k=$tb->get_v2()->v1;
-
-array_merge("ss","ssdf");

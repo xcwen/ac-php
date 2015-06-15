@@ -10,7 +10,7 @@ class Testa {
      */
     public $v1;
     
-    const  DIR="sss";
+    const DIR="sss";
     public function set_v1($v){
 
         $v=trim($v);

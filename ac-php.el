@@ -987,7 +987,7 @@ then this function split it to
     ))
 
 
-(defun ac-php-get-class-name-by-key-list-pri ( tags-data key-list-str show-error-flag )
+(defun ac-php-get-class-name-by-key-list( tags-data key-list-str )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
     (dolist (item key-list )
       (if (string= cur-class "" )
@@ -1018,8 +1018,7 @@ then this function split it to
               ))
 
           (when (string= cur-class "")
-            (when show-error-flag 
-              (message (concat " class[" temp-class "]'s member[" item "] not define type ")))
+              (message (concat " class[" temp-class "]'s member[" item "] not define type "))
             (return))
 
           ))
@@ -1029,25 +1028,6 @@ then this function split it to
 (defun ac-php--get-namespace-from-classname (classname)
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
-(defun ac-php-get-class-name-by-key-list ( tags-data key-list-str  )
-  "DOCSTRING"
-  (let ( class-name  frist-key  ( key-list (split-string key-list-str "\\." ) ) )
-    (setq frist-key (nth 0 key-list))
-    (setq class-name "")
-    (if (not ( string-match "\\\\" frist-key) ) ;no find namespace fix
-        (let (full-key-list-str namespace-name)
-          (setq namespace-name (ac-php-get-cur-namespace-name))
-          (when namespace-name 
-            (setq full-key-list-str (concat namespace-name "\\" key-list-str) )
-            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data full-key-list-str  nil  ) ))
-
-          (when (string= class-name "" )
-            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str  t ) ))
-
-          class-name)
-        (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str  t )
-      )
-    )) 
 
 (defun ac-php-find-symbol-at-point (&optional prefix)
   (interactive "P")

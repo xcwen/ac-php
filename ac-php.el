@@ -323,7 +323,7 @@ then this function split it to
     (let (  (stack-list nil))
         (setq line-string  (replace-regexp-in-string   "\\\\\"" "'"       line-string))
         (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
-        (setq line-string  (replace-regexp-in-string   "\\." ";"       line-string))
+        (setq line-string  (replace-regexp-in-string   "[.+\-/*]"   ";"       line-string))
         (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
         (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
         (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))

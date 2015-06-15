@@ -523,7 +523,7 @@ then this function split it to
                 (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
                 (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  x ) ))
                 (setq key-word (propertize key-word 'ac-php-access (nth 6  x ) ))
-                (setq key-word (propertize key-word 'summary  (nth 0  x )    ))
+                (setq key-word (propertize key-word 'summary  (concat (nth 5  x ) ":" (nth 0  x ))    ))
                 (push key-word ret-list  )
                 nil
                 ) output-list )

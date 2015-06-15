@@ -510,7 +510,7 @@ then this function split it to
 
 (defun ac-php-candidate-class ( tags-data key-str-list  )
   ;;得到变量
-  (let ( ret-list key-word output-list  class-name  (class-list (nth 0 tags-data)) (inherit-list (nth 2 tags-data))  )
+  (let ( ret-list key-word output-list  class-name  (class-list (nth 0 tags-data)) (inherit-list (nth 2 tags-data))  item-list )
     (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
     (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
 
@@ -519,12 +519,19 @@ then this function split it to
       (setq  output-list (ac-php-get-class-member-list  class-list inherit-list  class-name ) )
       (mapc (lambda (x)
                 (setq key-word (nth 1 x ))
-                (setq key-word (propertize key-word 'ac-php-help  (nth 2  x ) ))
-                (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
-                (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  x ) ))
-                (setq key-word (propertize key-word 'ac-php-access (nth 6  x ) ))
-                (setq key-word (propertize key-word 'summary  (concat (nth 5  x ) ":" (nth 0  x ))    ))
-                (push key-word ret-list  )
+                (if (assoc-string  key-word item-list t ) 
+                    (progn
+                      )
+                  (progn
+                    (setq  item-list (append  (list key-word nil) item-list))
+                    (setq key-word (propertize key-word 'ac-php-help  (nth 2  x ) ))
+                    (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
+                    (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  x ) ))
+                    (setq key-word (propertize key-word 'ac-php-access (nth 6  x ) ))
+                    ;;(setq key-word (propertize key-word 'summary  (concat  (nth 0  x ))    ))
+                    (setq key-word (propertize key-word 'summary  (concat (nth 5  x ) ":" (nth 0  x ))    ))
+                    (push key-word ret-list  )))
+                
                 nil
                 ) output-list )
       )

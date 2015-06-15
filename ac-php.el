@@ -294,7 +294,9 @@ this function will remove anything between ( and )  ,so only
        ((= 1 (length split-arr))
         ;; use as 
         (setq cur-class-name (nth 0 split-arr) )
+        (message "888 %s" cur-class-name)
         (setq tmp-name (ac-php-get-use-as-name  cur-class-name ) )
+        (message "88800 %s" tmp-name)
         ;; current-namespace
         (unless tmp-name
           (setq tmp-name (concat (ac-php-get-cur-namespace-name) "\\" class-name ) )
@@ -415,7 +417,9 @@ then this function split it to
 
 (defun ac-php-get-use-as-name (item-name )
   "DOCSTRING"
-  (or ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)") 1  nil  )
+  (or
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)") 1  nil  )
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\("  item-name "\\)") 1  nil  )
       ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name) 1 nil ) )
   )
 
@@ -479,8 +483,10 @@ then this function split it to
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
           )))
     ;;fix use-as-name ,same namespace
+    (message "1111 %s" frist-class-name)
     (when frist-class-name  
         (setq frist-class-name (ac-php--get-class-full-name-in-cur-buffer frist-class-name  class-list  ) ))
+    (message "222 %s" frist-class-name)
 
 
     
@@ -523,7 +529,7 @@ then this function split it to
 
 (defun ac-php-candidate-other ( tags-data)
   
-  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value )
+  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value  start-word-pos )
     ;;系统函数
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-prefix) ) )
@@ -1172,6 +1178,7 @@ then this function split it to
 (defun ac-php-candidate ()
   (let ( key-str-list  tags-data)
     (setq key-str-list (ac-php-get-class-at-point))
+    (message "key-str-list %s" key-str-list)
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if key-str-list
         (ac-php-candidate-class tags-data key-str-list  )

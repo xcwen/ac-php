@@ -621,6 +621,10 @@ then this function split it to
               )
 
             (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  ) function-list  )
+            ;;add class info 
+            (when (not (assoc-string tag-name class-list t ))
+              (push (list tag-name nil ) class-list))
+
             ;; add class-inherits
             (when (string-match  (concat  ".*\tinherits:\\(" ac-php-word-re-str "\\)\\(,.*\\)*" ) other-data)
               (push  (list  tag-name   (match-string 1  other-data  )) inherit-list)))
@@ -834,14 +838,13 @@ then this function split it to
           ))
       ;;加入参数
       (let ((temp-list cur-obj-list) tags-lines )
-        (setq cmd "cat" )
         (while temp-list  
-          (setq  cmd (concat cmd  " " (car  temp-list  )  ))
+          (setq tags-lines (append   (split-string  (f-read  (car  temp-list  )  ) "\n" ) tags-lines  ) )
           (setq temp-list (cdr  temp-list)))
 
         ;;(message "%s" cmd)
-        (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
         (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
+
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
           (message "rebuild cscope  data file " )
@@ -938,11 +941,13 @@ then this function split it to
     ))
 
 
-(defun ac-php-get-class-name-by-key-list-pri ( tags-data key-list-str )
+(defun ac-php-get-class-name-by-key-list-pri ( tags-data key-list-str show-error-flag )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
     (dolist (item key-list )
       (if (string= cur-class "" )
-          (setq cur-class item)
+          (if (or (assoc-string item inherit-list  t ) (assoc-string  item class-list t )  )
+              (setq cur-class item)
+            (return))
         (progn
           (setq temp-class cur-class)
 
@@ -967,7 +972,8 @@ then this function split it to
               ))
 
           (when (string= cur-class "")
-            (message (concat " class[" temp-class "]'s member[" item "] not define type "))
+            (when show-error-flag 
+              (message (concat " class[" temp-class "]'s member[" item "] not define type ")))
             (return))
 
           ))
@@ -977,7 +983,7 @@ then this function split it to
 (defun ac-php--get-namespace-from-classname (classname)
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
-(defun ac-php-get-class-name-by-key-list ( tags-data key-list-str )
+(defun ac-php-get-class-name-by-key-list ( tags-data key-list-str  )
   "DOCSTRING"
   (let ( class-name  frist-key  ( key-list (split-string key-list-str "\\." ) ) )
     (setq frist-key (nth 0 key-list))
@@ -987,13 +993,13 @@ then this function split it to
           (setq namespace-name (ac-php-get-cur-namespace-name))
           (when namespace-name 
             (setq full-key-list-str (concat namespace-name "\\" key-list-str) )
-            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data full-key-list-str   ) ))
+            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data full-key-list-str  nil  ) ))
 
           (when (string= class-name "" )
-            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str   ) )
-            )
+            (setq class-name (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str  t ) ))
+
           class-name)
-        (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str  )
+        (ac-php-get-class-name-by-key-list-pri  tags-data key-list-str  t )
       )
     )) 
 

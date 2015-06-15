@@ -1010,12 +1010,13 @@ then this function split it to
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))
               (setq cur-class (if  member-info
-                                  (let (tmp-class cur-namespace check-classname)
+                                  (let (tmp-class cur-namespace check-classname member-local-class-name)
                                     (setq tmp-class (nth 4 member-info) )
                                     (if (s-index-of "\\" tmp-class )
                                         tmp-class
                                       (progn
-                                        (setq cur-namespace (ac-php--get-namespace-from-classname cur-class))
+                                        (setq member-local-class-name (nth 5 member-info) )
+                                        (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
                                         (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
                                         (if (assoc-string check-classname class-list t )
                                             check-classname tmp-class ))))

@@ -449,6 +449,7 @@ then this function split it to
       (setq  key-list (list (ac-php-get-cur-word ))))
 
 
+
     (when  key-list  
       (setq frist-key-str (nth 0  key-list) )
       ;;检查 :: 
@@ -480,8 +481,11 @@ then this function split it to
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
           )))
+
     ;;fix use-as-name ,same namespace
-    (when frist-class-name  
+    (when ( and frist-class-name
+                (= 1 (length  (s-split "\\."  frist-class-name ) ) )
+                )
         (setq frist-class-name (ac-php--get-class-full-name-in-cur-buffer frist-class-name  class-list  ) ))
 
 
@@ -888,7 +892,6 @@ then this function split it to
           (while temp-list  
             (setq tags-lines (append   (split-string  (f-read  (car  temp-list  )  ) "\n" ) tags-lines  ) )
             (setq temp-list (cdr  temp-list)))
-          ;;(message "%s" cmd)
           (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  ))
 
         ;;  TODO do cscope  

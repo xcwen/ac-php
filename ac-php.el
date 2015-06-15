@@ -838,12 +838,12 @@ then this function split it to
           ))
       ;;加入参数
       (let ((temp-list cur-obj-list) tags-lines )
-        (while temp-list  
-          (setq tags-lines (append   (split-string  (f-read  (car  temp-list  )  ) "\n" ) tags-lines  ) )
-          (setq temp-list (cdr  temp-list)))
-
-        ;;(message "%s" cmd)
-        (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
+        (unless last-phpctags-errmsg
+          (while temp-list  
+            (setq tags-lines (append   (split-string  (f-read  (car  temp-list  )  ) "\n" ) tags-lines  ) )
+            (setq temp-list (cdr  temp-list)))
+          ;;(message "%s" cmd)
+          (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  ))
 
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
@@ -1012,6 +1012,7 @@ then this function split it to
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
     (setq key-str-list (ac-php-get-class-at-point ))
+    (message "==%s" key-str-list)
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  

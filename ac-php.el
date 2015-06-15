@@ -349,7 +349,7 @@ then this function split it to
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
-          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[&|,;^]"  ";"  t))))
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[&|!,;^]"  ";"  t))))
         (setq stack-list tmp-list))
 
       (let ((ele)(tmp-list))

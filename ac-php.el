@@ -1038,7 +1038,6 @@ then this function split it to
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
     (setq key-str-list (ac-php-get-class-at-point  ))
-    (message "====%s" key-str-list)
 
 
     (setq  tags-data  (ac-php-get-tags-data )  )
@@ -1074,7 +1073,6 @@ then this function split it to
                 ;;check "namespace" "use as"  
                 (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
                 (when full-name  (setq  cur-word  full-name) )
-                (message "kk   %s" full-name)
                 
 
                 (dolist (function-item function-list )

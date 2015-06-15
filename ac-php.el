@@ -282,7 +282,8 @@ this function will remove anything between ( and )  ,so only
     "DOCSTRING"
   (let (cur-namespace tmp-name )
     (let (  split-arr   cur-class-name )
-      (setq split-arr (s-split "\\\\"  (ac-php-clean-namespace-name class-name )) )
+
+      (setq split-arr (s-split-up-to "\\\\"  (ac-php-clean-namespace-name class-name ) 2 ))
       (cond
        ((= 2 (length split-arr))
 
@@ -301,9 +302,8 @@ this function will remove anything between ( and )  ,so only
           )
         )))
 
-    (if (assoc-string (ac-php-clean-namespace-name  tmp-name ) class-list t  )
-        tmp-name
-      
+    (unless (assoc-string (ac-php-clean-namespace-name  tmp-name ) class-list t  )
+        (setq tmp-name  nil)
         )
     (unless tmp-name
       (if (assoc-string ( ac-php-clean-namespace-name  class-name ) class-list t  )
@@ -1038,6 +1038,8 @@ then this function split it to
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
     (setq key-str-list (ac-php-get-class-at-point  ))
+    (message "====%s" key-str-list)
+
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  
@@ -1072,6 +1074,7 @@ then this function split it to
                 ;;check "namespace" "use as"  
                 (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
                 (when full-name  (setq  cur-word  full-name) )
+                (message "kk   %s" full-name)
                 
 
                 (dolist (function-item function-list )

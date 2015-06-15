@@ -278,6 +278,41 @@ this function will remove anything between ( and )  ,so only
     (setq stack-list stack-list)
       ))
 
+(defun ac-php--get-class-full-name-in-cur-buffer ( class-name   class-list)
+    "DOCSTRING"
+  (let (cur-namespace tmp-name )
+    (let (  split-arr   cur-class-name )
+      (setq split-arr (s-split "\\\\"  (ac-php-clean-namespace-name class-name )) )
+      (cond
+       ((= 2 (length split-arr))
+
+        (setq cur-namespace (nth 0 split-arr) )
+        (setq cur-class-name (nth 1 split-arr) )
+        (setq tmp-name (ac-php-get-use-as-name  cur-namespace ) )
+        (when tmp-name (setq tmp-name (concat tmp-name "\\" cur-class-name ) ) ))
+
+       ((= 1 (length split-arr))
+        ;; use as 
+        (setq cur-class-name (nth 0 split-arr) )
+        (setq tmp-name (ac-php-get-use-as-name  cur-class-name ) )
+        ;; current-namespace
+        (unless tmp-name
+          (setq tmp-name (concat (ac-php-get-cur-namespace-name) "\\" class-name ) )
+          )
+        )))
+
+    (if (assoc-string (ac-php-clean-namespace-name  tmp-name ) class-list t  )
+        tmp-name
+      
+        )
+    (unless tmp-name
+      (if (assoc-string ( ac-php-clean-namespace-name  class-name ) class-list t  )
+          (setq tmp-name class-name )
+          ))
+    
+    tmp-name
+    ))
+
 (defun ac-php-split-line-4-complete-method(line-string  )
   "this function is used to complete method ,first this function will split line-string to small items
 for example : suppose line-string is
@@ -309,12 +344,12 @@ then this function split it to
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
-          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[<(\\[{]"  "("  t))))
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[<([{]"  "("  t))))
         (setq stack-list tmp-list))
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
-          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[\\^&|,;]"  ";"  t))))
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[&|,;^]"  ";"  t))))
         (setq stack-list tmp-list))
 
       (let ((ele)(tmp-list))
@@ -322,6 +357,7 @@ then this function split it to
           (setq tmp-list (append tmp-list (split-string ele "[ \t]+"  t))))
         (setq stack-list tmp-list))
       (setq stack-list stack-list )
+
       ))
   )
 
@@ -377,17 +413,18 @@ then this function split it to
   ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  ))
 
 
-(defun ac-php-get-use-as-name (pkg-name )
+(defun ac-php-get-use-as-name (item-name )
   "DOCSTRING"
-  (or ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str pkg-name "\\)") 1  nil  )
-      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" pkg-name) 1 nil ) )
+  (or ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)") 1  nil  )
+      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name) 1 nil ) )
   )
 
 
 
 (defun ac-php-get-class-at-point( &optional pos  )
 
-  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str frist-key-str  )
+  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str frist-key-str  (class-list (nth 0 (ac-php-get-tags-data)) ) )
+    
     ;; default use cur point 
     (unless  pos (setq pos (point) ))
 
@@ -441,16 +478,9 @@ then this function split it to
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
           )))
-    ;;fix use-as-name
-    (if frist-class-name  
-        (let (tmp-name cur-namespace split-arr  cur-class-name )
-          (setq split-arr (s-split "\\\\" frist-class-name ) )
-          (when (= 2 (length split-arr))
-            (setq cur-namespace (nth 0 split-arr) )
-            (setq cur-class-name (nth 1 split-arr) )
-            (setq tmp-name (ac-php-get-use-as-name  cur-namespace ) )
-            (when tmp-name (setq frist-class-name  (concat tmp-name "\\" cur-class-name ) ) )
-            )))
+    ;;fix use-as-name ,same namespace
+    (when frist-class-name  
+        (setq frist-class-name (ac-php--get-class-full-name-in-cur-buffer frist-class-name  class-list  ) ))
 
 
     
@@ -493,33 +523,47 @@ then this function split it to
 
 (defun ac-php-candidate-other ( tags-data)
   
-  (let (ret-list (ac-prefix-len (length ac-prefix)) cmp-value )
+  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value )
     ;;系统函数
+    (setq cur-word-len (length cur-word ))
+    (setq start-word-pos (- cur-word-len (length ac-prefix) ) )
     (dolist  (key-word ac-php-sys-function-list)
 
-      (when (>= (length key-word) ac-prefix-len)
-        (setq cmp-value   (substring-no-properties  key-word 0 ac-prefix-len ) )
-        (if (string<   ac-prefix  cmp-value) (return ))
-        (if (string= cmp-value  ac-prefix ) (push key-word ret-list  ))
+      (when (>= (length key-word) cur-word-len)
+        (setq cmp-value   (substring-no-properties  key-word 0 cur-word-len ) )
+        (if (string<  cur-word  cmp-value) (return ))
+        (if (string= cmp-value  cur-word ) (push key-word ret-list  ))
         ))
-    ;;用户函数
+    ;;用户函数 + class  
 
     (if tags-data 
-        (let ((function-list (nth 1 tags-data )  ) key-word )
+        (let ((function-list (nth 1 tags-data )  ) key-word func-name  end-flag  )
 
-          (dolist (function-item function-list )
-            (when (string-prefix-p  ac-prefix (nth 1 function-item )  )
-              (setq key-word (nth  1 function-item ))
-              (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
-              (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
-              (push key-word ret-list  )
-              )))
-      )
-    
+          (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
+              (progn 
+                (setq cur-word (substring-no-properties cur-word 1 ))
+                (setq end-flag (string= (substring-no-properties cur-word  -1   )  "\\" ))
+                (dolist (function-item function-list )
+                  (when (string-prefix-p  cur-word (nth 1 function-item )  )
+                    (if end-flag
+                        (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
+                      (setq key-word  (substring-no-properties (nth  1  function-item )  (1- start-word-pos )))
+                   ) 
+                    (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                    (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                    (push key-word ret-list  )
+                    )))
+            (dolist (function-item function-list )
+              
+              (when (string-prefix-p  cur-word (nth 1 function-item )  )
+                (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
+                (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                (push key-word ret-list  )
+                )))
 
-
-    ret-list
-    ))
+          )) 
+    ret-list))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files ( work-dir regex also-find-subdir )
   "get all php file list"
@@ -1011,8 +1055,7 @@ then this function split it to
                     (line-beginning-position)
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
-    (setq key-str-list (ac-php-get-class-at-point ))
-    (message "==%s" key-str-list)
+    (setq key-str-list (ac-php-get-class-at-point  ))
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  
@@ -1042,7 +1085,12 @@ then this function split it to
       (progn ;;function
         (if tags-data 
             (progn
-              (let ((function-list (nth 1 tags-data )  ))
+              (let ((function-list (nth 1 tags-data ))  (class-list (nth 0 tags-data ) ) full-name )
+
+                ;;check "namespace" "use as"  
+                (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
+                (when full-name  (setq  cur-word  full-name) )
+                
 
                 (dolist (function-item function-list )
                   (when (ac-php--string=-ignore-care (nth 1 function-item )  cur-word  )
@@ -1138,6 +1186,16 @@ then this function split it to
       (ac-php-clean-namespace-name (buffer-substring-no-properties start-pos (point)))
 	  )
     )) 
+(defun ac-php-get-cur-word-without-clean ( )
+  (let (start-pos cur-word)
+	(save-excursion
+	  (skip-chars-backward "a-z0-9A-Z_\\\\")
+	  (setq start-pos (point))
+	  (skip-chars-forward "a-z0-9A-Z_\\\\")
+	  )
+      (buffer-substring-no-properties start-pos (point))
+    )) 
+
 
 (defun ac-php-show-tip	(&optional prefix)
   (interactive "P")
@@ -1317,14 +1375,22 @@ then this function split it to
 
 (defun ac-php-prefix ()
   (or (ac-prefix-symbol)
-      (let ((c (char-before)))
+      (let ((c (char-before)) ret )
         (when (or
                ;; ->
                (and (eq ?> c) (eq ?- (char-before (1- (point)))))
                ;; :: 
                (and (eq ?: c) (eq ?: (char-before (1- (point))))))
 
-          (point)))))
+          (setq  ret (point)))
+        (unless ret
+          (save-excursion
+            (skip-chars-backward "a-z0-9A-Z_\\\\")
+            (setq ret (point))
+            )
+          )
+        ret
+        )))
 
 (when (featurep 'auto-complete) 
   

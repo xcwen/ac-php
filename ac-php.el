@@ -323,6 +323,7 @@ then this function split it to
     (let (  (stack-list nil))
         (setq line-string  (replace-regexp-in-string   "\\\\\"" "'"       line-string))
         (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
+        (setq line-string  (replace-regexp-in-string   "\\." ";"       line-string))
         (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
         (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
         (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))
@@ -356,6 +357,7 @@ then this function split it to
         (dolist (ele stack-list)
           (setq tmp-list (append tmp-list (split-string ele "[ \t]+"  t))))
         (setq stack-list tmp-list))
+
       (setq stack-list stack-list )
 
       ))

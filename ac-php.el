@@ -298,7 +298,11 @@ this function will remove anything between ( and )  ,so only
         (setq tmp-name (ac-php-get-use-as-name  cur-class-name ) )
         ;; current-namespace
         (unless tmp-name
-          (setq tmp-name (concat (ac-php-get-cur-namespace-name) "\\" class-name ) )
+          (let (cur-namespace (ac-php-get-cur-namespace-name)))
+          (if cur-namespace
+              (setq tmp-name (concat  cur-namespace "\\" class-name ) )
+            (setq tmp-name class-name)
+              )
           )
         )))
 

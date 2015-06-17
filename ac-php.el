@@ -485,6 +485,7 @@ then this function split it to
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
           )))
 
+
     ;;fix use-as-name ,same namespace
     (when ( and frist-class-name
                 (= 1 (length  (s-split "\\."  frist-class-name ) ) )
@@ -494,6 +495,7 @@ then this function split it to
 
     
 
+    (ac-php--debug "frist-class-name :%s" frist-class-name)
     
     (if frist-class-name 
         (progn
@@ -1169,6 +1171,7 @@ then this function split it to
 (defun ac-php-candidate ()
   (let ( key-str-list  tags-data)
     (setq key-str-list (ac-php-get-class-at-point))
+    (ac-php--debug "GET key-str-list  :%s" key-str-list)
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if key-str-list
         (ac-php-candidate-class tags-data key-str-list  )

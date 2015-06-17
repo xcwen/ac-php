@@ -5,8 +5,6 @@
 /**  @var  $ta  \Test\Testa  */
 $ta->set_v1("ss");
 /**  @var  $tb  Test\Testb  */
-
-
 $v=$tb->get_v2()->v1;
 
 $tb->

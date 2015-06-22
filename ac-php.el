@@ -252,31 +252,91 @@
               (setq split-list (append split-list (list str)))))
         (setq split-list (list str)))
       split-list)))
+(defun ac-php--get-node-paser-data ( paser-data)
+  (let ((last-item (nth (1- (length paser-data)) paser-data )) ret-data )
 
+    (if ( and ( stringp last-item )
+              (string=  last-item  "__POINT__" ))
+        (let ((i 0 )
+              (check-len (1- (length paser-data)))
+              item )
+          (while (< i check-len )  
+            (setq item (nth i paser-data ) )
+            (if (and (stringp item   )
+                     (string= item ";" )
+                     )
+                (setq ret-data nil)
+              (push item ret-data)
+              ) 
+            (setq i (1+ i))
+            )
+          (setq  ret-data (reverse ret-data) )
+          )
+      (when last-item 
+        (setq ret-data (ac-php--get-node-paser-data last-item )) ))
+    ret-data
+    ))
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
-" System.getProperty(str.substring(3)).to
-first ajc-split-line-4-complete-method will split this line to
-'System' '.' 'getProperty' '(' 'str' '.' 'substring' '(' '3' ')' ')' '.' 'to'
-this function will remove anything between ( and )  ,so only
-'System'  '.' 'getProperty'  '.'  'to'  is left "
-  (let* (  (stack-list)(ele) (reverse-current-line-split-list  (reverse splited-line-items)) (parse-finished))
-    (setq ele (pop reverse-current-line-split-list))
-    (while  (and ele (not parse-finished))
-      (if  (or (string-equal ";" ele) (string-equal "(" ele )) (setq parse-finished t);; parse finished ,exit the  loop
-          (if (string-equal ")" ele)
-              (let ((e)(right-stack))
-                (push ele  right-stack)
-                (setq e (pop reverse-current-line-split-list))
-                (while (and e (  > (length right-stack) 0))
-                  (if (string-equal "(" e ) (pop right-stack))
-                  (if (string-equal ")" e ) (push e right-stack))
-                  (setq e (pop reverse-current-line-split-list)))
-                (if e    (push e reverse-current-line-split-list)))
-              (push ele stack-list)
-            ))
-      (setq ele (pop reverse-current-line-split-list)))
-    (setq stack-list stack-list)
-      ))
+  (let ((need-add-right-count 1  )
+        ( item-count (length splited-line-items ))
+        (i 0)
+        item
+        (elisp-str "(")
+        paser-data
+        ret
+        )
+    
+    (while (< i item-count )
+      (setq item (nth i splited-line-items) )
+      (cond
+       ((string= "(" item )
+        (setq elisp-str (concat elisp-str "(" )   )
+        (setq need-add-right-count (1+ need-add-right-count ) )
+        )
+       ((string= ")" item )
+        (setq elisp-str (concat elisp-str ")" )   )
+        (setq need-add-right-count (1- need-add-right-count ) )
+        )
+       (t
+        (setq elisp-str (concat elisp-str "\"" item  "\" " )  )))
+      (setq i (1+ i))
+      )
+
+    (if (> need-add-right-count  0)
+        (progn
+          (setq  elisp-str (concat  elisp-str "\"__POINT__\"") )
+          (setq i 0)
+          (while (< i need-add-right-count )
+            (setq  elisp-str (concat  elisp-str ")" ))
+
+            (setq i (1+ i))
+            )
+          )
+      (setq  elisp-str "()"  ))
+     (setq paser-data (read  elisp-str) )
+     (setq paser-data (ac-php--get-node-paser-data  paser-data  ))
+     ;; get frist key
+     (let (
+           (frist-key (nth 0  paser-data ))
+           item
+           (i 1)
+           (len-paser-data (length paser-data)))
+       (while (and (listp  frist-key) frist-key )
+         (setq frist-key  (nth 0 frist-key))
+         )
+       (when frist-key
+         (setq ret (list frist-key ) )
+         (while (< i len-paser-data)
+           (setq item (nth i paser-data) )
+           (when (stringp item)
+           (push item  ret  ))
+           (setq i(1+ i) )
+           )))
+     (setq ret (reverse ret  ) )
+
+     ret
+
+    ))
 
 (defun ac-php--get-class-full-name-in-cur-buffer ( class-name   class-list)
     "DOCSTRING"

@@ -276,6 +276,40 @@
         (setq ret-data (ac-php--get-node-paser-data last-item )) ))
     ret-data
     ))
+(defun ac-php--get-key-list-from-paser-data( paser-data)
+  (let (
+        (frist-key (nth 0  paser-data ))
+        item
+        (i 1)
+        (ret)
+        (len-paser-data (length paser-data)))
+    (message "SS %S" paser-data)
+    ;;处理list
+
+    
+    (if (and (listp  frist-key)  frist-key   )
+        (setq ret (ac-php--get-key-list-from-paser-data frist-key ) )
+      (setq ret (list frist-key) )
+      )
+
+    (message "ret 1 %S" ret)
+
+    (setq i 1)
+    (while (< i len-paser-data)
+      (setq item (nth i paser-data) )
+      (when (stringp item)
+        (message "ret 1.1 %S" ret)
+        (setq ret (append ret  (list item)))
+        (message "ret 1.2 %S" ret)
+
+
+        )
+      (setq i(1+ i) )
+      )
+    (message "ret 2 %S" ret)
+    ret
+    ))
+
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
   (let ((need-add-right-count 1  )
         ( item-count (length splited-line-items ))
@@ -315,41 +349,8 @@
       (setq  elisp-str "()"  ))
      (setq paser-data (read  elisp-str) )
      (setq paser-data (ac-php--get-node-paser-data  paser-data  ))
-     ;; get frist key
-     (let (
-           (frist-key (nth 0  paser-data ))
-           item
-           (i 1)
-           (len-paser-data (length paser-data)))
-       ;;处理list
-       (while (and (listp  frist-key) (listp (nth 0 frist-key) ))
-         (setq frist-key  (nth 0 frist-key))
-         )
-
-       (when frist-key
-         (if (stringp frist-key )
-             (setq ret (list frist-key ) )
-           (progn
-             (setq i 0)
-             (while (< i  (length    frist-key) )
-               (setq item (nth i  frist-key ) )
-               (when (stringp item)
-                 (push item  ret  ))
-               (setq i(1+ i) )
-               )))
-
-         (setq i 1)
-         (while (< i len-paser-data)
-           (setq item (nth i paser-data) )
-           (when (stringp item)
-           (push item  ret  ))
-           (setq i(1+ i) )
-           ))
-       )
-     (setq ret (reverse ret  ) )
-
+     (setq ret (ac-php--get-key-list-from-paser-data  paser-data) )
      ret
-
     ))
 
 (defun ac-php--get-class-full-name-in-cur-buffer ( class-name   class-list)
@@ -600,10 +601,12 @@ then this function split it to
   (let ( ret-list key-word output-list  class-name  (class-list (nth 0 tags-data)) (inherit-list (nth 2 tags-data))  item-list )
     (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
     (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
+    (ac-php--debug "class-name:%s %S" class-name inherit-list )
 
     (progn
 
       (setq  output-list (ac-php-get-class-member-list  class-list inherit-list  class-name ) )
+      (ac-php--debug " 22 class-name:%s" class-name)
       (mapc (lambda (x)
                 (setq key-word (nth 1 x ))
                 (if (assoc-string  key-word item-list t ) 
@@ -1046,15 +1049,23 @@ then this function split it to
     (if (string= tags-dir "/") (setq tags-dir nil )   )
     tags-dir
     ))
+(defun ac-php--get-check-class-list ( class-name inherit-list )
+  "DOCSTRING"
+  (let ((tmp-class class-name )
+        (check-class-list (list  (ac-php-clean-namespace-name class-name)))
+          )
 
+    (while (and (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )))
+                (not (assoc-string   tmp-class check-class-list )))
+      (push  (ac-php-clean-namespace-name tmp-class) check-class-list )
+      )
+    (nreverse check-class-list )
+    ))
 
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
-  (let ((tmp-class class-name ) (check-class-list (list  (ac-php-clean-namespace-name class-name))) (ret ) find-flag )
-    (while (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )) )
-      (push  (ac-php-clean-namespace-name tmp-class) check-class-list )
-      )
-    (setq check-class-list (nreverse check-class-list ) )
+  (let ((check-class-list ) (ret ) find-flag )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
         (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t ))) 
@@ -1071,11 +1082,9 @@ then this function split it to
 (defun ac-php-get-class-member-list (class-list inherit-list  class-name  )
   "DOCSTRING"
   (setq  class-name (ac-php-clean-namespace-name  class-name) )
-  (let ((tmp-class class-name ) (check-class-list (list class-name)) (ret ) find-flag )
-    (while (setq  tmp-class (nth 1 (assoc-string tmp-class inherit-list  t)) )
-      (push tmp-class check-class-list )
-      )
-    (setq check-class-list (nreverse check-class-list ) )
+  (let ( (check-class-list ) (ret ) find-flag  )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
+    (ac-php--debug "check-class-list %S" check-class-list)
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
         (setq  class-member-list  (copy-tree (nth 1 (assoc-string  opt-class class-list  t ))))  ;;copy-tree : will not change tags-data

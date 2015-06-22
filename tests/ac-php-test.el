@@ -177,7 +177,7 @@ run with specific customizations set."
 (ert-deftest ac-php-test-7 ()
   "text"
   (let (line-txt  ret )
-    (setq line-txt "return (($this->tt()))->kk()->ss ")
+    (setq line-txt "return (($this->tt())->kk())->ss ")
     (setq  ret '("this" "." "tt"   "." "kk" "."  "ss"  ))
     (ac-php-test--parse-line line-txt ret  )
     ))

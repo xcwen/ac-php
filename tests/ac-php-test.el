@@ -165,6 +165,13 @@ run with specific customizations set."
     (ac-php-test--parse-line line-txt ret  )
     ))
 
+(ert-deftest ac-php-test-6 ()
+  "text"
+  (let (line-txt  ret )
+    (setq line-txt "yii\\web\\Application(config)->ru")
+    (setq  ret '("yii\\web\\Application" "." "ru"   ))
+    (ac-php-test--parse-line line-txt ret  )
+    ))
 
 
 

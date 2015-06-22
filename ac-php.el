@@ -298,7 +298,7 @@
         (setq need-add-right-count (1- need-add-right-count ) )
         )
        (t
-        (setq elisp-str (concat elisp-str "\"" item  "\" " )  )))
+        (setq elisp-str (concat elisp-str "\"" (s-replace "\\"  "\\\\" item )  "\" " )  )))
       (setq i (1+ i))
       )
 
@@ -541,6 +541,7 @@ then this function split it to
           ;;check for new define   @var $v  class_type 
           (setq frist-class-name  (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\(" ac-php-word-re-str "\\)" )  1   t )))
 
+
           ;;check for old define  $v:: class_type 
           (unless frist-class-name 
             (setq  frist-class-name
@@ -550,7 +551,10 @@ then this function split it to
 
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
-          )))
+          )
+
+        (unless frist-class-name (setq frist-class-name frist-key))  
+        ))
 
 
     ;;fix use-as-name ,same namespace

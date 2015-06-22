@@ -321,17 +321,31 @@
            item
            (i 1)
            (len-paser-data (length paser-data)))
-       (while (and (listp  frist-key) frist-key )
+       ;;处理list
+       (while (and (listp  frist-key) (listp (nth 0 frist-key) ))
          (setq frist-key  (nth 0 frist-key))
          )
+
        (when frist-key
-         (setq ret (list frist-key ) )
+         (if (stringp frist-key )
+             (setq ret (list frist-key ) )
+           (progn
+             (setq i 0)
+             (while (< i  (length    frist-key) )
+               (setq item (nth i  frist-key ) )
+               (when (stringp item)
+                 (push item  ret  ))
+               (setq i(1+ i) )
+               )))
+
+         (setq i 1)
          (while (< i len-paser-data)
            (setq item (nth i paser-data) )
            (when (stringp item)
            (push item  ret  ))
            (setq i(1+ i) )
-           )))
+           ))
+       )
      (setq ret (reverse ret  ) )
 
      ret

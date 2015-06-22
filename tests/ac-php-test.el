@@ -168,8 +168,17 @@ run with specific customizations set."
 (ert-deftest ac-php-test-6 ()
   "text"
   (let (line-txt  ret )
-    (setq line-txt "yii\\web\\Application(config)->ru")
+    (setq line-txt "(yii\\web\\Application(config))->ru")
     (setq  ret '("yii\\web\\Application" "." "ru"   ))
+    (ac-php-test--parse-line line-txt ret  )
+    ))
+
+
+(ert-deftest ac-php-test-7 ()
+  "text"
+  (let (line-txt  ret )
+    (setq line-txt "return (($this->tt()))->kk()->ss ")
+    (setq  ret '("this" "." "tt"   "." "kk" "."  "ss"  ))
     (ac-php-test--parse-line line-txt ret  )
     ))
 

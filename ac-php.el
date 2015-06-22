@@ -283,7 +283,6 @@
         (i 1)
         (ret)
         (len-paser-data (length paser-data)))
-    (message "SS %S" paser-data)
     ;;处理list
 
     
@@ -292,21 +291,16 @@
       (setq ret (list frist-key) )
       )
 
-    (message "ret 1 %S" ret)
 
     (setq i 1)
     (while (< i len-paser-data)
       (setq item (nth i paser-data) )
       (when (stringp item)
-        (message "ret 1.1 %S" ret)
         (setq ret (append ret  (list item)))
-        (message "ret 1.2 %S" ret)
-
 
         )
       (setq i(1+ i) )
       )
-    (message "ret 2 %S" ret)
     ret
     ))
 

@@ -942,7 +942,7 @@ then this function split it to
 (defun ac-php-remake-tags ()
   " reset tags , if  php source  is changed  "
   (interactive)
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list)  
+  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list )  
 
     (message "remake %s" tags-dir )
     (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
@@ -991,8 +991,18 @@ then this function split it to
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
           (message "rebuild cscope  data file " )
-          (setq tags-lines  (split-string (shell-command-to-string  cmd ) "\n"   ))
-          (shell-command-to-string  (concat " cd " tags-dir ".tags &&  find  ../ -name \"[A-Za-z0-9_]*.php\" ! -path \"../.tags/*\"  > cscope.files &&  cscope -bkq -i cscope.files  ") ) )
+          ;;write cscope.files
+          (let ((file-name-list ) cscope-file-name )
+            (dolist (file-item file-list )
+              (setq cscope-file-name (concat "../" (substring (nth  0 file-item ) tags-dir-len)  ))
+              (push  cscope-file-name   file-name-list ))
+            (f-write
+             (s-join  "\n" file-name-list )
+             'utf-8
+             (concat tags-dir ".tags/cscope.files" ) ))
+          (shell-command-to-string
+           (concat " cd " tags-dir ".tags &&  cscope -bkq -i cscope.files  ") ) )
+
         (if last-phpctags-errmsg
             (princ last-phpctags-errmsg )
           (message "BUILD SUCCESS.")

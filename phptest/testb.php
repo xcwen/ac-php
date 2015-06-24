@@ -34,9 +34,10 @@ class Testb  extends Testa {
         /**  @var  $testv Test\Testa  */
         $testv=$this->get_v2();
         $testv->set_v1("ss");
-        if ($testv->set_v1("s") && $testv->get_v1() ){
+        if ($testv->set_v1("s") && $testv->set_v1() ){
             
         }
+
         static::get_v2();
     }
 

@@ -183,6 +183,16 @@ run with specific customizations set."
     ))
 
 
+(ert-deftest ac-php-test-8 ()
+  "text"
+  (let (line-txt  ret )
+    (setq line-txt "\"sdfa\" => $this->tt ")
+    (setq  ret '("this" "." "tt"     ))
+    (ac-php-test--parse-line line-txt ret  )
+    ))
+
+
+
 
 
 ;; (ert-deftest ac-php-test-issue-9 ()

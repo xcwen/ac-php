@@ -117,7 +117,6 @@
 ;;data 
 (defvar ac-php-tag-last-data-list nil) ;;(("/home/xxx/projecj/.tags".(  1213141011  data )   ))
 
-
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
 
 (defvar ac-php-location-stack-index 0)
@@ -405,7 +404,7 @@ then this function split it to
         (setq line-string  (replace-regexp-in-string   "\\becho\\b" ""  line-string))
         (setq line-string  (replace-regexp-in-string   "\\bprint\\b" ""  line-string))
         (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
-        (while (string-match "=\\(.*\\)" line-string)
+        (while (string-match "=[>]?\\(.*\\)" line-string)
           (setq line-string (match-string-no-properties 1 line-string)))
        ;;split line-string with "." ,but add "." as an element at its position in list
       (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))

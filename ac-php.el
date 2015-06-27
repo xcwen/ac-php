@@ -393,22 +393,24 @@ then this function split it to
 'System' '.' 'getProperty' '(' 'str' '.' 'substring' '(' '3' ')' ')' '.' 'to' "
   (save-excursion
     (let (  (stack-list nil))
-        (setq line-string  (replace-regexp-in-string   "\\\\\"" "'"       line-string))
-        (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
-        (setq line-string  (replace-regexp-in-string   "[.+/*]"   ";"       line-string))
-        (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
-        (setq line-string  (replace-regexp-in-string   "[\-]"   ";"       line-string))
-        (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
-        (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))
-        (setq line-string  (replace-regexp-in-string   "\\breturn\\b" ""  line-string))
-        (setq line-string  (replace-regexp-in-string   "\\becho\\b" ""  line-string))
-        (setq line-string  (replace-regexp-in-string   "\\bprint\\b" ""  line-string))
-        (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
-        (while (string-match "=[>]?\\(.*\\)" line-string)
-          (setq line-string (match-string-no-properties 1 line-string)))
-       ;;split line-string with "." ,but add "." as an element at its position in list
+      (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
+      (setq line-string  (replace-regexp-in-string   "[.]"   ";"       line-string))
+      ;;  do : without ::
+      (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   ";\\1"  line-string))
+      (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
+      (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
+      (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\breturn\\b" ""  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\becho\\b" ""  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\bprint\\b" ""  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
+      (setq line-string  (replace-regexp-in-string   "!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
+      (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
+
+ 
+      ;;split line-string with "." ,but add "." as an element at its position in list
       (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))
-       ;;split each element  with "(" ,but add "(" as an element at its position in list
+      ;;split each element  with "(" ,but add "(" as an element at its position in list
       ;;and merge all the list in a list
 
       (let((ele)(tmp-list))
@@ -426,8 +428,10 @@ then this function split it to
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
-          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[&|!,;^]"  ";"  t))))
+          (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele ";"  ";"  t))))
         (setq stack-list tmp-list))
+
+
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)

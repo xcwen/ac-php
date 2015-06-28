@@ -251,6 +251,25 @@
               (setq split-list (append split-list (list str)))))
         (setq split-list (list str)))
       split-list)))
+(defun ac-php--get-clean-node( paser-data &optional check-len )
+    "clean  before ';'  "
+    (let ((i 0 )  ret-data  item )
+      (unless check-len
+        (setq check-len (length paser-data) ) )
+    (while (< i check-len )  
+      (setq item (nth i paser-data ) )
+      (if (and (stringp item   )
+               (string= item ";" )
+               )
+          (setq ret-data nil)
+        (push item ret-data)
+        ) 
+      (setq i (1+ i))
+      )
+
+
+    (reverse ret-data)
+    ))
 (defun ac-php--get-node-paser-data ( paser-data)
   (let ((last-item (nth (1- (length paser-data)) paser-data )) ret-data )
 
@@ -259,18 +278,8 @@
         (let ((i 0 )
               (check-len (1- (length paser-data)))
               item )
-          (while (< i check-len )  
-            (setq item (nth i paser-data ) )
-            (if (and (stringp item   )
-                     (string= item ";" )
-                     )
-                (setq ret-data nil)
-              (push item ret-data)
-              ) 
-            (setq i (1+ i))
+          (setq ret-data (ac-php--get-clean-node  paser-data check-len ) )
             )
-          (setq  ret-data (reverse ret-data) )
-          )
       (when last-item 
         (setq ret-data (ac-php--get-node-paser-data last-item )) ))
     ret-data
@@ -286,8 +295,10 @@
 
     
     (if (and (listp  frist-key)  frist-key   )
-        (setq ret (ac-php--get-key-list-from-paser-data frist-key ) )
-      (setq ret (list frist-key) )
+        (progn
+          (setq ret  (ac-php--get-clean-node (ac-php--get-key-list-from-paser-data frist-key )) )
+        )
+      (setq ret  (list frist-key) )
       )
 
 
@@ -399,10 +410,9 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   ";\\1"  line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
-      (setq line-string  (replace-regexp-in-string   "\\bnew\\b"    ""  line-string))
-      (setq line-string  (replace-regexp-in-string   "\\breturn\\b" ""  line-string))
-      (setq line-string  (replace-regexp-in-string   "\\becho\\b" ""  line-string))
-      (setq line-string  (replace-regexp-in-string   "\\bprint\\b" ""  line-string))
+
+      (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bint\\b\\|\\bfloat\\b\\|\\bdouble\\b\\|\\bstring\\b"    ";"  line-string))
+
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
       (setq line-string  (replace-regexp-in-string   "!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))

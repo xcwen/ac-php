@@ -38,7 +38,14 @@ class Testb  extends Testa {
             
         }
 
-        static::get_v2();
+        $this->get_v2()->set_v1("ss");
+        
     }
+
+}
+
+function ff(){
+    return 0;
+
 
 }

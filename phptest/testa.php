@@ -2,6 +2,10 @@
 
 namespace Test;
 
+
+const CON_NAME="sss";
+define("NAME_CONSTANT", "Hello world.");
+
 class Testa {
 
 
@@ -16,6 +20,7 @@ class Testa {
         $v=trim($v);
         $this->v1=$v;
     }
+
 
 
     public function get_v1(){

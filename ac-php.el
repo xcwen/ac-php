@@ -89,6 +89,8 @@
 
 
 (defvar ac-php-debug-flag nil)
+;;(setq ac-php-debug-flag t)
+;;(setq ac-php-debug-flag nil)
 
 (defmacro ac-php--debug (  fmt-str &rest args )
   `(if ac-php-debug-flag
@@ -377,14 +379,16 @@
         (setq tmp-name (ac-php-get-use-as-name  cur-class-name ) )
         ;; current-namespace
         (unless tmp-name
-          (let (cur-namespace (ac-php-get-cur-namespace-name)))
-          (if cur-namespace
-              (setq tmp-name (concat  cur-namespace "\\" class-name ) )
-            (setq tmp-name class-name)
+
+          (let ((cur-namespace (ac-php-get-cur-namespace-name)))
+            (if cur-namespace
+                (setq tmp-name (concat  cur-namespace "\\" class-name ) )
+              (setq tmp-name class-name)
               )
-          )
+            ))
         )))
 
+    (ac-php--debug "to check %s" tmp-name )
     (unless (assoc-string (ac-php-clean-namespace-name  tmp-name ) class-list t  )
         (setq tmp-name  nil)
         )
@@ -459,6 +463,7 @@ then this function split it to
   (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search )  
     (setq  old-case-fold-search case-fold-search )
     (setq need-find-flag t )
+
     (save-excursion
       (while  need-find-flag
         (if (re-search-backward  re-str  0 t 1)
@@ -466,8 +471,10 @@ then this function split it to
               (when (if in-comment-flag
                         (not (ac-php-check-not-in-comment (point) ) )
                       (ac-php-check-not-in-string-or-comment (point))) 
+                
                 (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
                 (when (string-match   re-str    line-txt)
+
                   (setq  ret-str  (match-string pos line-txt))
                   (setq need-find-flag nil))))
           (setq need-find-flag nil)
@@ -501,8 +508,11 @@ then this function split it to
         )))
 
 (defun ac-php-get-cur-namespace-name ()
+  (interactive)
   "DOCSTRING"
-  ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  ))
+  ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
+
+  )
 
 
 (defun ac-php-get-use-as-name (item-name )
@@ -538,7 +548,7 @@ then this function split it to
                         (string= "."  (nth 1 key-list )  )
                         ))
               (setq  key-list nil )))
-      (setq  key-list (list (ac-php-get-cur-word ))))
+      (setq  key-list nil ))
 
 
 
@@ -608,12 +618,11 @@ then this function split it to
   (let ( ret-list key-word output-list  class-name  (class-list (nth 0 tags-data)) (inherit-list (nth 2 tags-data))  item-list )
     (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
     (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
-    (ac-php--debug "class-name:%s %S" class-name inherit-list )
 
     (progn
 
       (setq  output-list (ac-php-get-class-member-list  class-list inherit-list  class-name ) )
-      (ac-php--debug " 22 class-name:%s" class-name)
+      (ac-php--debug " 22 class-name:%s output-list= %S" class-name output-list )
       (mapc (lambda (x)
                 (setq key-word (nth 1 x ))
                 (if (assoc-string  key-word item-list t ) 
@@ -715,108 +724,99 @@ then this function split it to
     results 
     ))
 
-(defun ac-php-gen-data ( tags-lines project-dir-len )
+(defun ac-php-gen-data ( tags-list project-dir-len )
   "gen-el-data"
   (let ( class-list function-list inherit-list (file-start-pos project-dir-len ) (count 0 ) )
-    (dolist (line-data tags-lines)
-      (ac-php--debug "DO line:[%s]"  line-data   ) 
-      (when (and
-             (> (length line-data ) 0)
-             (not (string= (substring line-data 0 1 ) "!" ) )
-             (string-match "^\\([a-zA-Z0-9_]+\\)\t\\(.*\\)\t/\\^\\(.+\\)\\$/;\"\t\\([a-zA-Z0-9_]\\)\tline:\\([0-9]+\\)\\(.*\\)" line-data)
-             )
-        
+    (dolist (line-data tags-list)
+      (let (
+            (tag-name (nth 0  line-data ))
+            (file-pos (concat (substring  (nth 1  line-data )  file-start-pos ) ))
+            (doc (nth 2  line-data ))
+            (tag-type (nth 3  line-data ))
+
+            return-type
+            class-name
+            access
+            namespace
+            scope 
+
+            ) 
+        (ac-php--debug "Matching type[%s]  " tag-type ) 
+        (cond
+         ((string= tag-type "f")
+          ;;  check in type field
+          ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  "function kk(){"  "f"  ("namespace". "xxx" )  "return_type" )
+       ;;get  return type
+
+          (setq return-type  (nth  5 line-data ))
+          (unless return-type 
+            (setq return-type  (if (string-match
+                                    (concat ".*::[ \t]*\\("ac-php-word-re-str "\\).*")  doc)
+                                   (ac-php-clean-namespace-name (match-string 1  doc  ) )
+                                 "")))
 
 
-        (let (
-              (tag-name (match-string 1  line-data ))
-              (file-pos (concat (substring  (match-string 2  line-data )  file-start-pos ) ":" (match-string 5  line-data )   ))
-              (doc (match-string 3  line-data ))
-              (tag-type (match-string 4  line-data ))
-              other-data
+          (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  return-type ) function-list  ))
+         ((string= tag-type "d")
 
-              return-type
-              class-name
-              access
+          ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  "function kk(){"  "d"  ("namespace". "xxx" )   "return_type" )
+          (setq scope (nth 4   line-data ))
 
-              ) 
-          (ac-php--debug "Matching type[%s]  " tag-type ) 
-          (cond
-           ((string= tag-type "f")
-            ;;  check in type field
-            (setq other-data  (match-string 6  line-data ) )
-            (when (string-match  (concat  ".*\ttype:\\(" ac-php-word-re-str "\\).*" ) other-data)
-              (setq return-type  (match-string 1  other-data  )))
-
-            (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  return-type ) function-list  ))
-           ((string= tag-type "d")
-
-
-            (setq other-data  (match-string 6  line-data ) )
-
-
-            (if (string-match (concat "^\tclass:\\(" ac-php-word-re-str "\\)") other-data)
-                (progn ;class
-                (setq class-name (match-string 1  other-data  ))
+          (if   scope   
+              (progn ;class
+                (setq class-name  (cdr scope) )
                 (setq doc  tag-name )
                 (setq return-type "" )
                 (setq access "public" )
-
+                
                 (when (not (assoc-string class-name class-list t ))
                   (push (list class-name nil ) class-list))
 
                 (push (list tag-type tag-name doc file-pos return-type  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
                 )
-              (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  ))
+            (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )))
+         ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
 
+          ;;("Testb"  "/home/jim/ac-php/phptest/testb.php:5"  nil  "c" ("namespace"."Test") "Testa" )
+          (setq scope (nth 4   line-data ))
+
+          (when (and  (car scope   )
+                      (string= "namespace" (car scope) )
+                      )
+            (setq  tag-name   (concat (cdr scope ) "\\" tag-name) )
             )
-           ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
 
-            (setq other-data  (match-string 6  line-data ) )
-            (when (string-match (concat ".*\tnamespace:\\(" ac-php-word-re-str "\\)\\(,.*\\)*") other-data)
-              (setq  tag-name   (concat (match-string 1  other-data ) "\\" tag-name) )
-              )
+          (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  ) function-list  )
+          ;;add class info 
+          (when (not (assoc-string tag-name class-list t ))
+            (push (list tag-name nil ) class-list))
 
-            (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  ) function-list  )
-            ;;add class info 
-            (when (not (assoc-string tag-name class-list t ))
-              (push (list tag-name nil ) class-list))
+          ;; add class-inherits
+          (let ((p-class-name (nth 5 line-data ) ) )
+            (when  p-class-name 
+              (push  (list  tag-name  p-class-name ) inherit-list))) )
 
-            ;; add class-inherits
-            (when (string-match  (concat  ".*\tinherits:\\(" ac-php-word-re-str "\\)\\(,.*\\)*" ) other-data)
-              (push  (list  tag-name   (match-string 1  other-data  )) inherit-list)))
+         ((or (string= tag-type "p")  (string= tag-type "m") ) ;;class function member
+          ;; ("v8"  "/home/jim/ac-php/phptest/testb.php:9"  nil  "p" ("class"."Test\\Testb") "public"  "\\Test\\Testa" )
+          ;;(setq return-type  )
+          (setq return-type (nth 6 line-data))
 
-           ((or (string= tag-type "p")  (string= tag-type "m") ) ;;class function member
-            (setq other-data  (match-string 6  line-data ) )
+          (setq class-name (cdr (nth  4 line-data  )))
+          (setq access (nth 5  line-data))
 
-            ;;get  return type
-            (setq return-type  (if (string-match (concat ".*::[ \t]*\\("ac-php-word-re-str "\\).*")  doc)
-                                   (ac-php-clean-namespace-name (match-string 1  doc  ) )
-                                 ""))
+          ;;add class info 
+          (when (not (assoc-string class-name class-list t ))
+            (push (list class-name nil ) class-list))
+          ;;add member & function 
 
-            ;;  check in type field
-            (when  (string= return-type "" )
-              (when (string-match  (concat  ".*\ttype:\\(" ac-php-word-re-str "\\).*" ) other-data)
-                (setq return-type  (match-string 1  other-data  ))))
+          (if (string= tag-type "p")
+              (setq doc tag-name)
+            (setq doc (ac-php-gen-el-func tag-name doc) ))
 
+          ;;push TAG item into list 
+          (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc-string  class-name class-list  t) ) )) 
 
-            (when (string-match (concat "^\t\\(class\\|interface\\):\\(" ac-php-word-re-str "\\)\taccess:\\([a-zA-Z0-9_]+\\)") other-data)
-              (setq class-name (match-string 2  other-data  ))
-              (setq access (match-string 3  other-data  ))
-              )
-            ;;add class info 
-            (when (not (assoc-string class-name class-list t ))
-              (push (list class-name nil ) class-list))
-            ;;add member & function 
-
-            (if (string= tag-type "p")
-                (setq doc tag-name)
-              (setq doc (ac-php-gen-el-func tag-name doc) ))
-
-            ;;push TAG item into list 
-            (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc-string  class-name class-list  t) ) ))
-
-           ))))
+         )))
     ;;reset inherit-list
     (setq  inherit-list (mapcar (lambda (inherit-item )
                                   (let (
@@ -966,7 +966,7 @@ then this function split it to
       (if (not (file-directory-p obj-tags-dir ))
           (mkdir obj-tags-dir))
       (setq file-list (ac-php--get-php-files-from-config tags-dir  ) )
-      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.tags$" t ) )
+      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ) )
       
       (dolist (file-item file-list )
 
@@ -974,7 +974,7 @@ then this function split it to
         (setq src-time  (nth 1 file-item ) )
         (setq obj-file-name   (substring file-name  tags-dir-len   ) )
         (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
-        (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".tags" obj-file-name ))
+        (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
         (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
 
         (push obj-file-name cur-obj-list )
@@ -993,13 +993,24 @@ then this function split it to
               (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))))
           ;;gen el data file
           ))
-      ;;加入参数
-      (let ((temp-list cur-obj-list) tags-lines )
-        (unless last-phpctags-errmsg
-          (while temp-list  
-            (setq tags-lines (append   (split-string  (f-read  (car  temp-list  )  ) "\n" ) tags-lines  ) )
-            (setq temp-list (cdr  temp-list)))
-          (ac-php-save-data  (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  ))
+
+      (unless last-phpctags-errmsg
+        ;;read data
+        (let ((temp-list cur-obj-list) tags-list )
+          (with-temp-buffer
+            (insert "(")
+            (while temp-list  
+
+              (goto-char (point-max) )
+              (insert-file-contents (car   temp-list ))
+              (setq temp-list (cdr  temp-list)))
+            (insert ")")
+
+            (goto-char (point-min) )
+            (setq  tags-list (read (current-buffer))))
+
+          (ac-php-save-data  (ac-php-get-tags-file )  (ac-php-gen-data  tags-list tags-dir-len  )))
+         ;;( (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
 
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
@@ -1016,16 +1027,19 @@ then this function split it to
           (shell-command-to-string
            (concat " cd " tags-dir ".tags &&  cscope -bkq -i cscope.files  ") ) )
 
-        (if last-phpctags-errmsg
-            (princ last-phpctags-errmsg )
-          (message "BUILD SUCCESS.")
-          ) 
-        ))))
+          )
+
+      (if last-phpctags-errmsg
+          (princ last-phpctags-errmsg )
+        (message "BUILD SUCCESS.")
+        ) 
+        )))
 
 (defun ac-php-save-data (file data)
   (with-temp-file file
     (let ((standard-output (current-buffer))
-          (print-circle t))  ; Allow circular data
+          ;;(print-circle t)
+          )  ; Allow circular data
       (prin1 data))))
 
 (defun ac-php-load-data (file)
@@ -1102,9 +1116,11 @@ then this function split it to
   (let ( (check-class-list ) (ret ) find-flag  )
     (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
     (ac-php--debug "check-class-list %S" check-class-list)
-    (let (  class-member-list )
+
+    (let (  class-member-list tmp-data  )
       (dolist (opt-class check-class-list)
-        (setq  class-member-list  (copy-tree (nth 1 (assoc-string  opt-class class-list  t ))))  ;;copy-tree : will not change tags-data
+        (setq tmp-data (assoc-string  opt-class class-list  t ) )
+        (setq  class-member-list  (copy-tree (nth 1 tmp-data )))  ;;copy-tree : will not change tags-data
         (if ret 
             (nconc ret class-member-list)
           (setq ret class-member-list  ) )
@@ -1167,6 +1183,8 @@ then this function split it to
     (setq key-str-list (ac-php-get-class-at-point  ))
 
 
+    (ac-php--debug "key-str-list:%s" key-str-list)
+
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  
         (progn
@@ -1176,6 +1194,7 @@ then this function split it to
                   ;;(setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word ) key-str-list ))
                   (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
                   (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
+                  (ac-php--debug "class %s" class-name )
                   ;;(message "class %s" class-name)
                   (if (not (string= class-name "" ) )
                       (progn 
@@ -1199,6 +1218,8 @@ then this function split it to
 
                 ;;check "namespace" "use as"  
                 (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
+                (message "1111:full-name=%s" full-name)
+
                 (when full-name  (setq  cur-word  full-name) )
                 
 

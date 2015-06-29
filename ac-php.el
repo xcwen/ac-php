@@ -1038,8 +1038,8 @@ then this function split it to
 (defun ac-php-save-data (file data)
   (with-temp-file file
     (let ((standard-output (current-buffer))
-          ;;(print-circle t)
-          )  ; Allow circular data
+          (print-circle t) ; Allow circular data
+          )  
       (prin1 data))))
 
 (defun ac-php-load-data (file)

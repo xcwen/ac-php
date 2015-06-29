@@ -1218,7 +1218,6 @@ then this function split it to
 
                 ;;check "namespace" "use as"  
                 (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
-                (message "1111:full-name=%s" full-name)
 
                 (when full-name  (setq  cur-word  full-name) )
                 

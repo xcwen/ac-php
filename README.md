@@ -243,9 +243,9 @@ localhost:~/ac-php/phptest/.tags$ tree .
 .
 ├── tags-data.el
 └── tags_dir_jim
-    ├── a.tags
-    ├── testa.tags
-    └── testb.tags
+    ├── a.el
+    ├── testa.el
+    └── testb.el
 1 directory, 4 files
 ```
 

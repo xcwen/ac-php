@@ -389,6 +389,10 @@
         )))
 
     (ac-php--debug "to check %s" tmp-name )
+    ;; (dolist (item  class-list)
+    ;;   (ac-php--debug "class %s" (car item ) )
+    ;;   )
+    
     (unless (assoc-string (ac-php-clean-namespace-name  tmp-name ) class-list t  )
         (setq tmp-name  nil)
         )
@@ -397,6 +401,8 @@
           (setq tmp-name class-name )
           ))
     
+
+    (ac-php--debug "tmp-name  %s" tmp-name )
     tmp-name
     ))
 
@@ -803,6 +809,7 @@ then this function split it to
 
           (setq class-name (cdr (nth  4 line-data  )))
           (setq access (nth 5  line-data))
+          
 
           ;;add class info 
           (when (not (assoc-string class-name class-list t ))
@@ -1004,6 +1011,8 @@ then this function split it to
               (goto-char (point-max) )
               (insert-file-contents (car   temp-list ))
               (setq temp-list (cdr  temp-list)))
+
+            (goto-char (point-max) )
             (insert ")")
 
             (goto-char (point-min) )

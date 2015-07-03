@@ -634,7 +634,7 @@ then this function split it to
 
     
 
-    (ac-php--debug "frist-class-name :%s" frist-class-name)
+    (ac-php--debug "===frist-class-name :%s" frist-class-name)
     
     (if frist-class-name 
         (progn
@@ -759,6 +759,10 @@ then this function split it to
         ))
     results 
     ))
+(defun ac-php--clean-return-type (return-type)
+  (when return-type 
+  (ac-php-clean-namespace-name (s-trim (replace-regexp-in-string "|.*" "" return-type ) ) ))
+  )
 
 (defun ac-php-gen-data ( tags-list project-dir-len )
   "gen-el-data"
@@ -792,7 +796,7 @@ then this function split it to
                                  "")))
 
 
-          (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos  return-type ) function-list  ))
+          (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
          ((string= tag-type "d")
 
           ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  "function kk(){"  "d"  ("namespace". "xxx" )   "return_type" )
@@ -808,7 +812,7 @@ then this function split it to
                 (when (not (assoc-string class-name class-list t ))
                   (push (list class-name nil ) class-list))
 
-                (push (list tag-type tag-name doc file-pos return-type  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
+                (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type)  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
                 )
             (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )))
          ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
@@ -851,7 +855,7 @@ then this function split it to
             (setq doc (ac-php-gen-el-func tag-name doc) ))
 
           ;;push TAG item into list 
-          (push (list tag-type tag-name doc file-pos return-type class-name   access ) (cadr (assoc-string  class-name class-list  t) ) )) 
+          (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type) class-name   access ) (cadr (assoc-string  class-name class-list  t) ) )) 
 
          )))
     ;;reset inherit-list

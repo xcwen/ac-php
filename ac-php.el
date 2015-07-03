@@ -1297,7 +1297,7 @@ then this function split it to
   (interactive "P")
   ;;检查是类还是 符号 
   (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos)
-    (message " symbol-ret:%S" symbol-ret)
+    ;;(message " symbol-ret:%S" symbol-ret)
     (when symbol-ret
       (setq type (car symbol-ret ))
       (cond

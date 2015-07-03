@@ -129,27 +129,6 @@ need: (setq ac-php-use-cscope-flag  t )
 
 
 
-`ac-php-gen-def` ;;  gen value define at point
-
-example:
-
-`php
-$value=new Testa ();
-`
-point at `$value` then m-x:  `ac-php-gen-def `  will gen : ` /** @var $value  Testa */ `
-
-then you can  yank/paste it 
-
-LIKE this: 
-
-`$value=new Testa ();` => 
-```php
-/** @var $value  Testa */
-$value=new Testa();
-```
-
-
-
 
 * mkdir ".tags"  in root of project
 
@@ -186,7 +165,7 @@ define class function   return type:
 public function get_v1()
 ```
 
-define variable: 
+define variable: (*if need*)
 
 `$value=new Testa ();` => 
 ```php
@@ -210,10 +189,10 @@ class Testa {
 
         //for complete system function 
         $v=trim($v);
-        //define value type
-        /** @var $v Testb*/
-        $v=new Testb();
 
+        $c=new Testb();
+        //can complete
+        $c->get_v2();
 
         //for complete memeber 
         $this->v1=$v;

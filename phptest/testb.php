@@ -31,18 +31,22 @@ class Testb  extends Testa {
 
     public function get_tt(){
 
-        /**  @var  $testv Test\Testa  */
-        $testv=$this->get_v2();
+
+        $testv = $this->get_v2($this->texx);
         $testv->set_v1("ss");
+
         if ($testv->set_v1("s") && $testv->set_v1() ){
             
         }
-
         $this->get_v2()->set_v1("ss");
         
     }
 
 }
+    /** 
+	 *
+     * @return   T\Testa 
+	 */
 
 function ff(){
     return 0;

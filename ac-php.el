@@ -91,6 +91,7 @@
 (defvar ac-php-debug-flag nil)
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
+;; (setq debug-on-error t )
 
 (defmacro ac-php--debug (  fmt-str &rest args )
   `(if ac-php-debug-flag
@@ -464,31 +465,34 @@ then this function split it to
   )
 
 
-(defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  )
+(defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  min-pos )
   "DOCSTRING"
-  (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search )  
+  (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search  search-pos)  
     (setq  old-case-fold-search case-fold-search )
     (setq need-find-flag t )
 
     (save-excursion
       (while  need-find-flag
-        (if (re-search-backward  re-str  0 t 1)
+        (if (setq search-pos (re-search-backward  re-str  min-pos t 1) )
             (progn
               (when (if in-comment-flag
                         (not (ac-php-check-not-in-comment (point) ) )
                       (ac-php-check-not-in-string-or-comment (point))) 
-                
                 (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
                 (when (string-match   re-str    line-txt)
-
                   (setq  ret-str  (match-string pos line-txt))
+                  (setq  ret-str (propertize ret-str 'pos  search-pos))
+
                   (setq need-find-flag nil))))
           (setq need-find-flag nil)
           )
         )
       )
     (setq   case-fold-search old-case-fold-search )
-    ret-str ))
+    (ac-php--debug "regstr=:%s; min-pos=%S ret-str:%s" re-str min-pos ret-str )
+    ret-str
+    ))
+
 
 
 
@@ -549,6 +553,7 @@ then this function split it to
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt ))) 
 
+          (ac-php--debug "ac-php-remove-unnecessary-items-4-complete-method:%S" key-list  )
           ;; out of function like : class Testb  extends test\Testa[point]
           (if (not (and (stringp (nth 1 key-list ) )
                         (string= "."  (nth 1 key-list )  )
@@ -576,23 +581,48 @@ then this function split it to
         (progn
           (setq frist-key  frist-key-str )
           (setq frist-key (ac-php-clean-namespace-name frist-key))
-          ;;check for new define   @var $v  class_type 
-          (setq frist-class-name  (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\(" ac-php-word-re-str "\\)" )  1   t )))
-
-
-          ;;check for old define  $v:: class_type 
-          (unless frist-class-name 
-            (setq  frist-class-name
-                   (ac-php-clean-namespace-name (ac-php-get-syntax-backward  (concat "$" frist-key "[\t ]*::[\t ]*\\(" ac-php-word-re-str "\\)" )  1   t )))
-            )
-
-
+          
           (when (and(not frist-class-name) (or (string= frist-key "this")  ) ) 
             (setq frist-class-name (ac-php-get-cur-full-class-name)  ))
-          )
 
-        (unless frist-class-name (setq frist-class-name frist-key))  
-        ))
+          ;;check for new define  /* @var $v  class_type  */
+          (unless frist-class-name
+            (setq frist-class-name  (ac-php-clean-namespace-name
+                                     (ac-php-get-syntax-backward
+                                      (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\("
+                                              ac-php-word-re-str "\\)" )
+                                      1 t
+                                      (save-excursion  (beginning-of-defun)  (point) )))))
+
+          ;; check $v = new .... or $v = $this->sadfa() ;
+          (unless frist-class-name
+            (let (define-str symbol-ret symbol-type )
+              (setq define-str (ac-php-get-syntax-backward
+                                (concat   "$" frist-key "[\t ]*=\\([^=]*\\)[;]*" )
+                                1 nil 
+                                (save-excursion  (beginning-of-defun)  (point) )) )
+              (when define-str
+                (save-excursion 
+                  (goto-char (get-text-property 0 'pos  define-str))
+                  (end-of-line)    
+                  (re-search-backward ";" )
+                  ;;(backward-char 1)
+                  (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
+                  (setq symbol-ret (ac-php-find-symbol-at-point-pri))
+                  (when symbol-ret
+                    (setq symbol-type  (car symbol-ret) )
+                    (when (or (string= symbol-type "class_member" )
+                            (string= symbol-type "user_function" ) )
+                      
+                      (setq frist-class-name  (nth 2 symbol-ret)  )
+
+                      ) 
+                    )
+                ))
+            ))
+          
+
+          (unless frist-class-name (setq frist-class-name frist-key)))))
 
 
     ;;fix use-as-name ,same namespace
@@ -792,7 +822,7 @@ then this function split it to
             (setq  tag-name   (concat (cdr scope ) "\\" tag-name) )
             )
 
-          (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  ) function-list  )
+          (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
           ;;add class info 
           (when (not (assoc-string tag-name class-list t ))
             (push (list tag-name nil ) class-list))
@@ -1180,19 +1210,16 @@ then this function split it to
 (defun ac-php--get-namespace-from-classname (classname)
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
-
-(defun ac-php-find-symbol-at-point (&optional prefix)
-  (interactive "P")
-  ;;检查是类还是 符号 
-  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data)
+(defun ac-php-find-symbol-at-point-pri ()
+  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data ret)
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
     (setq cur-word  (ac-php-get-cur-word ))
+    (ac-php--debug "key-str-list==begin:cur-word:%s" cur-word )
     (setq key-str-list (ac-php-get-class-at-point  ))
 
-
-    (ac-php--debug "key-str-list:%s" key-str-list)
+    (ac-php--debug "key-str-list==end:%s" key-str-list)
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (if  key-str-list  
@@ -1201,42 +1228,49 @@ then this function split it to
               (progn
                 (let (class-name member-info  )  
                   ;;(setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word ) key-str-list ))
+                  (when (string= cur-word "")
+                    (let ((key-arr (s-split "\\." key-str-list  ) ) )
+                      (ac-php--debug "key-arr %S " key-arr)
+                      (setq cur-word (nth (1- (length key-arr)) key-arr ))))
+
                   (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
                   (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
-                  (ac-php--debug "class %s" class-name )
+
+                  (ac-php--debug "class .member %s.%s " class-name  cur-word )
                   ;;(message "class %s" class-name)
                   (if (not (string= class-name "" ) )
                       (progn 
                         (setq member-info (ac-php-get-class-member-info (nth 0 tags-data)  (nth 2 tags-data)  class-name cur-word ) )
                         (if member-info
-                            (progn
-                              (setq jump-pos  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  ))
-                              (ac-php-location-stack-push)
-                              (ac-php-goto-location jump-pos )
-                              (ac-php-location-stack-push))
-                          (message "no find %s.%s " class-name cur-word  )
+                            (setq ret (list "class_member"  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  )      (nth 4 member-info) ) )
+                          (progn
+                              (message "no find %s.%s " class-name cur-word  )
+                            )
                           ))
                     ;;(message "no find class  from key-list %s " key-str-list  )
                     )
-                  ))))
+                  )))
+          )
 
       (progn ;;function
         (if tags-data 
             (progn
-              (let ((function-list (nth 1 tags-data ))  (class-list (nth 0 tags-data ) ) full-name )
+              (let ((function-list (nth 1 tags-data ))  (class-list (nth 0 tags-data ) ) full-name tmp-ret )
 
+                (when (string= "" cur-word) ;;new
+                  (setq tmp-ret  ( ac-php-get-syntax-backward (concat "new[ \t]+\\(" ac-php-word-re-str "\\)") 1 ))
+                  (when tmp-ret (setq cur-word (ac-php-clean-namespace-name  tmp-ret )))
+                  )
                 ;;check "namespace" "use as"  
                 (setq full-name (ac-php--get-class-full-name-in-cur-buffer cur-word  class-list) )
 
                 (when full-name  (setq  cur-word  full-name) )
+                (ac-php--debug "check user function===%s" cur-word )
                 
 
                 (dolist (function-item function-list )
                   (when (ac-php--string=-ignore-care (nth 1 function-item )  cur-word  )
-                    (setq jump-pos  (concat (ac-php-get-tags-dir)  (nth 3 function-item)   ))
-                    (ac-php-location-stack-push)
-                    (ac-php-goto-location jump-pos )
-                    (ac-php-location-stack-push)
+                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  (nth 3 function-item )  )      (nth 4 function-item) ) )
                     (setq find-flag t)
                     (return )))
                 )
@@ -1248,11 +1282,35 @@ then this function split it to
               (dolist (function-str ac-php-sys-function-list )
                 (when (ac-php--string=-ignore-care    function-str cur-word)
                 ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
-                  (php-search-documentation cur-word  )
+                  (setq ret (list "sys_function"  cur-word  ) )
+
                   (return )))
 
               ))))
+
+   (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
+    ret
 	))
+
+
+(defun ac-php-find-symbol-at-point (&optional prefix)
+  (interactive "P")
+  ;;检查是类还是 符号 
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos)
+    (message " symbol-ret:%S" symbol-ret)
+    (when symbol-ret
+      (setq type (car symbol-ret ))
+      (cond
+       ((or (string= type "class_member")  (string= type "user_function") )
+        (setq jump-pos  (nth 1  symbol-ret ) )
+        (ac-php-location-stack-push)
+        (ac-php-goto-location jump-pos )
+        (ac-php-location-stack-push))
+
+       ((string= type "sys_function")   
+        (php-search-documentation (nth 1  symbol-ret )  )
+        ) )) ) )
+
 
 (defun ac-php-gen-def ()
   "DOCSTRING"
@@ -1375,7 +1433,8 @@ then this function split it to
                 (dolist (function-item function-list )
                   (when (string=  (nth 1 function-item )  cur-word)
                     (setq  doc   (nth 2 function-item ) )
-                    (popup-tip (concat "[user]:"  (ac-php-clean-document doc)  ))
+                    (setq  return-type (nth 4 function-item ) )
+                    (popup-tip (concat "[user]:"  (ac-php-clean-document doc) "\n[type]:"  return-type   ))
                     (setq find-flag t)
                     (return )))
                 ))) 

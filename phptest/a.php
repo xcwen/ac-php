@@ -5,18 +5,16 @@
 
 const CON_NO="sss";
 
-/**  @var  $ta  \Test\Testa  */
-$ta->set_v1("ss");
 /**  @var  $tb  Test\Testb  */
 $v=$tb->get_v2()->v1;
 
-/**  @var  $ta \Test\Testa  */
 $ta= new \Test\Testa();
+$ta->set_v1("ss");
 
-/**  @var  $v Test\Testa  */
+$f=ff();
+
 $v=$tb->get_v2("ss");
 
-/**  @var  $k string  */
 $k=$tb->get_v2()->v1;
 
 function kk(){

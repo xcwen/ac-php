@@ -165,12 +165,12 @@ define class function   return type:
 public function get_v1()
 ```
 
-define variable: (*if need*)
+define variable: (**if function or member no define reutrn value  you need define it  **)
 
-`$value=new Testa ();` => 
+`$value=ff();` => 
 ```php
 /** @var $value  Testa */
-$value=new Testa();
+$value=ff();
 ```
 
 like this

@@ -993,9 +993,22 @@ then this function split it to
     ret-list 
     ))
 
-(defun ac-php-remake-tags ()
+
+(defun ac-php-remake-tags (  )
   " reset tags , if  php source  is changed  "
   (interactive)
+  (ac-php--remake-tags nil)
+)
+
+(defun ac-php-remake-tags-all (  )
+  (interactive)
+  "  remake tags without check modify time "
+  (ac-php--remake-tags  t )
+)
+
+
+(defun ac-php--remake-tags ( all-flag )
+  " reset tags , if  php source  is changed  "
   (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list )  
 
     (message "remake %s" tags-dir )
@@ -1021,7 +1034,7 @@ then this function split it to
         (push obj-file-name cur-obj-list )
         ;;check change time
         (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
-        (when (or (not obj-item) (< (nth 1 obj-item) src-time ) )
+        (when (or (not obj-item) (< (nth 1 obj-item) src-time ) all-flag )
           ;;gen tags file
           (message "rebuild %s" file-name )
           (let ( cmd cmd-output   )
@@ -1077,6 +1090,7 @@ then this function split it to
         (message "BUILD SUCCESS.")
         ) 
         )))
+
 
 (defun ac-php-save-data (file data)
   (with-temp-file file
@@ -1325,8 +1339,6 @@ then this function split it to
                     (line-end-position )))
     (if  (string-match ( concat  "$" cur-word ) line-txt)
         (let ((class-name "<...>" ) )
-          (when (string-match (concat  cur-word"[\t ]*=[\t ]*new[\t ]+\\("  ac-php-word-re-str "\\)" ) line-txt)
-            (setq class-name (match-string 1 line-txt)))
           (when (string-match (concat  cur-word"[\t ]*=.*[(;]" ) line-txt)
             ;;call function
             (let (key-str-list  pos) 

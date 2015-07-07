@@ -43,10 +43,10 @@ class Testb  extends Testa {
     }
 
 }
-    /** 
-	 *
-     * @return   T\Testa 
-	 */
+/** 
+ *
+ * @return   T\Testa 
+ */
 
 function ff(){
     return 0;

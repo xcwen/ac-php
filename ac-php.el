@@ -1357,7 +1357,7 @@ then this function split it to
                   ))))
 
           (kill-new (concat "\n\t/**  @var  $" cur-word " " class-name "  */\n") ))
-      (kill-new (concat "\n\t/** \n\t *\n\t * @var  " cur-word "\n\t */\n\tpublic   $" cur-word ";\n") ))))
+      (kill-new (concat "\n\t/**  @var  $" cur-word "  " cur-word "*/\n") ))))
 
 (defun ac-php-location-stack-forward ()
   (interactive)

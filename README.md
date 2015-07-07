@@ -14,6 +14,7 @@ and use `ac-php`  work with tags
 * [Usage](#usage)
 * [php extern for complete](#php-extern-for-complete)
 * [tags](#tags)
+* [FQA](#fqa)
 
 
 ##  Install 
@@ -117,6 +118,7 @@ emacs ~/ac-php/phptest/testb.php
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
 
+`ac-php-remake-tags-all` ;; **if you find a error, run it an retest **
 `ac-php-find-symbol-at-point`   ;goto define
 
 `ac-php-location-stack-back`    ;go back
@@ -342,4 +344,15 @@ or
 
 `mkdir /home/jim/.tags `
 
+
+
+
+## FQA 
+#  for all any question　
+
+you find a question 
+
+exec : `M-x`: `ac-php-remake-tags-all`
+
+and retest
 

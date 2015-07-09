@@ -781,7 +781,6 @@ then this function split it to
             scope 
 
             ) 
-        (ac-php--debug "Matching type[%s]  " tag-type ) 
         (cond
          ((string= tag-type "f")
           ;;  check in type field
@@ -1039,6 +1038,7 @@ then this function split it to
           (message "rebuild %s" file-name )
           (let ( cmd cmd-output   )
             (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
+            (ac-php--debug "exec cmd:%s" cmd)
             (setq cmd-output (shell-command-to-string  cmd) )
             
             (when (> (length cmd-output) 3)

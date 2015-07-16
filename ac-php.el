@@ -92,6 +92,7 @@
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
 ;; (setq debug-on-error t )
+;; (setq debug-on-error nil )
 
 (defmacro ac-php--debug (  fmt-str &rest args )
   `(if ac-php-debug-flag
@@ -1205,14 +1206,16 @@ then this function split it to
               (setq cur-class (if  member-info
                                   (let (tmp-class cur-namespace check-classname member-local-class-name)
                                     (setq tmp-class (nth 4 member-info) )
-                                    (if (s-index-of "\\" tmp-class )
-                                        tmp-class
-                                      (progn
-                                        (setq member-local-class-name (nth 5 member-info) )
-                                        (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
-                                        (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
-                                        (if (assoc-string check-classname class-list t )
-                                            check-classname tmp-class ))))
+                                    (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
+                                    (when (stringp tmp-class )
+                                      (if (s-index-of "\\" tmp-class )
+                                          tmp-class
+                                        (progn
+                                          (setq member-local-class-name (nth 5 member-info) )
+                                          (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
+                                          (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
+                                          (if (assoc-string check-classname class-list t )
+                                              check-classname tmp-class )))) )
                                 ""))
 
               ))

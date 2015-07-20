@@ -1,8 +1,11 @@
 <?php
 namespace Test; 
+require "testa.php";
 use  Test  as T ;
+use  Test\Testa as Ta ;
+use  Test\Testd; 
 
-class Testb  extends Testa {
+class Testb  extends Ta {
 
     //define v2 type is Testa in phpdoc
     
@@ -39,7 +42,6 @@ class Testb  extends Testa {
             
         }
         $this->get_v2()->set_v1("ss");
-        
     }
 
 }
@@ -50,6 +52,7 @@ class Testb  extends Testa {
 
 function ff(){
     return 0;
-
-
 }
+$t=new Ta();
+echo $t->get_v1()."\n" ;
+echo Ta::DIR."\n";

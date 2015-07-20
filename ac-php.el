@@ -533,6 +533,41 @@ then this function split it to
    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\("  item-name "\\)") 1  nil  )
       ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name) 1 nil ) )
   )
+(defun ac-php--get-all-use-as-name-in-cur-buffer () "make a regex to match   use statements "
+  (let ( ret-list (search-re (concat "use[ \t]+" ac-php-word-re-str ".*;")  ) line-txt match-ret )
+    (save-match-data
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward search-re  nil t )
+          (setq line-txt (buffer-substring-no-properties
+                          (line-beginning-position)
+                          (line-end-position )))
+          (message "line-text:%s" line-txt)
+          
+           (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+\\("ac-php-word-re-str "\\)[ \t]*;") line-txt ))
+          (if match-ret
+              (add-to-list 'ret-list (list  (nth 1 match-ret) (nth 2 match-ret)   ))
+            (progn
+              (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]*;") line-txt ))
+              (when match-ret
+                (let ((key-arr (s-split "\\\\" (nth 1 match-ret) ) ))
+                  (ac-php--debug "key-arr %S " key-arr)
+                  
+                  (add-to-list 'ret-list (list (nth 1 match-ret)  (nth (1- (length key-arr)) key-arr )   ))))))
+          
+          (end-of-line))))
+    ret-list ))
+
+(defun ac-php-test ()
+    "DOCSTRING"
+  (interactive)
+  (let (v)
+    (setq v (ac-php--get-all-use-as-name-in-cur-buffer  ))
+    (message "%S" v)
+    
+    ))
+
+
 
 
 
@@ -712,16 +747,43 @@ then this function split it to
                     (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
                     (push key-word ret-list  )
                     )))
-            (dolist (function-item function-list )
+            (progn 
+              ;;use as 
+              (dolist ( use-item (ac-php--get-all-use-as-name-in-cur-buffer  ) )
+                (when (string-prefix-p  cur-word (nth 1 use-item )  )
+                  (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
+                  (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
+                  (push key-word ret-list  )
+                  ))
+              ;;cur namespace
+              (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
+                (when cur-namespace
+                  (setq cur-full-fix (concat cur-namespace "\\" cur-word  ) )
+                  (setq start-word-pos-with-namespace (+  start-word-pos (length cur-namespace  ) 1 ) )
+                  (message "=== %s %S" cur-full-fix start-word-pos-with-namespace )
+                  
+                  (dolist (function-item function-list )
+                    
+                    (when (string-prefix-p  cur-full-fix  (nth 1 function-item )  )
+                      (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos-with-namespace  ))
+                      (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                      (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                      (push key-word ret-list  )
+                      ))))
               
-              (when (string-prefix-p  cur-word (nth 1 function-item )  )
-                (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
-                (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
-                (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
-                (push key-word ret-list  )
-                )))
 
-          )) 
+              
+              ;;common
+              (dolist (function-item function-list )
+                
+                (when (string-prefix-p  cur-word (nth 1 function-item )  )
+                  (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
+                  (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                  (push key-word ret-list  )
+                  ))
+              )))) 
     ret-list))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files ( work-dir regex also-find-subdir )
@@ -795,6 +857,13 @@ then this function split it to
                                    (ac-php-clean-namespace-name (match-string 1  doc  ) )
                                  "")))
 
+          (setq scope (nth 4   line-data ))
+          (when (and  (car scope   )
+                      (string= "namespace" (car scope) )
+                      )
+            (setq  tag-name   (concat (cdr scope ) "\\" tag-name) ))
+
+
 
           (push   (list  tag-type  tag-name (ac-php-gen-el-func tag-name doc)  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
          ((string= tag-type "d")
@@ -826,7 +895,7 @@ then this function split it to
             (setq  tag-name   (concat (cdr scope ) "\\" tag-name) )
             )
 
-          (push   (list  tag-type  tag-name (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
+          (push   (list  tag-type  tag-name (concat tag-name  ) file-pos  tag-name  ) function-list  )
           ;;add class info 
           (when (not (assoc-string tag-name class-list t ))
             (push (list tag-name nil ) class-list))

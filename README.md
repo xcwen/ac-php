@@ -52,11 +52,6 @@ cscope: version 15.8a
 
 * example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/1.png)
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
 
 ```bash
 \#backup old .emacs
@@ -161,6 +156,8 @@ if you won't define `public $v1 ` you can define with comment ,like this =>
 ```
 /** @var  $v1 \Test\Testa  */
 ```
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
+
 
 define class function   return type:
 
@@ -171,6 +168,10 @@ define class function   return type:
  */
 public function get_v1()
 ```
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
+
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
+
 
 define variable: (**if function or member no define reutrn value  you need define it  **)
 
@@ -179,6 +180,7 @@ define variable: (**if function or member no define reutrn value  you need defin
 /** @var $value  Testa */
 $value=ff();
 ```
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
 
 like this
 ```php
@@ -220,6 +222,7 @@ class Testa {
     }
 }
 ```
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/1.png)
 
 
 ## Tags

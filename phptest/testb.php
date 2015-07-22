@@ -30,6 +30,7 @@ class Testb  extends Ta {
         $this->v8->set_v1("sss");
         parent::set_v1("s");
         $this->get_v2->get_v2()->get_v1();
+
     }
 
     /**
@@ -52,7 +53,6 @@ class Testb  extends Ta {
 
         }
 
-        $this->get_v2;
         $this->get_v2()->set_v1("s");
     }
 }

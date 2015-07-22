@@ -1275,7 +1275,7 @@ then this function split it to
 
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
-  (let ((check-class-list ) (ret ) find-flag  type-str tmp-ret )
+  (let ((check-class-list ) (ret ) find-flag  type-str tmp-ret tag-type )
     (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
     
     (setq tmp-ret (ac-php--get-item-info member ) )
@@ -1288,9 +1288,10 @@ then this function split it to
         (ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
         (dolist (member-info class-member-list)
           (when(ac-php--string=-ignore-care (nth 1 member-info ) member    )
-            (ac-php--debug "member-info  %S" member-info )
-            (when (or  ( string= (nth 0 member-info)  "d" )
-                       (string= (nth 0 member-info) type-str ))
+            (setq tag-type (nth 0 member-info)  )
+            (ac-php--debug "tag-type=%s type-str=%s member-info  %S " tag-type type-str    member-info )
+            (when (or  ( string= tag-type  "d" )
+                       (string= tag-type  type-str ))
               (setq ret  member-info)
               (setq find-flag t)
               (return))))
@@ -1571,10 +1572,11 @@ then this function split it to
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
-    (setq cur-word  (ac-php-get-cur-word ))
+    (setq cur-word  (ac-php--get-cur-word-with-function-flag ))
 
     (setq  tags-data  (ac-php-get-tags-data )  )
     (setq key-str-list (ac-php-get-class-at-point ))
+    (ac-php--debug "key-str-list:%s" key-str-list)
     (if  key-str-list  
         (progn
           (if tags-data
@@ -1647,10 +1649,6 @@ then this function split it to
                                'raw-args args) candidates)
              (when (string-match "\{#" args)
                (setq args (replace-regexp-in-string "\{#.*#\}" "" args))
-               (push (propertize (ac-php-clean-document args) 'ac-php-help ret-t
-                                 'raw-args args) candidates))
-             (when (string-match ", \\.\\.\\." args)
-               (setq args (replace-regexp-in-string ", \\.\\.\\." "" args))
                (push (propertize (ac-php-clean-document args) 'ac-php-help ret-t
                                  'raw-args args) candidates)))
             ((string-match "^\\([^(]*\\)(\\*)(\\(.*)\\)" ret-t) ;; check whether it is a function ptr

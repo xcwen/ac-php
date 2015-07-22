@@ -12,7 +12,7 @@ and use `ac-php`  work with tags
 * [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
-* [php extern for complete](#php-extern-for-complete)
+* [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [FQA](#fqa)
 
@@ -52,6 +52,11 @@ cscope: version 15.8a
 
 * example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/1.png)
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
 
 ```bash
 \#backup old .emacs

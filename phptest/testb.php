@@ -9,7 +9,18 @@ class Testb  extends Ta {
 
     //define v2 type is Testa in phpdoc
     
+
 	/** @var  $v8 \Test\Testa  */
+    /**
+       
+     */
+    public function get_v8(){
+        return $this->v2;
+
+    }
+
+
+
 	/** @var  $v5 \Test\Testa  */
 
     /**
@@ -47,13 +58,18 @@ class Testb  extends Ta {
     public function get_tt(){
 
         $testv = $this->get_v2($this->texx);
-        $testv->set_v1("ss");
+
+        /** @var  $v \Test\Testa  */
+
 
         if ($testv->set_v1("s") && $testv->set_v1() ){
 
         }
 
         $this->get_v2()->set_v1("s");
+
+
+        
     }
 }
 /** 
@@ -73,4 +89,3 @@ trim("ss","s");
 $f=Test\ff();
 
 (new Ta())->set_v1("s");
-

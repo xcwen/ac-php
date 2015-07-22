@@ -18,6 +18,7 @@ class Testb  extends Ta {
 	public $v2;
 
 
+
     /** 
 	 *
      * @return   T\Testa 
@@ -27,23 +28,33 @@ class Testb  extends Ta {
         return $this->v2;
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
-
+        parent::set_v1("s");
+        $this->get_v2->get_v2()->get_v1();
     }
+
+    /**
+     * define value same as function
+
+     * @var   TestB 
+     */
+	public $get_v2;
+
+
 
 
 
     public function get_tt(){
 
-
         $testv = $this->get_v2($this->texx);
         $testv->set_v1("ss");
 
         if ($testv->set_v1("s") && $testv->set_v1() ){
-            
-        }
-        $this->get_v2()->set_v1("ss");
-    }
 
+        }
+
+        $this->get_v2;
+        $this->get_v2()->set_v1("s");
+    }
 }
 /** 
  *
@@ -56,3 +67,11 @@ function ff(){
 $t=new Ta();
 echo $t->get_v1()."\n" ;
 echo Ta::DIR."\n";
+(new Ta())->set_v1   ($v);
+trim("ss","s");
+
+$f=Test\ff();
+
+(new Ta())->set_v1("s");
+
+(ff() )->set_v1("s");

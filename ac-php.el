@@ -1464,7 +1464,7 @@ then this function split it to
         (ac-php-location-stack-push))
 
        ((string= type "sys_function")   
-        (php-search-documentation (nth 1  symbol-ret )  )
+        (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1  symbol-ret ))  ))
         ) )) ) )
 
 

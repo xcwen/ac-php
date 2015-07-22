@@ -382,13 +382,16 @@
         (setq cur-namespace (nth 0 split-arr) )
         (setq cur-class-name (nth 1 split-arr) )
         (setq tmp-name (ac-php-get-use-as-name  cur-namespace ) )
+        (ac-php--debug "tmp-name 22 %s" tmp-name)
         (when tmp-name (setq tmp-name (concat tmp-name "\\" cur-class-name ) ) ))
 
        ((= 1 (length split-arr))
+
         ;;check use as 
         (setq cur-class-name (nth 0 split-arr) )
         (setq  tmp-name (ac-php-get-use-as-name  cur-class-name ) )
 
+        (ac-php--debug "  length 1   tmp-name=%s" tmp-name  )
         ;;check cur-namespace
         (unless tmp-name
           (let ((cur-namespace (ac-php-get-cur-namespace-name)))
@@ -400,17 +403,18 @@
         )))
 
     ;; current-namespace
-    (ac-php--debug "to check %s" tmp-name )
-        
-    (setq tmp-ret  (ac-php--get-item-from-funtion-list  (ac-php-clean-namespace-name  tmp-name ) function-list ))
+    (ac-php--debug "==to check %s" tmp-name )
+    (when tmp-name
+      
+      (setq tmp-ret  (ac-php--get-item-from-funtion-list  (ac-php-clean-namespace-name  tmp-name ) function-list ))
 
-    (ac-php--debug "11 tmp-ret %S" tmp-ret)
-    (if tmp-ret
-        (if get-return-type-flag 
-            (setq ret-name  (nth 4 tmp-ret ) )
-          (setq ret-name  (nth 1 tmp-ret ) )
-          )
-      )
+      (ac-php--debug "11 tmp-ret %S" tmp-ret)
+      (if tmp-ret
+          (if get-return-type-flag 
+              (setq ret-name  (nth 4 tmp-ret ) )
+            (setq ret-name  (nth 1 tmp-ret ) )
+            )
+        ))
     (unless ret-name
       (setq tmp-ret  (ac-php--get-item-from-funtion-list  (ac-php-clean-namespace-name  first-key ) function-list ))
 

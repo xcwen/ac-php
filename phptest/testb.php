@@ -74,4 +74,3 @@ $f=Test\ff();
 
 (new Ta())->set_v1("s");
 
-(ff() )->set_v1("s");

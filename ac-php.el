@@ -749,7 +749,7 @@ then this function split it to
         (setq find-item function-item )
         (return)))
     find-item
-  ))
+    ))
 
 (defun ac-php-candidate-other ( tags-data)
   
@@ -1543,7 +1543,9 @@ then this function split it to
 	(save-excursion
 	  (skip-chars-backward "a-z0-9A-Z_\\\\")
 	  (setq start-pos (point))
-	  (skip-chars-forward "a-z0-9A-Z_\\\\ \t(")
+	  (skip-chars-forward "a-z0-9A-Z_\\\\")
+	  (skip-chars-forward " \t")
+	  (skip-chars-forward "(")
       (s-replace-all '((" "."" )  ("\t"."" ))   (ac-php-clean-namespace-name (buffer-substring-no-properties start-pos (point))))
 	  )
     )) 

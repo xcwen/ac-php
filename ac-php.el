@@ -745,7 +745,7 @@ then this function split it to
   "DOCSTRING"
   (let (find-item )
     (dolist (function-item function-list )
-      (when (string-prefix-p  key-word (nth 1 function-item )  )
+      (when (ac-php--string=-ignore-care   key-word (nth 1 function-item )  )
         (setq find-item function-item )
         (return)))
     find-item

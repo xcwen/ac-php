@@ -564,7 +564,7 @@ then this function split it to
           (setq line-txt (buffer-substring-no-properties
                           (line-beginning-position)
                           (line-end-position )))
-          (message "line-text:%s" line-txt)
+          (ac-php--debug "line-text:%s" line-txt)
           
            (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+\\("ac-php-word-re-str "\\)[ \t]*;") line-txt ))
           (if match-ret
@@ -585,7 +585,7 @@ then this function split it to
   (interactive)
   (let (v)
     (setq v (ac-php--get-all-use-as-name-in-cur-buffer  ))
-    (message "%S" v)
+    (ac-php--debug "%S" v)
     
     ))
 
@@ -801,7 +801,7 @@ then this function split it to
                 (when cur-namespace
                   (setq cur-full-fix (concat cur-namespace "\\" cur-word  ) )
                   (setq start-word-pos-with-namespace (+  start-word-pos (length cur-namespace  ) 1 ) )
-                  (message "=== %s %S" cur-full-fix start-word-pos-with-namespace )
+                  (ac-php--debug "=== %s %S" cur-full-fix start-word-pos-with-namespace )
                   
                   (dolist (function-item function-list )
                     

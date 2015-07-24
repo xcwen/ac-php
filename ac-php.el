@@ -1111,8 +1111,8 @@ then this function split it to
 )
 
 (defun ac-php-remake-tags-all (  )
-  (interactive)
   "  remake tags without check modify time "
+  (interactive)
   (ac-php--remake-tags  t )
 )
 

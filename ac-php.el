@@ -550,11 +550,13 @@ then this function split it to
 
 (defun ac-php-get-use-as-name (item-name )
   "DOCSTRING"
+  (let ()
+   (setq item-name (nth 0 (s-split "(" item-name  )) )
   (or
-   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)") 1  nil  )
-   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\("  item-name "\\)") 1  nil  )
-      ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name) 1 nil ) )
-  )
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)[ \t]*;") 1  nil  )
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
+  ))
+
 (defun ac-php--get-all-use-as-name-in-cur-buffer () "make a regex to match   use statements "
   (let ( ret-list (search-re (concat "use[ \t]+" ac-php-word-re-str ".*;")  ) line-txt match-ret )
     (save-match-data
@@ -1451,7 +1453,7 @@ then this function split it to
 
    (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
     ret
-	))
+))
 
 
 (defun ac-php-find-symbol-at-point (&optional prefix)

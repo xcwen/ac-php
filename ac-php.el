@@ -445,7 +445,7 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
 
-      (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bint\\b\\|\\bfloat\\b\\|\\bdouble\\b\\|\\bstring\\b"    ";"  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bint\\b\\|\\bfloat\\b\\|\\bdouble\\b\\|\\bstring\\b\\|\\bcase\\b"    ";"  line-string))
 
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
       (setq line-string  (replace-regexp-in-string   "!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))

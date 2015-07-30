@@ -1401,7 +1401,7 @@ then this function split it to
                         (if member-info
                             (setq ret (list "class_member"  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  )      (nth 4 member-info) ) )
                           (progn
-                              (message "no find %s.%s " class-name cur-word  )
+                            (message "no find %s.%s " class-name cur-word  )
                             )
                           ))
                     ;;(message "no find class  from key-list %s " key-str-list  )
@@ -1427,6 +1427,9 @@ then this function split it to
 
                 ;;TODO FIX namespace function like Test\ff()
                 (ac-php--debug "check user function===%s" cur-word )
+                (when (string=  cur-word "self"  ) 
+                  (setq cur-word (concat (ac-php-get-cur-class-name)  ) )
+                  )
                 
 
                 (dolist (function-item function-list )
@@ -1442,18 +1445,18 @@ then this function split it to
               
               (dolist (function-str ac-php-sys-function-list )
                 (when (ac-php--string=-ignore-care    function-str
-                                (nth 0 (ac-php--get-item-info  cur-word ) )
+                                                      (nth 0 (ac-php--get-item-info  cur-word ) )
                                                       )
-                ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
+                  ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
                   (setq ret (list "sys_function"  cur-word  ) )
 
                   (return )))
 
               ))))
 
-   (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
+    (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
     ret
-))
+    ))
 
 
 (defun ac-php-find-symbol-at-point (&optional prefix)

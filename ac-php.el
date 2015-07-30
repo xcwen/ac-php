@@ -581,6 +581,13 @@ then this function split it to
           
           (end-of-line))))
     ret-list ))
+(defun ac-php-toggle-debug ()
+    "DOCSTRING"
+  (interactive)
+  (let ()
+    (setq ac-php-debug-flag  (not ac-php-debug-flag) )
+    (message "set:  ac-php-debug-flag: %s " ac-php-debug-flag )
+    ))
 
 (defun ac-php-test ()
     "DOCSTRING"

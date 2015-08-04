@@ -1265,7 +1265,8 @@ then this function split it to
 
     (while (and (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )))
                 (not (assoc-string   tmp-class check-class-list )))
-      (push  (ac-php-clean-namespace-name tmp-class) check-class-list )
+
+      (push  (ac-php-clean-namespace-name (nth 0 (s-split "," tmp-class)) ) check-class-list )
       )
     (nreverse check-class-list )
     ))

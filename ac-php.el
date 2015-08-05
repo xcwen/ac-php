@@ -81,6 +81,8 @@
 ;;load sys-data
 (require 'ac-php-sys-data)
 
+(require 'ac-php-comm-tags-data )
+
 (if (featurep 'auto-complete) (require 'auto-complete) )
 (if (featurep 'php-mode)  (require 'php-mode))
 (if (featurep 'popup) (require 'popup) )
@@ -878,7 +880,13 @@ then this function split it to
 
 (defun ac-php-gen-data ( tags-list project-dir-len )
   "gen-el-data"
-  (let ( class-list function-list inherit-list (file-start-pos project-dir-len ) (count 0 ) )
+  (let (
+        (class-list  (nth 0 ac-php-comm-tags-data-list) )
+        (function-list (nth 1 ac-php-comm-tags-data-list) )
+        (inherit-list  (nth 2 ac-php-comm-tags-data-list) )
+        (file-start-pos project-dir-len ) (count 0 ) )
+
+
     (dolist (line-data tags-list)
       (let (
             (tag-name (nth 0  line-data ))
@@ -1004,8 +1012,9 @@ then this function split it to
   (let ( func-str ) 
     (if (string-match ".*(\\(.*\\)).*" doc)
         (progn
-          (setq func-str (replace-regexp-in-string "," "#>,<#" (match-string 1 doc) ) )
-          (setq func-str (replace-regexp-in-string "[\t ]+" "" func-str  ) )
+          (setq func-str (s-trim (match-string 1 doc) ) )
+          (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "#>,<#" func-str  ) )
+          (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str  ) )
           (concat func-name "(<#" func-str "#>)" )
           )
       (concat func-name "()")
@@ -1238,7 +1247,7 @@ then this function split it to
   (let ((tags-file   (ac-php-get-tags-file )))
     (if tags-file
         (ac-php-load-data  tags-file  )
-      nil))) 
+      ac-php-comm-tags-data-list ))) 
 
 ;;; ==============END
 
@@ -1302,7 +1311,11 @@ then this function split it to
             (ac-php--debug "tag-type=%s type-str=%s member-info  %S " tag-type type-str    member-info )
             (when (or  ( string= tag-type  "d" )
                        (string= tag-type  type-str ))
-              (setq ret  member-info)
+              (setq ret  (copy-tree member-info ))
+              (when (string= "S" (nth 3 ret ))
+                  (setf (nth 3 ret ) (format "sys_class:class.%s:%s"  opt-class member)   ) 
+                  )
+              
               (setq find-flag t)
               (return))))
         (if find-flag (return) )
@@ -1420,7 +1433,7 @@ then this function split it to
       (progn ;;function
         (if tags-data 
             (progn
-              (let ((function-list (nth 1 tags-data ))  (class-list (nth 0 tags-data ) ) full-name tmp-ret )
+              (let ((function-list (nth 1 tags-data ))  (class-list (nth 0 tags-data ) ) full-name tmp-ret file-pos  )
 
                 (when (string= "" cur-word) ;;new
                   (setq tmp-ret  ( ac-php-get-syntax-backward (concat "new[ \t]+\\(" ac-php-word-re-str "\\)") 1 ))
@@ -1438,11 +1451,15 @@ then this function split it to
                 (when (string=  cur-word "self"  ) 
                   (setq cur-word (concat (ac-php-get-cur-class-name)  ) )
                   )
-                
 
                 (dolist (function-item function-list )
                   (when (ac-php--string=-ignore-care (nth 1 function-item )  cur-word  )
-                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  (nth 3 function-item )  )      (nth 4 function-item) ) )
+                    (setq file-pos (nth 3 function-item ) )
+                    (when (string= "S" file-pos )
+                      (setf file-pos  (format "sys_class:class.%s"     (nth 1 function-item ) ) ) 
+                      )
+                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  file-pos   )      (nth 4 function-item) ) )
+                    
                     (setq find-flag t)
                     (return )))
                 )
@@ -1450,16 +1467,13 @@ then this function split it to
 
         (if (not find-flag )
             (progn
-              
               (dolist (function-str ac-php-sys-function-list )
                 (when (ac-php--string=-ignore-care    function-str
                                                       (nth 0 (ac-php--get-item-info  cur-word ) )
                                                       )
                   ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
                   (setq ret (list "sys_function"  cur-word  ) )
-
                   (return )))
-
               ))))
 
     (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
@@ -1470,17 +1484,27 @@ then this function split it to
 (defun ac-php-find-symbol-at-point (&optional prefix)
   (interactive "P")
   ;;检查是类还是 符号 
-  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos)
-    ;;(message " symbol-ret:%S" symbol-ret)
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos tmp-arr)
     (when symbol-ret
       (setq type (car symbol-ret ))
       (cond
        ((or (string= type "class_member")  (string= type "user_function") )
-        (setq jump-pos  (nth 1  symbol-ret ) )
-        (ac-php-location-stack-push)
-        (ac-php-goto-location jump-pos )
-        (ac-php-location-stack-push))
-
+        
+        (setq tmp-arr  (s-split ":" (nth 1 symbol-ret) ) )
+        (cond
+         ((s-matches-p "sys_class$" (nth 0 tmp-arr) )
+          (progn ;;sys_class
+            (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1 tmp-arr) )))
+            ))
+         (t
+          (progn 
+            (setq jump-pos  (nth 1  symbol-ret ) )
+            (ac-php-location-stack-push)
+            (ac-php-goto-location jump-pos )
+            (ac-php-location-stack-push)
+            )
+          ))
+        ) 
        ((string= type "sys_function")   
         (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1  symbol-ret ))  ))
         ) )) ) )

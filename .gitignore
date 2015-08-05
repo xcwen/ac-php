@@ -1,2 +1,3 @@
 *.elc
 */.tags/*
+*/commom_php/.tags/*

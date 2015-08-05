@@ -53,6 +53,10 @@ cscope: version 15.8a
 * example:
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 
+* also support system class
+spl XmlDocument  Http... 
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
+
 ```bash
 \#backup old .emacs
 cp ~/.emacs ~/.emacs.bak

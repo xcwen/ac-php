@@ -557,7 +557,7 @@ then this function split it to
   (let ()
    (setq item-name (nth 0 (s-split "(" item-name  )) )
   (or
-   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str item-name "\\)[ \t]*;") 1  nil  )
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\" item-name "\\)[ \t]*;") 1  nil  )
    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
   ))
 
@@ -663,7 +663,18 @@ then this function split it to
                                       (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\("
                                               ac-php-word-re-str "\\)" )
                                       1 t
-                                      (save-excursion  (beginning-of-defun)  (point) )))))
+                                      (save-excursion  (beginning-of-defun)  (beginning-of-line) )))))
+
+          ;;check  function xxx (classtype $val)  
+          ;;check   catch ( classtype $val) 
+          (unless frist-class-name
+            (setq frist-class-name  (ac-php-clean-namespace-name
+                                     (ac-php-get-syntax-backward
+                                      (concat "\\(" ac-php-word-re-str "\\)" "[\t ]+" "$" frist-key  "[ \t]*[),]" )
+                                      1 nil 
+                                      (save-excursion  (beginning-of-defun) (beginning-of-line)  )))))
+
+
 
           ;; check $v = new .... or $v = $this->sadfa() ;
           (unless frist-class-name
@@ -671,7 +682,7 @@ then this function split it to
               (setq define-str (ac-php-get-syntax-backward
                                 (concat   "$" frist-key "[\t ]*=\\([^=]*\\)[;]*" )
                                 1 nil 
-                                (save-excursion  (beginning-of-defun)  (point) )) )
+                                (save-excursion  (beginning-of-defun)  (beginning-of-line)  )) )
               (when define-str
                 (save-excursion 
                   (goto-char (get-text-property 0 'pos  define-str))

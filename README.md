@@ -6,6 +6,15 @@ use [phpctags](https://github.com/xcwen/phpctags) gen tags
 
 and use `ac-php`  work with tags 
 
+* example:
+
+![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+
+* also support system class
+
+for spl DOMDocument Http... 
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
+
  
 ## Table of Contents
 
@@ -50,12 +59,6 @@ cscope: version 15.8a
 
 ##  Test
 
-* example:
-![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
-
-* also support system class
-spl XmlDocument  Http... 
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
 ```bash
 \#backup old .emacs

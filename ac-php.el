@@ -218,7 +218,7 @@
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
         (cond
-         ( (or (string= tag-type "p") ( string= tag-type "m") )
+         ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
          (return-type 
           (format "%s  %s " return-type doc   ) )
@@ -943,15 +943,15 @@ then this function split it to
           (push   (list  tag-type  (concat tag-name "(" ) (ac-php-gen-el-func tag-name doc)  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
          ((string= tag-type "d")
 
-          ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  "function kk(){"  "d"  ("namespace". "xxx" )   "return_type" )
+          ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  nil  "d"  ("namespace". "xxx" )   "return_type" )
           (setq scope (nth 4   line-data ))
 
           (if   scope   
               (progn ;class
                 (setq class-name  (cdr scope) )
                 (setq doc  tag-name )
-                (setq return-type "" )
-                (setq access "public" )
+                (setq access (nth 5 line-data) )
+                (setq return-type (nth 6 line-data))
                 
                 (when (not (assoc-string class-name class-list t ))
                   (push (list class-name nil ) class-list))

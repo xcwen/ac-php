@@ -16,12 +16,7 @@ class Testb  extends Ta {
      */
     public function get_v8(){
         return $this->v2;
-
     }
-    public function clone( $x){
-        
-    }
-
 
 
 	/** @var  $v5 \Test\Testa  */

@@ -94,6 +94,7 @@
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
 ;; (setq debug-on-error t )
+;; (setq ac-php-comm-tags-data-list nil )
 ;; (setq debug-on-error nil )
 
 (defmacro ac-php--debug (  fmt-str &rest args )
@@ -884,7 +885,7 @@ then this function split it to
         (class-list  (nth 0 ac-php-comm-tags-data-list) )
         (function-list (nth 1 ac-php-comm-tags-data-list) )
         (inherit-list  (nth 2 ac-php-comm-tags-data-list) )
-        (file-start-pos project-dir-len ) (count 0 ) )
+        (file-start-pos project-dir-len ) (count 0 )  add-class-list  )
 
 
     (dolist (line-data tags-list)
@@ -953,10 +954,11 @@ then this function split it to
             )
 
           (push   (list  tag-type  tag-name (concat tag-name  ) file-pos  tag-name  ) function-list  )
-          (push   (list  tag-type  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
           ;;add class info 
           (when (not (assoc-string tag-name class-list t ))
-            (push (list tag-name nil ) class-list))
+            (push (list tag-name nil ) class-list)
+            (push  tag-name  add-class-list)
+            )
 
           ;; add class-inherits
           (let ((p-class-name (nth 5 line-data ) ) )
@@ -974,7 +976,9 @@ then this function split it to
 
           ;;add class info 
           (when (not (assoc-string class-name class-list t ))
-            (push (list class-name nil ) class-list))
+            (push (list class-name nil ) class-list)
+            (push   class-name  add-class-list)
+            )
           ;;add member & function 
 
           (if (string= tag-type "p")
@@ -1001,10 +1005,26 @@ then this function split it to
                                         (list class-name parent-name )
                                         ))
                                     )) inherit-list  ))
-    ;;reset return type
-    
+    ;; gen class __construct
+    (dolist (cur-class add-class-list)
+      (let ( member-info )
+        (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" ))
+        (when member-info
+
+            ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
+            (push   (list  "f"  (concat  cur-class  "(")
+                           (s-replace "__construct" cur-class   (nth 2  member-info)    )
+                           (nth 3  member-info) 
+                           (nth 4  member-info) 
+                           ) function-list  )
+            (ac-php--debug "  ADD class function :%s" cur-class   )
+            
+            )
+        ;;todo
+      ))
 
     
+    ;;reset return type
     (list class-list function-list inherit-list )))
 
 (defun  ac-php-gen-el-func ( func-name doc)

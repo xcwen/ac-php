@@ -2510,3 +2510,1326 @@ class HttpResponse {
 	/** @return bool */
 	static  function status( int $status ){} 
 }
+
+class mysqli {
+/* Properties */
+	/** @var int */
+	 public  $affected_rows;
+	/** @var string */
+	 public  $client_info;
+	/** @var int */
+	 public  $client_version;
+	/** @var int */
+	 public  $connect_errno;
+	/** @var string */
+	 public  $connect_error;
+	/** @var int */
+	 public  $errno;
+	/** @var array */
+	 public  $error_list;
+	/** @var string */
+	 public  $error;
+	/** @var int */
+	 public  $field_count;
+	/** @var int */
+	 public  $client_version;
+	/** @var string */
+	 public  $host_info;
+	/** @var string */
+	 public  $protocol_version;
+	/** @var string */
+	 public  $server_info;
+	/** @var int */
+	 public  $server_version;
+	/** @var string */
+	 public  $info;
+	/** @var mixed */
+	 public  $insert_id;
+	/** @var string */
+	 public  $sqlstate;
+	/** @var int */
+	 public  $thread_id;
+	/** @var int */
+	 public  $warning_count;
+/* Methods */
+	/** @return void */
+	 function __construct( string $host = 'ini_get("mysqli.default_host")' , string $username = 'ini_get("mysqli.default_user")' , string $passwd = 'ini_get("mysqli.default_pw")' , string $dbname = "" , int $port = 'ini_get("mysqli.default_port")' , string $socket = 'ini_get("mysqli.default_socket")'  ){} /** @return bool */
+	 function autocommit( bool $mode ){} 
+	/** @return bool */
+	 function change_user( string $user , string $password , string $database ){} 
+	/** @return string */
+	 function character_set_name(){} 
+	/** @return bool */
+	 function close(){} 
+	/** @return bool */
+	 function commit( int $flags , string $name  ){} 
+	/** @return bool */
+	 function debug( string $message ){} 
+	/** @return bool */
+	 function dump_debug_info(){} 
+	/** @return object */
+	 function get_charset(){} 
+	/** @return string */
+	 function get_client_info(){} 
+	/** @return bool */
+	 function get_connection_stats(){} 
+	/** @return mysqli_warning */
+	 function get_warnings(){} 
+	/** @return mysqli */
+	 function init(){} 
+	/** @return bool */
+	 function kill( int $processid ){} 
+	/** @return bool */
+	 function more_results(){} 
+	/** @return bool */
+	 function multi_query( string $query ){} 
+	/** @return bool */
+	 function next_result(){} 
+	/** @return bool */
+	 function options( int $option , mixed $value ){} 
+	/** @return bool */
+	 function ping(){} 
+	/** @return int */
+	public static  function poll( array &$read , array &$error , array &$reject , int $sec , int $usec  ){} 
+	/** @return mysqli_stmt */
+	 function prepare( string $query ){} 
+	/** @return mixed */
+	 function query( string $query , int $resultmode = MYSQLI_STORE_RESULT  ){} 
+	/** @return bool */
+	 function real_connect( string $host , string $username , string $passwd , string $dbname , int $port , string $socket , int $flags  ){} 
+	/** @return string */
+	 function escape_string( string $escapestr ){} 
+	/** @return bool */
+	 function real_query( string $query ){} 
+	/** @return mysqli_result */
+	public  function reap_async_query(){} 
+	/** @return bool */
+	public  function refresh( int $options ){} 
+	/** @return bool */
+	 function rollback( int $flags , string $name  ){} 
+	/** @return int */
+	 function rpl_query_type( string $query ){} 
+	/** @return bool */
+	 function select_db( string $dbname ){} 
+	/** @return bool */
+	 function send_query( string $query ){} 
+	/** @return bool */
+	 function set_charset( string $charset ){} 
+	/** @return bool */
+	 function set_local_infile_handler( mysqli $link , callable $read_func ){} 
+	/** @return bool */
+	 function ssl_set( string $key , string $cert , string $ca , string $capath , string $cipher ){} 
+	/** @return string */
+	 function stat(){} 
+	/** @return mysqli_stmt */
+	 function stmt_init(){} 
+	/** @return mysqli_result */
+	 function store_result( int $option  ){} 
+	/** @return mysqli_result */
+	 function use_result(){} 
+}
+class mysqli_stmt {
+/* Properties */
+	/** @var int */
+	 public  $affected_rows;
+	/** @var int */
+	 public  $errno;
+	/** @var array */
+	 public  $error_list;
+	/** @var string */
+	 public  $error;
+	/** @var int */
+	 public  $field_count;
+	/** @var int */
+	 public  $insert_id;
+	/** @var int */
+	 public  $num_rows;
+	/** @var int */
+	 public  $param_count;
+	/** @var string */
+	 public  $sqlstate;
+/* Methods */
+	/** @return void */
+	 function __construct( mysqli $link , string $query  ){} 
+	/** @return int */
+	 function attr_get( int $attr ){} 
+	/** @return bool */
+	 function attr_set( int $attr , int $mode ){} 
+	/** @return bool */
+	 function bind_param( string $types , mixed &$var1 , mixed $__args__ ){} 
+	/** @return bool */
+	 function bind_result( mixed &$var1 , mixed $__args__  ){} 
+	/** @return bool */
+	 function close(){} 
+	/** @return void */
+	 function data_seek( int $offset ){} 
+	/** @return bool */
+	 function execute(){} 
+	/** @return bool */
+	 function fetch(){} 
+	/** @return void */
+	 function free_result(){} 
+	/** @return mysqli_result */
+	 function get_result(){} 
+	/** @return object */
+	 function get_warnings( mysqli_stmt $stmt ){} 
+	/** @return mixed */
+	 function prepare( string $query ){} 
+	/** @return bool */
+	 function reset(){} 
+	/** @return mysqli_result */
+	 function result_metadata(){} 
+	/** @return bool */
+	 function send_long_data( int $param_nr , string $data ){} 
+	/** @return bool */
+	 function store_result(){} 
+}
+class mysqli_result implements Traversable {
+/* Properties */
+	/** @var int */
+	 public  $current_field ;
+	/** @var int */
+	 public  $field_count;
+	/** @var array */
+	 public  $lengths;
+	/** @var int */
+	 public  $num_rows;
+/* Methods */
+	/** @return bool */
+	 function data_seek( int $offset ){} 
+	/** @return mixed */
+	 function fetch_all( int $resulttype = MYSQLI_NUM  ){} 
+	/** @return mixed */
+	 function fetch_array( int $resulttype = MYSQLI_BOTH  ){} 
+	/** @return array */
+	 function fetch_assoc(){} 
+	/** @return object */
+	 function fetch_field_direct( int $fieldnr ){} 
+	/** @return object */
+	 function fetch_field(){} 
+	/** @return array */
+	 function fetch_fields(){} 
+	/** @return object */
+	 function fetch_object( string $class_name = "stdClass" , array $params  ){} 
+	/** @return mixed */
+	 function fetch_row(){} 
+	/** @return bool */
+	 function field_seek( int $fieldnr ){} 
+	/** @return void */
+	 function free(){} 
+}
+class  mysqli_driver {
+/* Properties */
+	/** @var string */
+	 public  $client_info ;
+	/** @var string */
+	 public  $client_version ;
+	/** @var string */
+	 public  $driver_version ;
+	/** @var string */
+	 public  $embedded ;
+	/** @var bool */
+	 public  $reconnect ;
+	/** @var int */
+	 public  $report_mode ;
+/* Methods */
+	/** @return void */
+	 function embedded_server_end(){} 
+	/** @return bool */
+	 function embedded_server_start( bool $start , array $arguments , array $groups ){} 
+}
+
+
+class mysqli_warning {
+/* Properties */
+	/** @var string */
+	 public  $message ;
+	/** @var int */
+	 public  $sqlstate ;
+	/** @var int */
+	 public  $errno ;
+/* Methods */
+	/** @return void */
+	public  function __construct(){} 
+	/** @return void */
+	public  function next(){} 
+}
+
+class mysqli_sql_exception extends RuntimeException {
+	/** @var string */
+	 protected  $sqlstate ;
+}
+class SQLite3 {
+/* Methods */
+	/** @return bool */
+	public  function busyTimeout( int $msecs ){} 
+	/** @return int */
+	public  function changes(){} 
+	/** @return bool */
+	public  function close(){} 
+	/** @return void */
+	public  function __construct( string $filename , int $flags , string $encryption_key  ){} 
+	/** @return bool */
+	public  function createAggregate( string $name , mixed $step_callback , mixed $final_callback , int $argument_count = -1  ){} 
+	/** @return bool */
+	public  function createCollation( string $name , callable $callback ){} 
+	/** @return bool */
+	public  function createFunction( string $name , mixed $callback , int $argument_count = -1  ){} 
+	/** @return string */
+	public static  function escapeString( string $value ){} 
+	/** @return bool */
+	public  function exec( string $query ){} 
+	/** @return int */
+	public  function lastErrorCode(){} 
+	/** @return string */
+	public  function lastErrorMsg(){} 
+	/** @return int */
+	public  function lastInsertRowID(){} 
+	/** @return bool */
+	public  function loadExtension( string $shared_library ){} 
+	/** @return void */
+	public  function open( string $filename , int $flags = SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE , string $encryption_key  ){} 
+	/** @return SQLite3Stmt */
+	public  function prepare( string $query ){} 
+	/** @return SQLite3Result */
+	public  function query( string $query ){} 
+	/** @return mixed */
+	public  function querySingle( string $query , bool $entire_row = false  ){} 
+	/** @return array */
+	public static  function version(){} 
+}
+
+class SQLite3Stmt {
+/* Methods */
+	/** @return bool */
+	public  function bindParam( string $sql_param , mixed &$param , int $type  ){} 
+	/** @return bool */
+	public  function bindValue( string $sql_param , mixed $value , int $type  ){} 
+	/** @return bool */
+	public  function clear(){} 
+	/** @return bool */
+	public  function close(){} 
+	/** @return SQLite3Result */
+	public  function execute(){} 
+	/** @return int */
+	public  function paramCount(){} 
+	/** @return bool */
+	public  function reset(){} 
+}
+
+
+class SQLite3Result {
+/* Methods */
+	/** @return string */
+	public  function columnName( int $column_number ){} 
+	/** @return int */
+	public  function columnType( int $column_number ){} 
+	/** @return array */
+	public  function fetchArray( int $mode = SQLITE3_BOTH  ){} 
+	/** @return bool */
+	public  function finalize(){} 
+	/** @return int */
+	public  function numColumns(){} 
+	/** @return bool */
+	public  function reset(){} 
+}
+class PDO {
+	/** @return void */
+	public  function __construct( string $dsn , string $username , string $password , array $options  ){} 
+	/** @return bool */
+	public  function beginTransaction(){} 
+	/** @return bool */
+	public  function commit(){} 
+	/** @return mixed */
+	public  function errorCode(){} 
+	/** @return array */
+	public  function errorInfo(){} 
+	/** @return int */
+	public  function exec( string $statement ){} 
+	/** @return mixed */
+	public  function getAttribute( int $attribute ){} 
+	/** @return array */
+	public static  function getAvailableDrivers(){} 
+	/** @return bool */
+	public  function inTransaction(){} 
+	/** @return string */
+	public  function lastInsertId( string $name = NULL  ){} 
+	/** @return PDOStatement */
+	public  function prepare( string $statement , array $driver_options = array()  ){} 
+	/** @return PDOStatement */
+	public  function query( string $statement ){} 
+	/** @return string */
+	public  function quote( string $string , int $parameter_type = PDO::PARAM_STR  ){} 
+	/** @return bool */
+	public  function rollBack(){} 
+	/** @return bool */
+	public  function setAttribute( int $attribute , mixed $value ){} 
+}
+
+class PDOStatement implements Traversable {
+/* Properties */
+	/** @var string */
+	 public  $queryString;
+/* Methods */
+	/** @return bool */
+	public  function bindColumn( mixed $column , mixed &$param , int $type , int $maxlen , mixed $driverdata  ){} 
+	/** @return bool */
+	public  function bindParam( mixed $parameter , mixed &$variable , int $data_type = PDO::PARAM_STR , int $length , mixed $driver_options  ){} 
+	/** @return bool */
+	public  function bindValue( mixed $parameter , mixed $value , int $data_type = PDO::PARAM_STR  ){} 
+	/** @return bool */
+	public  function closeCursor(){} 
+	/** @return int */
+	public  function columnCount(){} 
+	/** @return void */
+	public  function debugDumpParams(){} 
+	/** @return string */
+	public  function errorCode(){} 
+	/** @return array */
+	public  function errorInfo(){} 
+	/** @return bool */
+	public  function execute( array $input_parameters  ){} 
+	/** @return mixed */
+	public  function fetch( int $fetch_style , int $cursor_orientation = PDO::FETCH_ORI_NEXT , int $cursor_offset = 0  ){} 
+	/** @return array */
+	public  function fetchAll( int $fetch_style , mixed $fetch_argument , array $ctor_args = array()  ){} 
+	/** @return mixed */
+	public  function fetchColumn( int $column_number = 0  ){} 
+	/** @return mixed */
+	public  function fetchObject( string $class_name = "stdClass" , array $ctor_args  ){} 
+	/** @return mixed */
+	public  function getAttribute( int $attribute ){} 
+	/** @return array */
+	public  function getColumnMeta( int $column ){} 
+	/** @return bool */
+	public  function nextRowset(){} 
+	/** @return int */
+	public  function rowCount(){} 
+	/** @return bool */
+	public  function setAttribute( int $attribute , mixed $value ){} 
+	/** @return bool */
+	public  function setFetchMode( int $mode ){} 
+}
+
+class PDOException extends RuntimeException {
+/* Properties */
+	/** @var array */
+	 public  $errorInfo ;
+	/** @var string */
+	 protected  $code ;
+}
+class DateTime implements DateTimeInterface {
+/* 常量 */
+	/** @var string */
+	 const  ATOM = "Y-m-d\TH:i:sP" ;
+	/** @var string */
+	 const  COOKIE = "l, d-M-Y H:i:s T" ;
+	/** @var string */
+	 const  ISO8601 = "Y-m-d\TH:i:sO" ;
+	/** @var string */
+	 const  RFC822 = "D, d M y H:i:s O" ;
+	/** @var string */
+	 const  RFC850 = "l, d-M-y H:i:s T" ;
+	/** @var string */
+	 const  RFC1036 = "D, d M y H:i:s O" ;
+	/** @var string */
+	 const  RFC1123 = "D, d M Y H:i:s O" ;
+	/** @var string */
+	 const  RFC2822 = "D, d M Y H:i:s O" ;
+	/** @var string */
+	 const  RFC3339 = "Y-m-d\TH:i:sP" ;
+	/** @var string */
+	 const  RSS = "D, d M Y H:i:s O" ;
+	/** @var string */
+	 const  W3C = "Y-m-d\TH:i:sP" ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( string $time = "now" , DateTimeZone $timezone = NULL  ){} 
+	/** @return DateTime */
+	public  function add( DateInterval $interval ){} 
+	/** @return DateTime */
+	public static  function createFromFormat( string $format , string $time , DateTimeZone $timezone  ){} 
+	/** @return array */
+	public static  function getLastErrors(){} 
+	/** @return DateTime */
+	public  function modify( string $modify ){} 
+	/** @return DateTime */
+	public static  function __set_state( array $array ){} 
+	/** @return DateTime */
+	public  function setDate( int $year , int $month , int $day ){} 
+	/** @return DateTime */
+	public  function setISODate( int $year , int $week , int $day = 1  ){} 
+	/** @return DateTime */
+	public  function setTime( int $hour , int $minute , int $second = 0  ){} 
+	/** @return DateTime */
+	public  function setTimestamp( int $unixtimestamp ){} 
+	/** @return DateTime */
+	public  function setTimezone( DateTimeZone $timezone ){} 
+	/** @return DateTime */
+	public  function sub( DateInterval $interval ){} 
+	/** @return DateInterval */
+	public  function diff( DateTimeInterface $datetime2 , bool $absolute = false  ){} 
+	/** @return string */
+	public  function format( string $format ){} 
+	/** @return int */
+	public  function getOffset(){} 
+	/** @return int */
+	public  function getTimestamp(){} 
+	/** @return DateTimeZone */
+	public  function getTimezone(){} 
+	/** @return void */
+	public  function __wakeup(){} 
+}
+
+class DateTimeImmutable implements DateTimeInterface {
+/* 方法 */
+	/** @return void */
+	public  function __construct( string $time = "now" , DateTimeZone $timezone = NULL  ){} 
+	/** @return DateTimeImmutable */
+	public  function add( DateInterval $interval ){} 
+	/** @return DateTimeImmutable */
+	public static  function createFromFormat( string $format , string $time , DateTimeZone $timezone  ){} 
+	/** @return DateTimeImmutable */
+	public static  function createFromMutable( DateTime $datetime ){} 
+	/** @return array */
+	public static  function getLastErrors(){} 
+	/** @return DateTimeImmutable */
+	public  function modify( string $modify ){} 
+	/** @return DateTimeImmutable */
+	public static  function __set_state( array $array ){} 
+	/** @return DateTimeImmutable */
+	public  function setDate( int $year , int $month , int $day ){} 
+	/** @return DateTimeImmutable */
+	public  function setISODate( int $year , int $week , int $day = 1  ){} 
+	/** @return DateTimeImmutable */
+	public  function setTime( int $hour , int $minute , int $second = 0  ){} 
+	/** @return DateTimeImmutable */
+	public  function setTimestamp( int $unixtimestamp ){} 
+	/** @return DateTimeImmutable */
+	public  function setTimezone( DateTimeZone $timezone ){} 
+	/** @return DateTimeImmutable */
+	public  function sub( DateInterval $interval ){} 
+	/** @return DateInterval */
+	public  function diff( DateTimeInterface $datetime2 , bool $absolute = false  ){} 
+	/** @return string */
+	public  function format( string $format ){} 
+	/** @return int */
+	public  function getOffset(){} 
+	/** @return int */
+	public  function getTimestamp(){} 
+	/** @return DateTimeZone */
+	public  function getTimezone(){} 
+	/** @return void */
+	public  function __wakeup(){} 
+}
+class DateTimeInterface {
+/* 方法 */
+	/** @return DateInterval */
+	public  function diff( DateTimeInterface $datetime2 , bool $absolute = false  ){} 
+	/** @return string */
+	public  function format( string $format ){} 
+	/** @return int */
+	public  function getOffset(){} 
+	/** @return int */
+	public  function getTimestamp(){} 
+	/** @return DateTimeZone */
+	public  function getTimezone(){} 
+	/** @return void */
+	public  function __wakeup(){} 
+}
+class DateTimeZone {
+/* 常量 */
+	/** @var integer */
+	 const  AFRICA = 1 ;
+	/** @var integer */
+	 const  AMERICA = 2 ;
+	/** @var integer */
+	 const  ANTARCTICA = 4 ;
+	/** @var integer */
+	 const  ARCTIC = 8 ;
+	/** @var integer */
+	 const  ASIA = 16 ;
+	/** @var integer */
+	 const  ATLANTIC = 32 ;
+	/** @var integer */
+	 const  AUSTRALIA = 64 ;
+	/** @var integer */
+	 const  EUROPE = 128 ;
+	/** @var integer */
+	 const  INDIAN = 256 ;
+	/** @var integer */
+	 const  PACIFIC = 512 ;
+	/** @var integer */
+	 const  UTC = 1024 ;
+	/** @var integer */
+	 const  ALL = 2047 ;
+	/** @var integer */
+	 const  ALL_WITH_BC = 4095 ;
+	/** @var integer */
+	 const  PER_COUNTRY = 4096 ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( string $timezone ){} 
+	/** @return array */
+	public  function getLocation(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return int */
+	public  function getOffset( DateTime $datetime ){} 
+	/** @return array */
+	public  function getTransitions( int $timestamp_begin , int $timestamp_end  ){} 
+	/** @return array */
+	public static  function listAbbreviations(){} 
+	/** @return array */
+	public static  function listIdentifiers( int $what = DateTimeZone::ALL , string $country = NULL  ){} 
+}
+
+class DateInterval {
+/* 属性 */
+	/** @var integer */
+	 public  $y ;
+	/** @var integer */
+	 public  $m ;
+	/** @var integer */
+	 public  $d ;
+	/** @var integer */
+	 public  $h ;
+	/** @var integer */
+	 public  $i ;
+	/** @var integer */
+	 public  $s ;
+	/** @var integer */
+	 public  $invert ;
+	/** @var mixed */
+	 public  $days ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( string $interval_spec ){} 
+	/** @return DateInterval */
+	public static  function createFromDateString( string $time ){} 
+	/** @return string */
+	public  function format( string $format ){} 
+}
+class DatePeriod implements Traversable {
+/* 常量 */
+	/** @var integer */
+	 const  EXCLUDE_START_DATE = 1 ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( DateTimeInterface $start , DateInterval $interval , int $recurrences , int $options  ){} 
+	/** @return void */
+	public  function __construct( DateTimeInterface $start , DateInterval $interval , DateTimeInterface $end , int $options  ){} 
+	/** @return void */
+	public  function __construct( string $isostr , int $options  ){} 
+}
+
+class Imagick implements Iterator {
+	/** @return bool */
+	 function adaptiveBlurImage( float $radius , float $sigma , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function adaptiveResizeImage( int $columns , int $rows , bool $bestfit = false  ){} 
+	/** @return bool */
+	 function adaptiveSharpenImage( float $radius , float $sigma , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function adaptiveThresholdImage( int $width , int $height , int $offset ){} 
+	/** @return bool */
+	 function addImage( Imagick $source ){} 
+	/** @return bool */
+	 function addNoiseImage( int $noise_type , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function affineTransformImage( ImagickDraw $matrix ){} 
+	/** @return bool */
+	 function animateImages( string $x_server ){} 
+	/** @return bool */
+	 function annotateImage( ImagickDraw $draw_settings , float $x , float $y , float $angle , string $text ){} 
+	/** @return Imagick */
+	 function appendImages( bool $stack = false ){} 
+	/** @return void */
+	public  function autoLevelImage( string $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return Imagick */
+	 function averageImages(){} 
+	/** @return bool */
+	 function blackThresholdImage( mixed $threshold ){} 
+	/** @return void */
+	public  function blueShiftImage( float $factor = 1.5  ){} 
+	/** @return bool */
+	 function blurImage( float $radius , float $sigma , int $channel  ){} 
+	/** @return bool */
+	 function borderImage( mixed $bordercolor , int $width , int $height ){} 
+	/** @return void */
+	public  function brightnessContrastImage( string $brightness , string $contrast , string $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function charcoalImage( float $radius , float $sigma ){} 
+	/** @return bool */
+	 function chopImage( int $width , int $height , int $x , int $y ){} 
+	/** @return void */
+	public  function clampImage( string $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function clear(){} 
+	/** @return bool */
+	 function clipImage(){} 
+	/** @return void */
+	public  function clipImagePath( string $pathname , string $inside ){} 
+	/** @return bool */
+	 function clipPathImage( string $pathname , bool $inside ){} 
+	/** @return Imagick */
+	 function clone_(){} 
+	/** @return bool */
+	 function clutImage( Imagick $lookup_table , float $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return Imagick */
+	 function coalesceImages(){} 
+	/** @return bool */
+	 function colorFloodfillImage( mixed $fill , float $fuzz , mixed $bordercolor , int $x , int $y ){} 
+	/** @return bool */
+	 function colorizeImage( mixed $colorize , mixed $opacity ){} 
+	/** @return void */
+	public  function colorMatrixImage( string $color_matrix = Imagick::CHANNEL_DEFAULT ){} 
+	/** @return Imagick */
+	 function combineImages( int $channelType ){} 
+	/** @return bool */
+	 function commentImage( string $comment ){} 
+	/** @return array */
+	 function compareImageChannels( Imagick $image , int $channelType , int $metricType ){} 
+	/** @return Imagick */
+	 function compareImageLayers( int $method ){} 
+	/** @return array */
+	 function compareImages( Imagick $compare , int $metric ){} 
+	/** @return bool */
+	 function compositeImage( Imagick $composite_object , int $composite , int $x , int $y , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return void */
+	 function __construct( mixed $files ){} 
+	/** @return bool */
+	 function contrastImage( bool $sharpen ){} 
+	/** @return bool */
+	 function contrastStretchImage( float $black_point , float $white_point , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function convolveImage( array $kernel , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return void */
+	public  function count( string $mode  ){} 
+	/** @return bool */
+	 function cropImage( int $width , int $height , int $x , int $y ){} 
+	/** @return bool */
+	 function cropThumbnailImage( int $width , int $height ){} 
+	/** @return Imagick */
+	 function current(){} 
+	/** @return bool */
+	 function cycleColormapImage( int $displace ){} 
+	/** @return bool */
+	 function decipherImage( string $passphrase ){} 
+	/** @return Imagick */
+	 function deconstructImages(){} 
+	/** @return bool */
+	 function deleteImageArtifact( string $artifact ){} 
+	/** @return void */
+	public  function deleteImageProperty( string $name ){} 
+	/** @return bool */
+	public  function deskewImage( float $threshold ){} 
+	/** @return bool */
+	 function despeckleImage(){} 
+	/** @return bool */
+	 function destroy(){} 
+	/** @return bool */
+	 function displayImage( string $servername ){} 
+	/** @return bool */
+	 function displayImages( string $servername ){} 
+	/** @return bool */
+	 function distortImage( int $method , array $arguments , bool $bestfit ){} 
+	/** @return bool */
+	 function drawImage( ImagickDraw $draw ){} 
+	/** @return bool */
+	 function edgeImage( float $radius ){} 
+	/** @return bool */
+	 function embossImage( float $radius , float $sigma ){} 
+	/** @return bool */
+	 function encipherImage( string $passphrase ){} 
+	/** @return bool */
+	 function enhanceImage(){} 
+	/** @return bool */
+	 function equalizeImage(){} 
+	/** @return bool */
+	 function evaluateImage( int $op , float $constant , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return array */
+	public  function exportImagePixels( int $x , int $y , int $width , int $height , string $map , int $STORAGE ){} 
+	/** @return bool */
+	 function extentImage( int $width , int $height , int $x , int $y ){} 
+	/** @return void */
+	public  function filter( ImagickKernel $ImagickKernel , int $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return Imagick */
+	 function flattenImages(){} 
+	/** @return bool */
+	 function flipImage(){} 
+	/** @return bool */
+	 function floodFillPaintImage( mixed $fill , float $fuzz , mixed $target , int $x , int $y , bool $invert , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function flopImage(){} 
+	/** @return void */
+	public  function forwardFourierTransformimage( bool $magnitude ){} 
+	/** @return bool */
+	 function frameImage( mixed $matte_color , int $width , int $height , int $inner_bevel , int $outer_bevel ){} 
+	/** @return bool */
+	public  function functionImage( int $function , array $arguments , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return Imagick */
+	 function fxImage( string $expression , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function gammaImage( float $gamma , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function gaussianBlurImage( float $radius , float $sigma , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return int */
+	 function getColorspace(){} 
+	/** @return int */
+	 function getCompression(){} 
+	/** @return int */
+	 function getCompressionQuality(){} 
+	/** @return string */
+	 function getCopyright(){} 
+	/** @return string */
+	 function getFilename(){} 
+	/** @return string */
+	 function getFont(){} 
+	/** @return string */
+	 function getFormat(){} 
+	/** @return int */
+	 function getGravity(){} 
+	/** @return string */
+	 function getHomeURL(){} 
+	/** @return Imagick */
+	 function getImage(){} 
+	/** @return int */
+	 function getImageAlphaChannel(){} 
+	/** @return string */
+	 function getImageArtifact( string $artifact ){} 
+	/** @return string */
+	public  function getImageAttribute( string $key ){} 
+	/** @return ImagickPixel */
+	 function getImageBackgroundColor(){} 
+	/** @return string */
+	 function getImageBlob(){} 
+	/** @return array */
+	 function getImageBluePrimary(){} 
+	/** @return ImagickPixel */
+	 function getImageBorderColor(){} 
+	/** @return int */
+	 function getImageChannelDepth( int $channel ){} 
+	/** @return float */
+	 function getImageChannelDistortion( Imagick $reference , int $channel , int $metric ){} 
+	/** @return float */
+	 function getImageChannelDistortions( Imagick $reference , int $metric , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return array */
+	 function getImageChannelExtrema( int $channel ){} 
+	/** @return array */
+	public  function getImageChannelKurtosis( int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return array */
+	 function getImageChannelMean( int $channel ){} 
+	/** @return array */
+	 function getImageChannelRange( int $channel ){} 
+	/** @return array */
+	 function getImageChannelStatistics(){} 
+	/** @return Imagick */
+	 function getImageClipMask(){} 
+	/** @return ImagickPixel */
+	 function getImageColormapColor( int $index ){} 
+	/** @return int */
+	 function getImageColors(){} 
+	/** @return int */
+	 function getImageColorspace(){} 
+	/** @return int */
+	 function getImageCompose(){} 
+	/** @return int */
+	 function getImageCompression(){} 
+	/** @return int */
+	 function getImageCompressionQuality(){} 
+	/** @return int */
+	 function getImageDelay(){} 
+	/** @return int */
+	 function getImageDepth(){} 
+	/** @return int */
+	 function getImageDispose(){} 
+	/** @return float */
+	 function getImageDistortion( MagickWand $reference , int $metric ){} 
+	/** @return array */
+	 function getImageExtrema(){} 
+	/** @return string */
+	 function getImageFilename(){} 
+	/** @return string */
+	 function getImageFormat(){} 
+	/** @return float */
+	 function getImageGamma(){} 
+	/** @return array */
+	 function getImageGeometry(){} 
+	/** @return int */
+	 function getImageGravity(){} 
+	/** @return array */
+	 function getImageGreenPrimary(){} 
+	/** @return int */
+	 function getImageHeight(){} 
+	/** @return array */
+	 function getImageHistogram(){} 
+	/** @return int */
+	 function getImageIndex(){} 
+	/** @return int */
+	 function getImageInterlaceScheme(){} 
+	/** @return int */
+	 function getImageInterpolateMethod(){} 
+	/** @return int */
+	 function getImageIterations(){} 
+	/** @return int */
+	 function getImageLength(){} 
+	/** @return string */
+	 function getImageMagickLicense(){} 
+	/** @return bool */
+	 function getImageMatte(){} 
+	/** @return ImagickPixel */
+	 function getImageMatteColor(){} 
+	/** @return string */
+	public  function getImageMimeType(){} 
+	/** @return int */
+	 function getImageOrientation(){} 
+	/** @return array */
+	 function getImagePage(){} 
+	/** @return ImagickPixel */
+	 function getImagePixelColor( int $x , int $y ){} 
+	/** @return string */
+	 function getImageProfile( string $name ){} 
+	/** @return array */
+	 function getImageProfiles( string $pattern = "*" , bool $only_names = true  ){} 
+	/** @return array */
+	 function getImageProperties( string $pattern = "*" , bool $only_names = true  ){} 
+	/** @return string */
+	 function getImageProperty( string $name ){} 
+	/** @return array */
+	 function getImageRedPrimary(){} 
+	/** @return Imagick */
+	 function getImageRegion( int $width , int $height , int $x , int $y ){} 
+	/** @return int */
+	 function getImageRenderingIntent(){} 
+	/** @return array */
+	 function getImageResolution(){} 
+	/** @return string */
+	 function getImagesBlob(){} 
+	/** @return int */
+	 function getImageScene(){} 
+	/** @return string */
+	 function getImageSignature(){} 
+	/** @return int */
+	 function getImageSize(){} 
+	/** @return int */
+	 function getImageTicksPerSecond(){} 
+	/** @return float */
+	 function getImageTotalInkDensity(){} 
+	/** @return int */
+	 function getImageType(){} 
+	/** @return int */
+	 function getImageUnits(){} 
+	/** @return int */
+	 function getImageVirtualPixelMethod(){} 
+	/** @return array */
+	 function getImageWhitePoint(){} 
+	/** @return int */
+	 function getImageWidth(){} 
+	/** @return int */
+	 function getInterlaceScheme(){} 
+	/** @return int */
+	 function getIteratorIndex(){} 
+	/** @return int */
+	 function getNumberImages(){} 
+	/** @return string */
+	 function getOption( string $key ){} 
+	/** @return string */
+	 function getPackageName(){} 
+	/** @return array */
+	 function getPage(){} 
+	/** @return ImagickPixelIterator */
+	 function getPixelIterator(){} 
+	/** @return ImagickPixelIterator */
+	 function getPixelRegionIterator( int $x , int $y , int $columns , int $rows ){} 
+	/** @return float */
+	 function getPointSize(){} 
+	/** @return int */
+	public static  function getQuantum(){} 
+	/** @return array */
+	 function getQuantumDepth(){} 
+	/** @return array */
+	 function getQuantumRange(){} 
+	/** @return string */
+	public static  function getRegistry( string $key ){} 
+	/** @return string */
+	 function getReleaseDate(){} 
+	/** @return int */
+	 function getResource( int $type ){} 
+	/** @return int */
+	 function getResourceLimit( int $type ){} 
+	/** @return array */
+	 function getSamplingFactors(){} 
+	/** @return array */
+	 function getSize(){} 
+	/** @return int */
+	 function getSizeOffset(){} 
+	/** @return array */
+	 function getVersion(){} 
+	/** @return bool */
+	public  function haldClutImage( Imagick $clut , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function hasNextImage(){} 
+	/** @return bool */
+	 function hasPreviousImage(){} 
+	/** @return string|false */
+	public  function identifyFormat( string $embedText ){} 
+	/** @return array */
+	 function identifyImage( bool $appendRawOutput = false  ){} 
+	/** @return bool */
+	 function implodeImage( float $radius ){} 
+	/** @return bool */
+	public  function importImagePixels( int $x , int $y , int $width , int $height , string $map , int $storage , array $pixels ){} 
+	/** @return void */
+	public  function inverseFourierTransformImage( string $complement , string $magnitude ){} 
+	/** @return bool */
+	 function labelImage( string $label ){} 
+	/** @return bool */
+	 function levelImage( float $blackPoint , float $gamma , float $whitePoint , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function linearStretchImage( float $blackPoint , float $whitePoint ){} 
+	/** @return bool */
+	 function liquidRescaleImage( int $width , int $height , float $delta_x , float $rigidity ){} 
+	/** @return array */
+	public static  function listRegistry(){} 
+	/** @return bool */
+	 function magnifyImage(){} 
+	/** @return bool */
+	 function mapImage( Imagick $map , bool $dither ){} 
+	/** @return bool */
+	 function matteFloodfillImage( float $alpha , float $fuzz , mixed $bordercolor , int $x , int $y ){} 
+	/** @return bool */
+	 function medianFilterImage( float $radius ){} 
+	/** @return Imagick */
+	 function mergeImageLayers( int $layer_method ){} 
+	/** @return bool */
+	 function minifyImage(){} 
+	/** @return bool */
+	 function modulateImage( float $brightness , float $saturation , float $hue ){} 
+	/** @return Imagick */
+	 function montageImage( ImagickDraw $draw , string $tile_geometry , string $thumbnail_geometry , int $mode , string $frame ){} 
+	/** @return Imagick */
+	 function morphImages( int $number_frames ){} 
+	/** @return void */
+	public  function morphology( int $morphologyMethod , int $iterations , ImagickKernel $ImagickKernel , string $CHANNEL  ){} 
+	/** @return Imagick */
+	 function mosaicImages(){} 
+	/** @return bool */
+	 function motionBlurImage( float $radius , float $sigma , float $angle , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function negateImage( bool $gray , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function newImage( int $cols , int $rows , mixed $background , string $format  ){} 
+	/** @return bool */
+	 function newPseudoImage( int $columns , int $rows , string $pseudoString ){} 
+	/** @return bool */
+	 function nextImage(){} 
+	/** @return bool */
+	 function normalizeImage( int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function oilPaintImage( float $radius ){} 
+	/** @return bool */
+	 function opaquePaintImage( mixed $target , mixed $fill , float $fuzz , bool $invert , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function optimizeImageLayers(){} 
+	/** @return bool */
+	 function orderedPosterizeImage( string $threshold_map , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function paintFloodfillImage( mixed $fill , float $fuzz , mixed $bordercolor , int $x , int $y , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function paintOpaqueImage( mixed $target , mixed $fill , float $fuzz , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function paintTransparentImage( mixed $target , float $alpha , float $fuzz ){} 
+	/** @return bool */
+	 function pingImage( string $filename ){} 
+	/** @return bool */
+	 function pingImageBlob( string $image ){} 
+	/** @return bool */
+	 function pingImageFile( resource $filehandle , string $fileName  ){} 
+	/** @return bool */
+	 function polaroidImage( ImagickDraw $properties , float $angle ){} 
+	/** @return bool */
+	 function posterizeImage( int $levels , bool $dither ){} 
+	/** @return bool */
+	 function previewImages( int $preview ){} 
+	/** @return bool */
+	 function previousImage(){} 
+	/** @return bool */
+	 function profileImage( string $name , string $profile ){} 
+	/** @return bool */
+	 function quantizeImage( int $numberColors , int $colorspace , int $treedepth , bool $dither , bool $measureError ){} 
+	/** @return bool */
+	 function quantizeImages( int $numberColors , int $colorspace , int $treedepth , bool $dither , bool $measureError ){} 
+	/** @return array */
+	 function queryFontMetrics( ImagickDraw $properties , string $text , bool $multiline  ){} 
+	/** @return array */
+	 function queryFonts( string $pattern = "*"  ){} 
+	/** @return array */
+	 function queryFormats( string $pattern = "*"  ){} 
+	/** @return bool */
+	 function radialBlurImage( float $angle , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function raiseImage( int $width , int $height , int $x , int $y , bool $raise ){} 
+	/** @return bool */
+	 function randomThresholdImage( float $low , float $high , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function readImage( string $filename ){} 
+	/** @return bool */
+	 function readImageBlob( string $image , string $filename  ){} 
+	/** @return bool */
+	 function readImageFile( resource $filehandle , string $fileName = null  ){} 
+	/** @return Imagick */
+	public  function readImages( string $filenames ){} 
+	/** @return bool */
+	 function recolorImage( array $matrix ){} 
+	/** @return bool */
+	 function reduceNoiseImage( float $radius ){} 
+	/** @return bool */
+	public  function remapImage( Imagick $replacement , int $DITHER ){} 
+	/** @return bool */
+	 function removeImage(){} 
+	/** @return string */
+	 function removeImageProfile( string $name ){} 
+	/** @return bool */
+	 function render(){} 
+	/** @return bool */
+	 function resampleImage( float $x_resolution , float $y_resolution , int $filter , float $blur ){} 
+	/** @return bool */
+	 function resetImagePage( string $page ){} 
+	/** @return bool */
+	 function resizeImage( int $columns , int $rows , int $filter , float $blur , bool $bestfit = false  ){} 
+	/** @return bool */
+	 function rollImage( int $x , int $y ){} 
+	/** @return bool */
+	 function rotateImage( mixed $background , float $degrees ){} 
+	/** @return void */
+	public  function rotationalBlurImage( string $angle , string $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function roundCorners( float $x_rounding , float $y_rounding , float $stroke_width = 10 , float $displace = 5 , float $size_correction = -6  ){} 
+	/** @return bool */
+	 function sampleImage( int $columns , int $rows ){} 
+	/** @return bool */
+	 function scaleImage( int $cols , int $rows , bool $bestfit = false  ){} 
+	/** @return bool */
+	public  function segmentImage( int $COLORSPACE , float $cluster_threshold , float $smooth_threshold , bool $verbose = false  ){} 
+	/** @return void */
+	public  function selectiveBlurImage( float $radius , float $sigma , float $threshold , int $CHANNEL ){} 
+	/** @return bool */
+	 function separateImageChannel( int $channel ){} 
+	/** @return bool */
+	 function sepiaToneImage( float $threshold ){} 
+	/** @return bool */
+	 function setBackgroundColor( mixed $background ){} 
+	/** @return bool */
+	 function setColorspace( int $COLORSPACE ){} 
+	/** @return bool */
+	 function setCompression( int $compression ){} 
+	/** @return bool */
+	 function setCompressionQuality( int $quality ){} 
+	/** @return bool */
+	 function setFilename( string $filename ){} 
+	/** @return bool */
+	 function setFirstIterator(){} 
+	/** @return bool */
+	 function setFont( string $font ){} 
+	/** @return bool */
+	 function setFormat( string $format ){} 
+	/** @return bool */
+	 function setGravity( int $gravity ){} 
+	/** @return bool */
+	 function setImage( Imagick $replace ){} 
+	/** @return bool */
+	 function setImageAlphaChannel( int $mode ){} 
+	/** @return bool */
+	 function setImageArtifact( string $artifact , string $value ){} 
+	/** @return void */
+	public  function setImageAttribute( string $key , string $value ){} 
+	/** @return bool */
+	 function setImageBackgroundColor( mixed $background ){} 
+	/** @return bool */
+	 function setImageBias( float $bias ){} 
+	/** @return void */
+	public  function setImageBiasQuantum( string $bias ){} 
+	/** @return bool */
+	 function setImageBluePrimary( float $x , float $y ){} 
+	/** @return bool */
+	 function setImageBorderColor( mixed $border ){} 
+	/** @return bool */
+	 function setImageChannelDepth( int $channel , int $depth ){} 
+	/** @return bool */
+	 function setImageClipMask( Imagick $clip_mask ){} 
+	/** @return bool */
+	 function setImageColormapColor( int $index , ImagickPixel $color ){} 
+	/** @return bool */
+	 function setImageColorspace( int $colorspace ){} 
+	/** @return bool */
+	 function setImageCompose( int $compose ){} 
+	/** @return bool */
+	 function setImageCompression( int $compression ){} 
+	/** @return bool */
+	 function setImageCompressionQuality( int $quality ){} 
+	/** @return bool */
+	 function setImageDelay( int $delay ){} 
+	/** @return bool */
+	 function setImageDepth( int $depth ){} 
+	/** @return bool */
+	 function setImageDispose( int $dispose ){} 
+	/** @return bool */
+	 function setImageExtent( int $columns , int $rows ){} 
+	/** @return bool */
+	 function setImageFilename( string $filename ){} 
+	/** @return bool */
+	 function setImageFormat( string $format ){} 
+	/** @return bool */
+	 function setImageGamma( float $gamma ){} 
+	/** @return bool */
+	 function setImageGravity( int $gravity ){} 
+	/** @return bool */
+	 function setImageGreenPrimary( float $x , float $y ){} 
+	/** @return bool */
+	 function setImageIndex( int $index ){} 
+	/** @return bool */
+	 function setImageInterlaceScheme( int $interlace_scheme ){} 
+	/** @return bool */
+	 function setImageInterpolateMethod( int $method ){} 
+	/** @return bool */
+	 function setImageIterations( int $iterations ){} 
+	/** @return bool */
+	 function setImageMatte( bool $matte ){} 
+	/** @return bool */
+	 function setImageMatteColor( mixed $matte ){} 
+	/** @return bool */
+	 function setImageOpacity( float $opacity ){} 
+	/** @return bool */
+	 function setImageOrientation( int $orientation ){} 
+	/** @return bool */
+	 function setImagePage( int $width , int $height , int $x , int $y ){} 
+	/** @return bool */
+	 function setImageProfile( string $name , string $profile ){} 
+	/** @return bool */
+	 function setImageProperty( string $name , string $value ){} 
+	/** @return bool */
+	 function setImageRedPrimary( float $x , float $y ){} 
+	/** @return bool */
+	 function setImageRenderingIntent( int $rendering_intent ){} 
+	/** @return bool */
+	 function setImageResolution( float $x_resolution , float $y_resolution ){} 
+	/** @return bool */
+	 function setImageScene( int $scene ){} 
+	/** @return bool */
+	 function setImageTicksPerSecond( int $ticks_per_second ){} 
+	/** @return bool */
+	 function setImageType( int $image_type ){} 
+	/** @return bool */
+	 function setImageUnits( int $units ){} 
+	/** @return bool */
+	 function setImageVirtualPixelMethod( int $method ){} 
+	/** @return bool */
+	 function setImageWhitePoint( float $x , float $y ){} 
+	/** @return bool */
+	 function setInterlaceScheme( int $interlace_scheme ){} 
+	/** @return bool */
+	 function setIteratorIndex( int $index ){} 
+	/** @return bool */
+	 function setLastIterator(){} 
+	/** @return bool */
+	 function setOption( string $key , string $value ){} 
+	/** @return bool */
+	 function setPage( int $width , int $height , int $x , int $y ){} 
+	/** @return bool */
+	 function setPointSize( float $point_size ){} 
+	/** @return void */
+	public  function setProgressMonitor( callable $callback ){} 
+	/** @return void */
+	public static  function setRegistry( string $key , string $value ){} 
+	/** @return bool */
+	 function setResolution( float $x_resolution , float $y_resolution ){} 
+	/** @return bool */
+	 function setResourceLimit( int $type , int $limit ){} 
+	/** @return bool */
+	 function setSamplingFactors( array $factors ){} 
+	/** @return bool */
+	 function setSize( int $columns , int $rows ){} 
+	/** @return bool */
+	 function setSizeOffset( int $columns , int $rows , int $offset ){} 
+	/** @return bool */
+	 function setType( int $image_type ){} 
+	/** @return bool */
+	 function shadeImage( bool $gray , float $azimuth , float $elevation ){} 
+	/** @return bool */
+	 function shadowImage( float $opacity , float $sigma , int $x , int $y ){} 
+	/** @return bool */
+	 function sharpenImage( float $radius , float $sigma , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function shaveImage( int $columns , int $rows ){} 
+	/** @return bool */
+	 function shearImage( mixed $background , float $x_shear , float $y_shear ){} 
+	/** @return bool */
+	 function sigmoidalContrastImage( bool $sharpen , float $alpha , float $beta , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function sketchImage( float $radius , float $sigma , float $angle ){} 
+	/** @return Imagick */
+	public  function smushImages( string $stack , string $offset ){} 
+	/** @return bool */
+	 function solarizeImage( int $threshold ){} 
+	/** @return bool */
+	public  function sparseColorImage( int $SPARSE_METHOD , array $arguments , int $channel = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return bool */
+	 function spliceImage( int $width , int $height , int $x , int $y ){} 
+	/** @return bool */
+	 function spreadImage( float $radius ){} 
+	/** @return void */
+	public  function statisticImage( int $type , int $width , int $height , string $CHANNEL = Imagick::CHANNEL_DEFAULT  ){} 
+	/** @return Imagick */
+	 function steganoImage( Imagick $watermark_wand , int $offset ){} 
+	/** @return bool */
+	 function stereoImage( Imagick $offset_wand ){} 
+	/** @return bool */
+	 function stripImage(){} 
+	/** @return Imagick */
+	public  function subImageMatch( Imagick $Imagick , array &$offset , float &$similarity  ){} 
+	/** @return bool */
+	 function swirlImage( float $degrees ){} 
+	/** @return bool */
+	 function textureImage( Imagick $texture_wand ){} 
+	/** @return bool */
+	 function thresholdImage( float $threshold , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function thumbnailImage( int $columns , int $rows , bool $bestfit = false , bool $fill = false  ){} 
+	/** @return bool */
+	 function tintImage( mixed $tint , mixed $opacity ){} 
+	/** @return string */
+	 function __toString(){} 
+	/** @return Imagick */
+	 function transformImage( string $crop , string $geometry ){} 
+	/** @return bool */
+	 function transformImageColorspace( int $colorspace ){} 
+	/** @return bool */
+	 function transparentPaintImage( mixed $target , float $alpha , float $fuzz , bool $invert ){} 
+	/** @return bool */
+	 function transposeImage(){} 
+	/** @return bool */
+	 function transverseImage(){} 
+	/** @return bool */
+	 function trimImage( float $fuzz ){} 
+	/** @return bool */
+	 function uniqueImageColors(){} 
+	/** @return bool */
+	 function unsharpMaskImage( float $radius , float $sigma , float $amount , float $threshold , int $channel = Imagick::CHANNEL_ALL  ){} 
+	/** @return bool */
+	 function valid(){} 
+	/** @return bool */
+	 function vignetteImage( float $blackPoint , float $whitePoint , int $x , int $y ){} 
+	/** @return bool */
+	 function waveImage( float $amplitude , float $length ){} 
+	/** @return bool */
+	 function whiteThresholdImage( mixed $threshold ){} 
+	/** @return bool */
+	 function writeImage( string $filename = NULL  ){} 
+	/** @return bool */
+	 function writeImageFile( resource $filehandle ){} 
+	/** @return bool */
+	 function writeImages( string $filename , bool $adjoin ){} 
+	/** @return bool */
+	 function writeImagesFile( resource $filehandle ){} 
+}

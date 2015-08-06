@@ -18,6 +18,9 @@ class Testb  extends Ta {
         return $this->v2;
 
     }
+    public function clone( $x){
+        
+    }
 
 
 
@@ -87,5 +90,8 @@ echo Ta::DIR."\n";
 trim("ss","s");
 
 $f=Test\ff();
+
+$s=new Testb($v1,$v2);
+
 
 (new Ta())->set_v1("s");

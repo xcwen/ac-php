@@ -1021,7 +1021,7 @@ then this function split it to
             (push   (list  "f"  (concat  cur-class  "(")
                            (s-replace "__construct" cur-class   (nth 2  member-info)    )
                            (nth 3  member-info) 
-                           (nth 4  member-info) 
+                           cur-class 
                            ) function-list  )
             (ac-php--debug "  ADD class function :%s" cur-class   )
             

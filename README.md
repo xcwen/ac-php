@@ -12,7 +12,8 @@ and use `ac-php`  work with tags
 
 * also support system class
 
-for spl DOMDocument Http... 
+for: PDO DOMDocument Http mysqli Imagick  SQLite3 Memcache  SimpleXMLElement  SplFileInfo  ...
+
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
  

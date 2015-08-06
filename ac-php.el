@@ -211,14 +211,15 @@
 
 (defun ac-php-document (item)
   (if (stringp item)
-      (let (doc  tag-type return-type access)
+      (let (doc  tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
         (setq tag-type (get-text-property 0 'ac-php-tag-type item))
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
+        (setq from-class (get-text-property 0 'ac-php-from item))
         (cond
          ( (or (string= tag-type "p") ( string= tag-type "m") )
-          (format "%s\n\t[  type]:%s\n\t[access]:%s" doc  return-type access   ) )
+          (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
          (return-type 
           (format "%s  %s " return-type doc   ) )
          (t
@@ -745,9 +746,10 @@ then this function split it to
                     (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
                     (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  x ) ))
                     (setq key-word (propertize key-word 'ac-php-access (nth 6  x ) ))
+                    (setq key-word (propertize key-word 'ac-php-from (nth 5  x ) ))
                     ;;(setq key-word (propertize key-word 'summary  (concat  (nth 0  x ))    ))
                     ;;(setq key-word (propertize key-word 'summary  (concat (nth 5  x ) ":" (nth 0  x ))    ))
-                    (setq key-word (propertize key-word 'summary  (nth 5  x )  ))
+                    (setq key-word (propertize key-word 'summary  (nth 4  x )  ))
                     (push key-word ret-list  )))
 
                 
@@ -797,6 +799,7 @@ then this function split it to
 
                     (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                     (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                    (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
                     (push key-word ret-list  )
                     )))
             (progn 
@@ -806,6 +809,7 @@ then this function split it to
                   (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
                   (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
                   (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
+                  (setq key-word (propertize key-word 'summary   (nth 0  use-item ) ))
                   (push key-word ret-list  )
                   ))
               ;;cur namespace
@@ -821,6 +825,7 @@ then this function split it to
                       (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos-with-namespace  ))
                       (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                       (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                      (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
                       (push key-word ret-list  )
                       ))))
               
@@ -833,6 +838,7 @@ then this function split it to
                   (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
                   (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                   (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                  (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
                   (push key-word ret-list  )
                   ))
               )))) 
@@ -1648,7 +1654,7 @@ then this function split it to
                         (setq  class-name   (nth 5 member-info) )
                         (setq  return-type   (nth 4 member-info) )
                         (setq  access   (nth 6 member-info) )
-                        (popup-tip (concat class-name  "::"  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access     ))
+                        (popup-tip (concat class-name  "::"  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   (nth 5 member-info)   ))
                         )
                     )
                   ))))

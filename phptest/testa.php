@@ -14,6 +14,9 @@ class Testa {
      */
     public $v1;
     
+    /**
+     * @var   string 
+     */
     const DIR="sss";
     public function set_v1($v){
         $v=trim($v);
@@ -29,7 +32,6 @@ class Testa {
 
     public function get_v1(){
         return "sfa" ;
-
 
         //$this->set_v1(1);
     }

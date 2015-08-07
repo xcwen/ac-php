@@ -61,6 +61,7 @@ class Testb  extends Ta {
 
         /** @var  $v \Test\Testa  */
         
+        $this->v8->do_f("s");
         
         $this->set_v1($v,$v2);
 

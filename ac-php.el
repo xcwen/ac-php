@@ -1814,49 +1814,25 @@ then this function split it to
   (unless (null ac-php-template-start-point)
     (let ((pos (point)) sl (snp "")
           (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
-      (cond ((string= s "")
-             ;; function ptr call
-             (setq s (cdr ac-last-completion))
-             (setq s (replace-regexp-in-string "^(\\|)$" "" s))
-             (setq sl (ac-clang-split-args s))
-             (cond ((featurep 'yasnippet)
-                    
-                    (dolist (arg sl)
-                      (if  (string= arg ""  )
-                          (setq snp (concat snp ", "))
-                        (setq snp (concat snp ", ${" arg "}"))))
+      (unless (string= s "()")
+        (setq s (replace-regexp-in-string "{#" "" s))
+        (setq s (replace-regexp-in-string "#}" "" s))
+        (cond ((featurep 'yasnippet)
+               (setq s (concat "${" s))
+               (setq s (replace-regexp-in-string ")" "})" s))
+               (setq s (replace-regexp-in-string "," "},${" s))
+               
+               (when (string= "${})" s) (setq s ")"))
 
-                    (condition-case nil
-                        (yas-expand-snippet (concat "("  (substring snp 2) ")")
-                                            ac-php-template-start-point pos) ;; 0.6.1c
-                      (error
-                       ;; try this one:
-                       (ignore-errors (yas-expand-snippet
-                                       ac-php-template-start-point pos
-                                       (concat "("  (substring snp 2) ")"))) ;; work in 0.5.7
-                       )))
-                   (t
-                    (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))
-            (t
-             (unless (string= s "()")
-               (setq s (replace-regexp-in-string "{#" "" s))
-               (setq s (replace-regexp-in-string "#}" "" s))
-               (cond ((featurep 'yasnippet)
-                      (setq s (concat "${" s))
-                      (setq s (replace-regexp-in-string ")" "})" s))
-                      (setq s (replace-regexp-in-string "," "},${" s))
-                      
-                      (when (string= "${})" s) (setq s ")"))
+               (condition-case nil
+                   (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
+                 (error
+                  ;; try this one:
+                  (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
+                  )))
 
-                      (condition-case nil
-                          (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
-                        (error
-                         ;; try this one:
-                         (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
-                         )))
-
-                     (t
-                      (message "Dude! You are too out! Please install a yasnippet or a snippet script:)")))))))))
+              (t
+               (message "Dude! You are too out! Please install a yasnippet or a snippet script:)")))))))
 
 
 (defun ac-php-template-prefix ()

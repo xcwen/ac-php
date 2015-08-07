@@ -38,7 +38,7 @@ class Testb  extends Ta {
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
         parent::set_v1("s");
-        $this->get_v2->get_v2()->get_v1();
+
 
         $q=new SplQueue ();
         $q->push(11);
@@ -60,6 +60,8 @@ class Testb  extends Ta {
         $testv = $this->get_v2($this->texx);
 
         /** @var  $v \Test\Testa  */
+        
+        
 
 
         if ($testv->set_v1("s") && $testv->set_v1() ){

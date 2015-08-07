@@ -803,7 +803,7 @@ then this function split it to
                 (setq cur-word (substring-no-properties cur-word 1 ))
                 (setq end-flag (string= (substring-no-properties cur-word  -1   )  "\\" ))
                 (dolist (function-item function-list )
-                  (when (string-prefix-p  cur-word (nth 1 function-item )  )
+                  (when (s-prefix-p  cur-word (nth 1 function-item )  t )
                     (if end-flag
                         (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
                       (setq key-word  (substring-no-properties (nth  1  function-item )  (1- start-word-pos )))) 
@@ -816,7 +816,7 @@ then this function split it to
             (progn 
               ;;use as 
               (dolist ( use-item (ac-php--get-all-use-as-name-in-cur-buffer  ) )
-                (when (string-prefix-p  cur-word (nth 1 use-item )  )
+                (when (s-prefix-p  cur-word (nth 1 use-item ) t )
                   (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
                   (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
                   (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
@@ -832,7 +832,7 @@ then this function split it to
                   
                   (dolist (function-item function-list )
                     
-                    (when (string-prefix-p  cur-full-fix  (nth 1 function-item )  )
+                    (when (s-prefix-p  cur-full-fix  (nth 1 function-item )  t )
                       (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos-with-namespace  ))
                       (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                       (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
@@ -845,7 +845,7 @@ then this function split it to
               ;;common
               (dolist (function-item function-list )
                 
-                (when (string-prefix-p  cur-word (nth 1 function-item )  )
+                (when (s-prefix-p  cur-word (nth 1 function-item )  t  )
                   (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
                   (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                   (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
@@ -974,8 +974,11 @@ then this function split it to
           ;;add class info 
           (when (not (assoc-string tag-name class-list t ))
             (push (list tag-name nil ) class-list)
-            (push  tag-name  add-class-list)
             )
+
+          (when (string= tag-type "c")  
+            (push  (list tag-name file-pos)   add-class-list))
+
 
           ;; add class-inherits
           (let ((p-class-name (nth 5 line-data ) ) )
@@ -994,7 +997,6 @@ then this function split it to
           ;;add class info 
           (when (not (assoc-string class-name class-list t ))
             (push (list class-name nil ) class-list)
-            (push   class-name  add-class-list)
             )
           ;;add member & function 
 
@@ -1023,10 +1025,11 @@ then this function split it to
                                         ))
                                     )) inherit-list  ))
     ;; gen class __construct
-    (dolist (cur-class add-class-list)
-      (let ( member-info )
+    (dolist (cur-class-item add-class-list)
+      (let ( member-info (cur-class (nth 0  cur-class-item ) ) (file-pos (nth 1 cur-class-item) ) )
+
         (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" ))
-        (when member-info
+        (if member-info
 
             ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
             (push   (list  "f"  (concat  cur-class  "(")
@@ -1034,8 +1037,11 @@ then this function split it to
                            (nth 3  member-info) 
                            cur-class 
                            ) function-list  )
-            (ac-php--debug "  ADD class function :%s" cur-class   )
-            
+          (push   (list  "f"  (concat  cur-class  "(")
+                         (concat  cur-class  "()"   )
+                         file-pos
+                         cur-class 
+                         ) function-list  )
             )
         ;;todo
       ))
@@ -1706,8 +1712,41 @@ then this function split it to
   ;; (ac-last-quick-help)
   (let ((help (ac-php-clean-document (get-text-property 0 'ac-php-help (cdr ac-last-completion))))
         (raw-help (get-text-property 0 'ac-php-help (cdr ac-last-completion)))
+
         (candidates (list)) ss fn args (ret-t "") ret-f)
-    (setq ss (split-string raw-help "\n"))
+    (dolist (item (split-string raw-help "\n"))
+      ;;do_f(<#$v1#>,<#$v2 =0#>,<#$v3 =0#>)
+      (if (s-matches-p ( concat"^" ac-php-word-re-str "(" )  item )
+          (let (match-ret args-list)
+            (setq match-ret (s-match
+                             (concat "^\\(" ac-php-word-re-str  "\\)(\\(.*\\))$"  )
+                             item  ))
+
+            (if match-ret
+                (let ((option-start-index 0 ) (i 0) find-flag
+                      (item-pre-str (concat (nth 1  match-ret) "(") ) )
+                  (setq args-list (s-split  ","  (nth 2  match-ret ))  )
+                  (dolist (arg args-list   )
+                    (when (and  (not find-flag) (s-matches-p "=" arg ) )
+                      (setq find-flag t)
+                      (setq option-start-index i )
+                      )
+                    (setf (nth i args-list) ( replace-regexp-in-string "=.*#>" "#>" arg ))
+                    (setq i (1+ i ) ))
+
+                  (setq i 0)
+                  (dolist (arg args-list   )
+                    (when (>= i  option-start-index )
+                      (push (concat item-pre-str ")" ) ss))
+                    (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
+                    (setq i (1+ i )))
+                  (push (concat item-pre-str ")" ) ss))
+
+              (push item ss)))
+        (push item ss)))
+
+      
+
     (ac-php--debug "SS=%S raw-help=%s"  ss  raw-help )
     (dolist (s ss)
       ;;return type
@@ -1736,6 +1775,7 @@ then this function split it to
              )
             ))
 
+    (ac-php--debug "ac-php-action candidates=%S " candidates)
     (cond (candidates
            (setq candidates (delete-dups candidates))
            (setq candidates (nreverse candidates))

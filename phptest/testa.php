@@ -26,9 +26,16 @@ class Testa {
 
     }
 
-    public function __construct( $v1 ,$v2 ){
-        
+    public function __construct(   ){
+        $this->do_f("ss");
     }
+
+    public function do_f( $v1 ,$v2 =0, $v3 =0 ){
+        
+        return "sfa" ;
+        //$this->set_v1(1);
+    }
+
 
 
     public function get_v1(){
@@ -37,3 +44,8 @@ class Testa {
         //$this->set_v1(1);
     }
 }
+
+
+
+
+

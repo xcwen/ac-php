@@ -1723,7 +1723,7 @@ then this function split it to
                              item  ))
 
             (if match-ret
-                (let ((option-start-index 0 ) (i 0) find-flag
+                (let ((option-start-index 1000000 ) (i 0) find-flag
                       (item-pre-str (concat (nth 1  match-ret) "(") ) )
                   (setq args-list (s-split  ","  (nth 2  match-ret ))  )
                   (dolist (arg args-list   )
@@ -1734,6 +1734,7 @@ then this function split it to
                     (setf (nth i args-list) ( replace-regexp-in-string "=.*#>" "#>" arg ))
                     (setq i (1+ i ) ))
 
+                  (ac-php--debug "ac-php-action option-start-index =%d" option-start-index )
                   (setq i 0)
                   (dolist (arg args-list   )
                     (when (>= i  option-start-index )

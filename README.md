@@ -1,6 +1,6 @@
-# ac-php   [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)
-emacs auto-complete for php
+# ac-php   [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)     [![MELPA Stable](http://stable.melpa.org/packages/ac-php-badge.svg)](http://stable.melpa.org/#/ac-php)
 
+emacs auto-complete for php
 
 use [phpctags](https://github.com/xcwen/phpctags) gen tags 
 

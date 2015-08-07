@@ -12,7 +12,8 @@ and use `ac-php`  work with tags
 
 * also support system class
 
-for: PDO DOMDocument Http mysqli Imagick  SQLite3 Memcache  SimpleXMLElement  SplFileInfo  ...
+** SPL
+** PDO DOMDocument Http mysqli Imagick  SQLite3 Memcache  SimpleXMLElement  SplFileInfo  ...
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
@@ -92,8 +93,8 @@ save it as `~/.emacs`
 ```bash
 cd ~/
 git clone https://github.com/xcwen/ac-php/
-\#test php files in ~/ac-php/phptest
-\#open file for test
+#test php files in ~/ac-php/phptest
+#open file for test
 emacs ~/ac-php/phptest/testb.php
 ```
 
@@ -122,11 +123,21 @@ emacs ~/ac-php/phptest/testb.php
                ))
 ```
 
-*  command
+
+* mkdir ".tags"  in root of project
+
+``` bash
+cd /project/to/path #  root dir of project
+mkdir .tags
+```
+* DONE 
+
+*  command 
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
 
-`ac-php-remake-tags-all` ;; **if you find a error, run it an retest **
+`ac-php-remake-tags-all` ;; **if you find a error, run it an retest**
+
 `ac-php-find-symbol-at-point`   ;goto define
 
 `ac-php-location-stack-back`    ;go back
@@ -139,14 +150,6 @@ need: (setq ac-php-use-cscope-flag  t )
 
 
 
-
-* mkdir ".tags"  in root of project
-
-``` bash
-cd /project/to/path #  root dir of project
-mkdir .tags
-```
-* DONE 
 
 
 ## Php Doc for complete  
@@ -220,7 +223,14 @@ class Testa {
 
         //for complete field from comment
         $this->v8->testA();
+
+        //for complete system class 
+        $q=new SplQueue ();
+        $q->push(11);
+
+
     }
+
     /**
      * 
      * @return  \Test\TestC; 

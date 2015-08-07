@@ -40,6 +40,8 @@ class Testb  extends Ta {
         parent::set_v1("s");
         $this->get_v2->get_v2()->get_v1();
 
+        $q=new SplQueue ();
+        $q->push(11);
     }
 
     /**

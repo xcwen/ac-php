@@ -12,8 +12,9 @@ and use `ac-php`  work with tags
 
 * also support system class
 
-** SPL
-** PDO DOMDocument Http mysqli Imagick  SQLite3 Memcache  SimpleXMLElement  SplFileInfo  ...
+core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ... 
+
+externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
@@ -32,15 +33,14 @@ and use `ac-php`  work with tags
 ### UBUNTU
 * install `php5-cli` command  for phpctags
 ```bash 
-\#UBUNTU
 localhost:~/$ sudo apt-get install php5-cli 
 ```
 
 * install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
 ```bash 
-\#UBUNTU
 localhost:~/$ sudo apt-get install cscope
 ```
+
 ### MAC OSX 
 ```bash
  brew  install homebrew/php/php56
@@ -63,7 +63,7 @@ cscope: version 15.8a
 
 
 ```bash
-\#backup old .emacs
+#backup old .emacs
 cp ~/.emacs ~/.emacs.bak
 ```
 
@@ -197,6 +197,13 @@ like this
 ```php
 class Testa {
     /** @var  $v8 \Test\Testa  */
+
+    /**
+     * @var int; 
+     */
+	const CON=1;
+
+    
     /**
      * @var Testb; 
      */

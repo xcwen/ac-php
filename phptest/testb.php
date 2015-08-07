@@ -62,7 +62,7 @@ class Testb  extends Ta {
         /** @var  $v \Test\Testa  */
         
         
-
+        $this->set_v1($v,$v2);
 
         if ($testv->set_v1("s") && $testv->set_v1() ){
 

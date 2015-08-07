@@ -30,11 +30,13 @@ class Testa {
         $this->do_f("ss");
     }
 
-    public function do_f( $v1 ,$v2 =0, $v3 =0 ){
+    public function do_f( $v1 ,$v2=0  , $v3 =0 ){
         return "sfa" ;
         //$this->set_v1(1);
         $this->do_f($v1,$v2 );
         json_encode("s","s");
+        $this->set_v1("s","d");
+        $this->do_f("s","ss");
     }
 
 
@@ -45,6 +47,10 @@ class Testa {
         //$this->set_v1(1);
     }
 }
+
+
+
+
 
 
 

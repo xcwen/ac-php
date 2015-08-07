@@ -78,9 +78,6 @@
 (require 's)
 (require 'f)
 
-;;load sys-data
-(require 'ac-php-sys-data)
-
 (require 'ac-php-comm-tags-data )
 
 (if (featurep 'auto-complete) (require 'auto-complete) )
@@ -786,13 +783,6 @@ then this function split it to
     ;;系统函数
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-prefix) ) )
-    (dolist  (key-word ac-php-sys-function-list)
-
-      (when (>= (length key-word) cur-word-len)
-        (setq cmp-value   (substring-no-properties  key-word 0 cur-word-len ) )
-        (if (string<  cur-word  cmp-value) (return ))
-        (if (string= cmp-value  cur-word ) (push (concat key-word "(" ) ret-list  ))
-        ))
     ;;用户函数 + class  
 
     (if tags-data 
@@ -1508,16 +1498,7 @@ then this function split it to
                 )
               ))
 
-        (if (not find-flag )
-            (progn
-              (dolist (function-str ac-php-sys-function-list )
-                (when (ac-php--string=-ignore-care    function-str
-                                                      (nth 0 (ac-php--get-item-info  cur-word ) )
-                                                      )
-                  ;;(unless (integer-or-marker-p ( compare-strings  function-str 0 nil cur-word 0 nil t ))
-                  (setq ret (list "sys_function"  cur-word  ) )
-                  (return )))
-              ))))
+        ))
 
     (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret ) 
     ret
@@ -1690,16 +1671,7 @@ then this function split it to
                     (setq find-flag t)
                     (return )))
                 ))) 
-
-        (if (not find-flag) 
-            (let ((cur-function (php-get-pattern) ) function-info) ;;sys function
-              (dolist (function-str ac-php-sys-function-list )
-                (when (string= function-str cur-function)
-                  (setq function-info (get-text-property 0 'ac-php-help  function-str ) )
-                  (popup-tip (concat "[system]:" (ac-php-clean-document function-info)))
-                  (return )))
-              
-              ))))
+        ))
     ))
 
 

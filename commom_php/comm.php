@@ -3833,3 +3833,4 @@ class Imagick implements Iterator {
 	/** @return bool */
 	 function writeImagesFile( resource $filehandle ){} 
 }
+

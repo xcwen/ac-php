@@ -205,6 +205,16 @@
     (setq s (replace-regexp-in-string "<#\\|#>\\|\\[#" "" s))
     (setq s (replace-regexp-in-string "#\\]" " " s)))
   s)
+(defun  ac-php--tag-name-is-function ( tag-name )
+  (s-matches-p "(" tag-name )
+    )
+
+(defun ac-php-template-document (item)
+  (if (stringp item)
+      (let (doc  tag-type return-type access from-class)
+        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
+        )
+  ))
 
 (defun ac-php-document (item)
   (if (stringp item)
@@ -214,7 +224,7 @@
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
-        (if (s-matches-p "(" item) 
+        (if ( ac-php--tag-name-is-function item) 
             (setq doc (concat item  doc ")" ) )
           (setq doc item )
           )
@@ -1639,15 +1649,17 @@ then this function split it to
 (defun ac-php-show-tip(&optional prefix)
   (interactive "P")
   ;;检查是类还是 符号 
-  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type  doc class-name access return-type member-info)
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type  doc class-name access return-type member-info tag-name function-item file-pos )
     (when symbol-ret
       (setq type (car symbol-ret ))
       (setq member-info (nth 3 symbol-ret))
       (cond
        ((string= type "class_member")
-        (if (s-matches-p "("  (nth 1 member-info) )
-            (setq  doc   (concat  (nth 1 member-info)  "(" (nth 2 member-info) ")" )   )
-          (setq  doc   (nth 1 member-info) ))
+
+        (setq tag-name  (nth 1 member-info ))
+        (if (ac-php--tag-name-is-function  tag-name )
+            (setq  doc   (concat  tag-name  "(" (nth 2 member-info) ")" )   )
+          (setq  doc    tag-name ))
 
         (setq  class-name   (nth 5 member-info) )
         (setq  return-type   (nth 4 member-info) )
@@ -1658,7 +1670,7 @@ then this function split it to
        ((string= type "user_function") 
         (setq function-item (nth 3 symbol-ret))
         (setq tag-name  (nth 1 function-item ))
-        (if ( s-matches-p "("   tag-name )
+        (if ( ac-php--tag-name-is-function   tag-name )
             (setq  doc   (concat  tag-name  (nth 2 function-item) ")" )   )
           (setq  doc   (nth 2 function-item) ))
 
@@ -1690,7 +1702,7 @@ then this function split it to
     (setq raw-help (get-text-property 0 'ac-php-help cur-item ))
     (setq tag-type (get-text-property 0 'ac-php-tag-type cur-item) )
 
-    (if  (s-matches-p "(" cur-item )
+    (if  (ac-php--tag-name-is-function cur-item )
         (setq raw-help (concat  cur-item raw-help ")"  ) )
       )
     (ac-php--debug "raw-help:%s " raw-help)
@@ -1719,10 +1731,10 @@ then this function split it to
                   (setq i 0)
                   (dolist (arg args-list   )
                     (when (>= i  option-start-index )
-                      (push (concat item-pre-str ")" ) ss))
+                      (push (propertize  (concat item-pre-str ")"  ) 'ac-php-help item ) ss))
                     (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
                     (setq i (1+ i )))
-                  (push (concat item-pre-str ")" ) ss))
+                  (push  (propertize  (concat item-pre-str ")" ) 'ac-php-help item  ) ss))
 
               (push item ss)))
         (push item ss)))
@@ -1733,30 +1745,13 @@ then this function split it to
     (ac-php--debug "SS=%S raw-help=%s"  ss  raw-help )
     (dolist (s ss)
       ;;return type
-      (when (string-match "\\[#\\(.*\\)#\\]" s)
-        (setq ret-t (match-string 1 s)))
-      (setq s (replace-regexp-in-string "\\[#.*?#\\]" "" s))
       (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)
-             ;;m
-             (ac-php--debug "do m")
+             (ac-php--debug "do function")
              (setq fn (match-string 1 s)
                    args (match-string 2 s))
-             (push (propertize (ac-php-clean-document args) 'ac-php-help ret-t
+             (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)  
                                'raw-args args) candidates)
-             (when (string-match "\{#" args)
-               (setq args (replace-regexp-in-string "\{#.*#\}" "" args))
-               (push (propertize (ac-php-clean-document args) 'ac-php-help ret-t
-                                 'raw-args args) candidates)))
-            ((string-match "^\\([^(]*\\)(\\*)(\\(.*)\\)" ret-t) ;; check whether it is a function ptr
-             ;;p
-             (setq ret-f (match-string 1 ret-t)
-                   args (match-string 2 ret-t))
-             (push (propertize args 'ac-php-help ret-f 'raw-args "") candidates)
-             (when (string-match ", \\.\\.\\." args)
-               (setq args (replace-regexp-in-string ", \\.\\.\\." "" args))
-               (push (propertize args 'ac-php-help ret-f 'raw-args "") candidates))
-             )
-            ))
+             ))) 
 
     (ac-php--debug "ac-php-action candidates=%S " candidates)
     (cond (candidates
@@ -1796,25 +1791,23 @@ then this function split it to
   (unless (null ac-php-template-start-point)
     (let ((pos (point)) sl (snp "")
           (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
-      (unless (string= s "()")
-        (setq s (replace-regexp-in-string "{#" "" s))
-        (setq s (replace-regexp-in-string "#}" "" s))
-        (cond ((featurep 'yasnippet)
-               (setq s (concat "${" s))
-               (setq s (replace-regexp-in-string ")" "})" s))
-               (setq s (replace-regexp-in-string "," "},${" s))
-               
-               (when (string= "${})" s) (setq s ")"))
 
-               (condition-case nil
-                   (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
-                 (error
-                  ;; try this one:
-                  (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
-                  )))
+      (cond ((featurep 'yasnippet)
+             (setq s (concat "${" s))
+             (setq s (replace-regexp-in-string ")" "})" s))
+             (setq s (replace-regexp-in-string "," "},${" s))
+             
+             (when (string= "${})" s) (setq s ")"))
 
-              (t
-               (message "Dude! You are too out! Please install a yasnippet or a snippet script:)")))))))
+             (condition-case nil
+                 (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
+               (error
+                ;; try this one:
+                (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
+                )))
+
+            (t
+             (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))))
 
 
 (defun ac-php-template-prefix ()
@@ -1858,7 +1851,7 @@ then this function split it to
     '((candidates . ac-php-template-candidate)
       (prefix . ac-php-template-prefix)
       (requires . 0)
-      (action . ac-php-template-action)
-      (document . ac-php-document)
+      (action .  ac-php-template-action)
+      (document . ac-php-template-document )
       (cache)
       (symbol . "t"))))

@@ -6,17 +6,30 @@ use [phpctags](https://github.com/xcwen/phpctags) gen tags
 
 and use `ac-php`  work with tags 
 
-* example:
 
-![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+* support system function 
 
-* also support system class
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/7.png)
+------
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/8.png)
+
+* support system class
 
 core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ... 
 
 externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
+
+* support user self class system
+
+
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
+
+
+* example:
+![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
+
 
  
 ## Table of Contents
@@ -191,7 +204,6 @@ define variable: (**if function or member no define reutrn value  you need defin
 /** @var $value  Testa */
 $value=ff();
 ```
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
 
 like this
 ```php

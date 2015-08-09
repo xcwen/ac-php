@@ -20,3 +20,7 @@ $k=$tb->get_v2()->v1;
 function kk(){
     
 }
+/** resource */
+function xml_parser_create ( string $encoding="11" ,  int $a){
+    
+}

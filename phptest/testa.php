@@ -23,7 +23,6 @@ class Testa {
         $v=trim($v);
         $this->v1=$v;
         $this->DIR;
-
     }
 
     public function __construct(   ){

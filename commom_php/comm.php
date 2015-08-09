@@ -1,5 +1,9 @@
-<?php
+/* Local Variables: */
+/*  (setq ac-php-comm-tags-data-list nil ) */
+/*  End: */
 
+
+<?php
 
 class SplDoublyLinkedList implements Iterator , ArrayAccess , Countable {
     /* 方法 */

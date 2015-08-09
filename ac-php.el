@@ -214,9 +214,7 @@
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
-        (if (or (string= tag-type "m")
-                (string= tag-type "f")
-                )
+        (if (s-matches-p "(" item) 
             (setq doc (concat item  doc ")" ) )
           (setq doc item )
           )
@@ -1033,12 +1031,12 @@ then this function split it to
 
             ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
             (push   (list  "c"  (concat  cur-class  "(")
-                           (s-replace "__construct" cur-class   (nth 2  member-info)    )
+                           (nth 2  member-info)
                            (nth 3  member-info) 
                            cur-class 
                            ) function-list  )
           (push   (list  "c"  (concat  cur-class  "(")
-                         (concat  cur-class  "()"   )
+                         "" 
                          file-pos
                          cur-class 
                          ) function-list  )
@@ -1053,7 +1051,7 @@ then this function split it to
 (defun  ac-php-gen-el-func (  doc)
   "DOCSTRING"
   (let ( func-str ) 
-    (if (string-match ".*(\\(.*\\)).*" doc)
+    (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
         (progn
           (setq func-str (s-trim (match-string 1 doc) ) )
           (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "," func-str  ) )
@@ -1463,7 +1461,7 @@ then this function split it to
                       (progn 
                         (setq member-info (ac-php-get-class-member-info (nth 0 tags-data)  (nth 2 tags-data)  class-name cur-word ) )
                         (if member-info
-                            (setq ret (list "class_member"  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  )      (nth 4 member-info) ) )
+                            (setq ret (list "class_member"  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  )      (nth 4 member-info) member-info )  )
                           (progn
                             (message "no find %s.%s " class-name cur-word  )
                             )
@@ -1505,7 +1503,7 @@ then this function split it to
                         (setf file-pos  (format "system:function.%s"     (nth 1 function-item ) ) ) 
                           )
                       )
-                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  file-pos   )      (nth 4 function-item) ) )
+                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  file-pos   )      (nth 4 function-item) function-item  ) )
                     
                     (setq find-flag t)
                     (return )))
@@ -1543,9 +1541,7 @@ then this function split it to
             )
           ))
         ) 
-       ((string= type "sys_function")   
-        (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1  symbol-ret ))  ))
-        ) )) ) )
+       )) ) )
 
 
 (defun ac-php-gen-def ()
@@ -1640,60 +1636,39 @@ then this function split it to
       (buffer-substring-no-properties start-pos (point))
     )) 
 
-
-(defun ac-php-show-tip	(&optional prefix)
+(defun ac-php-show-tip(&optional prefix)
   (interactive "P")
-  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    class-name return-type access doc  cmd complete-cmd  find-flag tags-data )
-    (setq line-txt (buffer-substring-no-properties
-                    (line-beginning-position)
-                    (line-end-position )))
-    (setq cur-word  (ac-php--get-cur-word-with-function-flag ))
+  ;;检查是类还是 符号 
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type  doc class-name access return-type member-info)
+    (when symbol-ret
+      (setq type (car symbol-ret ))
+      (setq member-info (nth 3 symbol-ret))
+      (cond
+       ((string= type "class_member")
+        (if (s-matches-p "("  (nth 1 member-info) )
+            (setq  doc   (concat  (nth 1 member-info)  "(" (nth 2 member-info) ")" )   )
+          (setq  doc   (nth 1 member-info) ))
 
-    (setq  tags-data  (ac-php-get-tags-data )  )
-    (setq key-str-list (ac-php-get-class-at-point ))
-    (ac-php--debug "key-str-list:%s" key-str-list)
-    (if  key-str-list  
-        (progn
-          (if tags-data
-              (progn
-                (let (class-name member-info  )  
-                  (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
-                  (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
-                  (setq member-info (ac-php-get-class-member-info (nth 0 tags-data)    (nth 2 tags-data)  class-name cur-word ) )
-                  (if member-info
-                      (progn
-                        (if (string= "m" (nth 0 member-info) )
-                            (setq  doc   (concat  (nth 1 member-info)  "(" (nth 2 member-info) ")" )   )
-                          (setq  doc   (nth 1 member-info) ))
+        (setq  class-name   (nth 5 member-info) )
+        (setq  return-type   (nth 4 member-info) )
+        (setq  access   (nth 6 member-info) )
+        (popup-tip (concat class-name  "::"  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   (nth 5 member-info)   ))
 
-                        (setq  class-name   (nth 5 member-info) )
-                        (setq  return-type   (nth 4 member-info) )
-                        (setq  access   (nth 6 member-info) )
-                        (popup-tip (concat class-name  "::"  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   (nth 5 member-info)   ))
-                        )
-                    )
-                  ))))
+        )
+       ((string= type "user_function") 
+        (setq function-item (nth 3 symbol-ret))
+        (setq tag-name  (nth 1 function-item ))
+        (if ( s-matches-p "("   tag-name )
+            (setq  doc   (concat  tag-name  (nth 2 function-item) ")" )   )
+          (setq  doc   (nth 2 function-item) ))
 
+        (setq file-pos (nth 3 function-item ) )
 
-      (progn ;;function
-        (if tags-data 
-            (progn
-              (let ((function-list (nth 1 tags-data ) ))
+        (setq  return-type (nth 4 function-item ) )
+        (popup-tip (concat "[" (if (string= "S" file-pos ) "system" "  user" )  "]:"  (ac-php-clean-document doc) "\n[  type]:"  return-type   ))
+       
+        )) )))
 
-                (dolist (function-item function-list )
-                  (when (string=  (nth 1 function-item )  cur-word)
-
-                    (if (string= "f" (nth 0 function-item) )
-                        (setq  doc   (concat  (nth 1 function-item)  (nth 2 function-item) ")" )   )
-                      (setq  doc   (nth 2 function-item) ))
-
-                    (setq  return-type (nth 4 function-item ) )
-                    (popup-tip (concat "[user]:"  (ac-php-clean-document doc) "\n[type]:"  return-type   ))
-                    (setq find-flag t)
-                    (return )))
-                ))) 
-        ))
-    ))
 
 
 
@@ -1703,13 +1678,20 @@ then this function split it to
 (defun ac-php-action ()
   (interactive)
   ;; (ac-last-quick-help)
-  (let ((help (ac-php-clean-document (get-text-property 0 'ac-php-help (cdr ac-last-completion))))
-        (raw-help (get-text-property 0 'ac-php-help (cdr ac-last-completion)))
+  (let (
+        (cur-item (cdr ac-last-completion) )
+        (help )
+        (raw-help )
 
-        (tag-type (get-text-property 0 'ac-php-tag-type (cdr ac-last-completion)) )
+        (tag-type )
         (candidates (list)) ss fn args (ret-t "") ret-f)
-    (if  (or (string=  tag-type "m")  (string=  tag-type "f"))
-        (setq raw-help (concat  (cdr ac-last-completion) raw-help ")"  ) )
+
+    (setq help (ac-php-clean-document (get-text-property 0 'ac-php-help cur-item )))
+    (setq raw-help (get-text-property 0 'ac-php-help cur-item ))
+    (setq tag-type (get-text-property 0 'ac-php-tag-type cur-item) )
+
+    (if  (s-matches-p "(" cur-item )
+        (setq raw-help (concat  cur-item raw-help ")"  ) )
       )
     (ac-php--debug "raw-help:%s " raw-help)
 

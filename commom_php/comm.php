@@ -3838,3 +3838,796 @@ class Imagick implements Iterator {
 	 function writeImagesFile( resource $filehandle ){} 
 }
 
+
+class Reflector {
+/* 方法 */
+	/** @return string */
+	public static  function export(){} 
+	/** @return string */
+	public  function __toString(){} 
+} 
+
+class ReflectionClass implements Reflector {
+/* 常量 */
+	/** @var integer */
+	 const  IS_IMPLICIT_ABSTRACT = 16 ;
+	/** @var integer */
+	 const  IS_EXPLICIT_ABSTRACT = 32 ;
+	/** @var integer */
+	 const  IS_FINAL = 64 ;
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( mixed $argument ){} 
+	/** @return string */
+	public static  function export( mixed $argument , bool $return = false  ){} 
+	/** @return mixed */
+	public  function getConstant( string $name ){} 
+	/** @return array */
+	public  function getConstants(){} 
+	/** @return ReflectionMethod */
+	public  function getConstructor(){} 
+	/** @return array */
+	public  function getDefaultProperties(){} 
+	/** @return string */
+	public  function getDocComment(){} 
+	/** @return int */
+	public  function getEndLine(){} 
+	/** @return ReflectionExtension */
+	public  function getExtension(){} 
+	/** @return string */
+	public  function getExtensionName(){} 
+	/** @return string */
+	public  function getFileName(){} 
+	/** @return array */
+	public  function getInterfaceNames(){} 
+	/** @return array */
+	public  function getInterfaces(){} 
+	/** @return ReflectionMethod */
+	public  function getMethod( string $name ){} 
+	/** @return array */
+	public  function getMethods( int $filter  ){} 
+	/** @return int */
+	public  function getModifiers(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return string */
+	public  function getNamespaceName(){} 
+	/** @return object */
+	public  function getParentClass(){} 
+	/** @return array */
+	public  function getProperties( int $filter  ){} 
+	/** @return ReflectionProperty */
+	public  function getProperty( string $name ){} 
+	/** @return string */
+	public  function getShortName(){} 
+	/** @return int */
+	public  function getStartLine(){} 
+	/** @return array */
+	public  function getStaticProperties(){} 
+	/** @return mixed */
+	public  function getStaticPropertyValue( string $name , mixed &$def_value  ){} 
+	/** @return array */
+	public  function getTraitAliases(){} 
+	/** @return array */
+	public  function getTraitNames(){} 
+	/** @return array */
+	public  function getTraits(){} 
+	/** @return bool */
+	public  function hasConstant( string $name ){} 
+	/** @return bool */
+	public  function hasMethod( string $name ){} 
+	/** @return bool */
+	public  function hasProperty( string $name ){} 
+	/** @return bool */
+	public  function implementsInterface( string $interface ){} 
+	/** @return bool */
+	public  function inNamespace(){} 
+	/** @return bool */
+	public  function isAbstract(){} 
+	/** @return bool */
+	public  function isCloneable(){} 
+	/** @return bool */
+	public  function isFinal(){} 
+	/** @return bool */
+	public  function isInstance( object $object ){} 
+	/** @return bool */
+	public  function isInstantiable(){} 
+	/** @return bool */
+	public  function isInterface(){} 
+	/** @return bool */
+	public  function isInternal(){} 
+	/** @return bool */
+	public  function isIterateable(){} 
+	/** @return bool */
+	public  function isSubclassOf( string $class ){} 
+	/** @return bool */
+	public  function isTrait(){} 
+	/** @return bool */
+	public  function isUserDefined(){} 
+	/** @return object */
+	public  function newInstance( mixed $args , mixed $__args__  ){} 
+	/** @return object */
+	public  function newInstanceArgs( array $args  ){} 
+	/** @return object */
+	public  function newInstanceWithoutConstructor(){} 
+	/** @return void */
+	public  function setStaticPropertyValue( string $name , string $value ){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class QuickHashIntSet {
+/* Constants */
+	/** @var integer */
+	 const  CHECK_FOR_DUPES = 1 ;
+	/** @var integer */
+	 const  DO_NOT_USE_ZEND_ALLOC = 2 ;
+	/** @var integer */
+	 const  HASHER_NO_HASH = 256 ;
+	/** @var integer */
+	 const  HASHER_JENKINS1 = 512 ;
+	/** @var integer */
+	 const  HASHER_JENKINS2 = 1024 ;
+/* Methods */
+	/** @return bool */
+	public  function add( int $key ){} 
+	/** @return void */
+	public  function __construct( int $size , int $options  ){} 
+	/** @return bool */
+	public  function delete( int $key ){} 
+	/** @return bool */
+	public  function exists( int $key ){} 
+	/** @return publicint */
+	 function getSize(){} 
+	/** @return QuickHashIntSet */
+	public static  function loadFromFile( string $filename , int $size , int $options  ){} 
+	/** @return QuickHashIntSet */
+	public static  function loadFromString( string $contents , int $size , int $options  ){} 
+	/** @return void */
+	public  function saveToFile( string $filename ){} 
+	/** @return string */
+	public  function saveToString(){} 
+}
+
+class QuickHashIntHash {
+/* Constants */
+	/** @var integer */
+	 const  CHECK_FOR_DUPES = 1 ;
+	/** @var integer */
+	 const  DO_NOT_USE_ZEND_ALLOC = 2 ;
+	/** @var integer */
+	 const  HASHER_NO_HASH = 256 ;
+	/** @var integer */
+	 const  HASHER_JENKINS1 = 512 ;
+	/** @var integer */
+	 const  HASHER_JENKINS2 = 1024 ;
+/* Methods */
+	/** @return bool */
+	public  function add( int $key , int $value  ){} 
+	/** @return void */
+	public  function __construct( int $size , int $options  ){} 
+	/** @return bool */
+	public  function delete( int $key ){} 
+	/** @return bool */
+	public  function exists( int $key ){} 
+	/** @return int */
+	public  function get( int $key ){} 
+	/** @return int */
+	public  function getSize(){} 
+	/** @return QuickHashIntHash */
+	public static  function loadFromFile( string $filename , int $options  ){} 
+	/** @return QuickHashIntHash */
+	public static  function loadFromString( string $contents , int $options  ){} 
+	/** @return void */
+	public  function saveToFile( string $filename ){} 
+	/** @return string */
+	public  function saveToString(){} 
+	/** @return bool */
+	public  function set( int $key , int $value ){} 
+	/** @return bool */
+	public  function update( int $key , int $value ){} 
+}
+
+class QuickHashStringIntHash {
+/* Constants */
+	/** @var integer */
+	 const  CHECK_FOR_DUPES = 1 ;
+	/** @var integer */
+	 const  DO_NOT_USE_ZEND_ALLOC = 2 ;
+/* Methods */
+	/** @return bool */
+	public  function add( string $key , int $value ){} 
+	/** @return void */
+	public  function __construct( int $size , int $options = 0  ){} 
+	/** @return bool */
+	public  function delete( string $key ){} 
+	/** @return bool */
+	public  function exists( string $key ){} 
+	/** @return mixed */
+	public  function get( string $key ){} 
+	/** @return int */
+	public  function getSize(){} 
+	/** @return QuickHashStringIntHash */
+	public static  function loadFromFile( string $filename , int $size = 0 , int $options = 0  ){} 
+	/** @return QuickHashStringIntHash */
+	public static  function loadFromString( string $contents , int $size = 0 , int $options = 0  ){} 
+	/** @return void */
+	public  function saveToFile( string $filename ){} 
+	/** @return string */
+	public  function saveToString(){} 
+	/** @return int */
+	public  function set( string $key , int $value ){} 
+	/** @return bool */
+	public  function update( string $key , int $value ){} 
+}
+
+class QuickHashIntStringHash {
+/* Constants */
+	/** @var integer */
+	 const  CHECK_FOR_DUPES = 1 ;
+	/** @var integer */
+	 const  DO_NOT_USE_ZEND_ALLOC = 2 ;
+	/** @var integer */
+	 const  HASHER_NO_HASH = 256 ;
+	/** @var integer */
+	 const  HASHER_JENKINS1 = 512 ;
+	/** @var integer */
+	 const  HASHER_JENKINS2 = 1024 ;
+/* Methods */
+	/** @return bool */
+	public  function add( int $key , string $value ){} 
+	/** @return void */
+	public  function __construct( int $size , int $options = 0  ){} 
+	/** @return bool */
+	public  function delete( int $key ){} 
+	/** @return bool */
+	public  function exists( int $key ){} 
+	/** @return mixed */
+	public  function get( int $key ){} 
+	/** @return int */
+	public  function getSize(){} 
+	/** @return QuickHashIntStringHash */
+	public static  function loadFromFile( string $filename , int $size = 0 , int $options = 0  ){} 
+	/** @return QuickHashIntStringHash */
+	public static  function loadFromString( string $contents , int $size = 0 , int $options = 0  ){} 
+	/** @return void */
+	public  function saveToFile( string $filename ){} 
+	/** @return string */
+	public  function saveToString(){} 
+	/** @return int */
+	public  function set( int $key , string $value ){} 
+	/** @return bool */
+	public  function update( int $key , string $value ){} 
+}
+
+class ReflectionZendExtension implements Reflector {
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return private */
+	final  function __clone(){} 
+	/** @return void */
+	public  function __construct( string $name ){} 
+	/** @return string */
+	public static  function export( string $name , string $return  ){} 
+	/** @return string */
+	public  function getAuthor(){} 
+	/** @return string */
+	public  function getCopyright(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return string */
+	public  function getURL(){} 
+	/** @return string */
+	public  function getVersion(){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class ReflectionExtension implements Reflector {
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return void */
+	final private  function __clone(){} 
+	/** @return void */
+	public  function __construct( string $name ){} 
+	/** @return string */
+	public static  function export( string $name , string $return = false  ){} 
+	/** @return array */
+	public  function getClasses(){} 
+	/** @return array */
+	public  function getClassNames(){} 
+	/** @return array */
+	public  function getConstants(){} 
+	/** @return array */
+	public  function getDependencies(){} 
+	/** @return array */
+	public  function getFunctions(){} 
+	/** @return array */
+	public  function getINIEntries(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return string */
+	public  function getVersion(){} 
+	/** @return void */
+	public  function info(){} 
+	/** @return void */
+	public  function isPersistent(){} 
+	/** @return void */
+	public  function isTemporary(){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class ReflectionFunction extends ReflectionFunctionAbstract implements Reflector {
+/* 常量 */
+	/** @var integer */
+	 const  IS_DEPRECATED = 262144 ;
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( mixed $name ){} 
+	/** @return string */
+	public static  function export( string $name , string $return  ){} 
+	/** @return Closure */
+	public  function getClosure(){} 
+	/** @return mixed */
+	public  function invoke( mixed $parameter , mixed $__args__  ){} 
+	/** @return mixed */
+	public  function invokeArgs( array $args ){} 
+	/** @return bool */
+	public  function isDisabled(){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+
+abstract class ReflectionFunctionAbstract implements Reflector {
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return void */
+	final private  function __clone(){} 
+	/** @return ReflectionClass */
+	public  function getClosureScopeClass(){} 
+	/** @return object */
+	public  function getClosureThis(){} 
+	/** @return string */
+	public  function getDocComment(){} 
+	/** @return int */
+	public  function getEndLine(){} 
+	/** @return ReflectionExtension */
+	public  function getExtension(){} 
+	/** @return string */
+	public  function getExtensionName(){} 
+	/** @return string */
+	public  function getFileName(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return string */
+	public  function getNamespaceName(){} 
+	/** @return int */
+	public  function getNumberOfParameters(){} 
+	/** @return int */
+	public  function getNumberOfRequiredParameters(){} 
+	/** @return array */
+	public  function getParameters(){} 
+	/** @return string */
+	public  function getShortName(){} 
+	/** @return int */
+	public  function getStartLine(){} 
+	/** @return array */
+	public  function getStaticVariables(){} 
+	/** @return bool */
+	public  function inNamespace(){} 
+	/** @return bool */
+	public  function isClosure(){} 
+	/** @return bool */
+	public  function isDeprecated(){} 
+	/** @return bool */
+	public  function isGenerator(){} 
+	/** @return bool */
+	public  function isInternal(){} 
+	/** @return bool */
+	public  function isUserDefined(){} 
+	/** @return bool */
+	public  function isVariadic(){} 
+	/** @return bool */
+	public  function returnsReference(){} 
+	/** @return void */
+	abstract public  function __toString(); 
+}
+
+class ReflectionMethod extends ReflectionFunctionAbstract implements Reflector {
+/* 常量 */
+	/** @var integer */
+	 const  IS_STATIC = 1 ;
+	/** @var integer */
+	 const  IS_PUBLIC = 256 ;
+	/** @var integer */
+	 const  IS_PROTECTED = 512 ;
+	/** @var integer */
+	 const  IS_PRIVATE = 1024 ;
+	/** @var integer */
+	 const  IS_ABSTRACT = 2 ;
+	/** @var integer */
+	 const  IS_FINAL = 4 ;
+/* 属性 */
+public $name ;
+public $class ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( mixed $class , string $name ){} 
+	/** @return string */
+	public static  function export( string $class , string $name , bool $return = false  ){} 
+	/** @return Closure */
+	public  function getClosure( object $object ){} 
+	/** @return ReflectionClass */
+	public  function getDeclaringClass(){} 
+	/** @return int */
+	public  function getModifiers(){} 
+	/** @return ReflectionMethod */
+	public  function getPrototype(){} 
+	/** @return mixed */
+	public  function invoke( object $object , mixed $parameter , mixed $__args__  ){} 
+	/** @return mixed */
+	public  function invokeArgs( object $object , array $args ){} 
+	/** @return bool */
+	public  function isAbstract(){} 
+	/** @return bool */
+	public  function isConstructor(){} 
+	/** @return bool */
+	public  function isDestructor(){} 
+	/** @return bool */
+	public  function isFinal(){} 
+	/** @return bool */
+	public  function isPrivate(){} 
+	/** @return bool */
+	public  function isProtected(){} 
+	/** @return bool */
+	public  function isPublic(){} 
+	/** @return bool */
+	public  function isStatic(){} 
+	/** @return void */
+	public  function setAccessible( bool $accessible ){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class  ReflectionObject extends ReflectionClass implements Reflector {
+/* 常量 */
+	/** @var integer */
+	 const  IS_IMPLICIT_ABSTRACT = 16 ;
+	/** @var integer */
+	 const  IS_EXPLICIT_ABSTRACT = 32 ;
+	/** @var integer */
+	 const  IS_FINAL = 64 ;
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return void */
+	public  function __construct( object $argument ){} 
+	/** @return string */
+	public static  function export( string $argument , bool $return  ){} 
+}
+
+class ReflectionParameter implements Reflector {
+/* 属性 */
+public $name ;
+/* 方法 */
+	/** @return bool */
+	public  function allowsNull(){} 
+	/** @return bool */
+	public  function canBePassedByValue(){} 
+	/** @return void */
+	final private  function __clone(){} 
+	/** @return void */
+	public  function __construct( string $function , string $parameter ){} 
+	/** @return string */
+	public static  function export( string $function , string $parameter , bool $return  ){} 
+	/** @return ReflectionClass */
+	public  function getClass(){} 
+	/** @return ReflectionClass */
+	public  function getDeclaringClass(){} 
+	/** @return ReflectionFunctionAbstract */
+	public  function getDeclaringFunction(){} 
+	/** @return mixed */
+	public  function getDefaultValue(){} 
+	/** @return string */
+	public  function getDefaultValueConstantName(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return int */
+	public  function getPosition(){} 
+	/** @return bool */
+	public  function isArray(){} 
+	/** @return bool */
+	public  function isCallable(){} 
+	/** @return bool */
+	public  function isDefaultValueAvailable(){} 
+	/** @return bool */
+	public  function isDefaultValueConstant(){} 
+	/** @return bool */
+	public  function isOptional(){} 
+	/** @return bool */
+	public  function isPassedByReference(){} 
+	/** @return bool */
+	public  function isVariadic(){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class ReflectionProperty implements Reflector {
+/* 常量 */
+	/** @var integer */
+	 const  IS_STATIC = 1 ;
+	/** @var integer */
+	 const  IS_PUBLIC = 256 ;
+	/** @var integer */
+	 const  IS_PROTECTED = 512 ;
+	/** @var integer */
+	 const  IS_PRIVATE = 1024 ;
+/* 属性 */
+    public $name ;
+    public $class ;
+/* 方法 */
+	/** @return void */
+	final private  function __clone(){} 
+	/** @return void */
+	public  function __construct( mixed $class , string $name ){} 
+	/** @return string */
+	public static  function export( mixed $class , string $name , bool $return  ){} 
+	/** @return ReflectionClass */
+	public  function getDeclaringClass(){} 
+	/** @return string */
+	public  function getDocComment(){} 
+	/** @return int */
+	public  function getModifiers(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return mixed */
+	public  function getValue( object $object  ){} 
+	/** @return bool */
+	public  function isDefault(){} 
+	/** @return bool */
+	public  function isPrivate(){} 
+	/** @return bool */
+	public  function isProtected(){} 
+	/** @return bool */
+	public  function isPublic(){} 
+	/** @return bool */
+	public  function isStatic(){} 
+	/** @return void */
+	public  function setAccessible( bool $accessible ){} 
+	/** @return void */
+	public  function setValue( object $object , mixed $value ){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class ReflectionException extends Exception {
+/* 属性 */
+	/** @var string */
+	 protected  $message ;
+	/** @var int */
+	 protected  $code ;
+	/** @var string */
+	 protected  $file ;
+	/** @var int */
+	 protected  $line ;
+}
+
+class Phar extends RecursiveDirectoryIterator implements Countable , ArrayAccess {
+/* 方法 */
+	/** @return void */
+	public  function addEmptyDir( string $dirname ){} 
+	/** @return void */
+	public  function addFile( string $file , string $localname  ){} 
+	/** @return void */
+	public  function addFromString( string $localname , string $contents ){} 
+	/** @return string */
+	final public static  function apiVersion(){} 
+	/** @return array */
+	public  function buildFromDirectory( string $base_dir , string $regex  ){} 
+	/** @return array */
+	public  function buildFromIterator( Iterator $iter , string $base_directory  ){} 
+	/** @return bool */
+	final public static  function canCompress( int $type = 0  ){} 
+	/** @return bool */
+	final public static  function canWrite(){} 
+	/** @return object */
+	public  function compress( int $compression , string $extension  ){} 
+	/** @return bool */
+	public  function compressAllFilesBZIP2(){} 
+	/** @return bool */
+	public  function compressAllFilesGZ(){} 
+	/** @return void */
+	public  function compressFiles( int $compression ){} 
+	/** @return void */
+	public  function __construct( string $fname , int $flags , string $alias  ){} 
+	/** @return PharData */
+	public  function convertToData( int $format = 9021976 , int $compression = 9021976 , string $extension  ){} 
+	/** @return Phar */
+	public  function convertToExecutable( int $format = 9021976 , int $compression = 9021976 , string $extension  ){} 
+	/** @return bool */
+	public  function copy( string $oldfile , string $newfile ){} 
+	/** @return int */
+	public  function count(){} 
+	/** @return string */
+	final public static  function createDefaultStub( string $indexfile , string $webindexfile  ){} 
+	/** @return object */
+	public  function decompress( string $extension  ){} 
+	/** @return bool */
+	public  function decompressFiles(){} 
+	/** @return bool */
+	public  function delMetadata(){} 
+	/** @return bool */
+	public  function delete( string $entry ){} 
+	/** @return bool */
+	public  function extractTo( string $pathto , array $files , bool $overwrite = false  ){} 
+	/** @return mixed */
+	public  function getMetadata(){} 
+	/** @return bool */
+	public  function getModified(){} 
+	/** @return array */
+	public  function getSignature(){} 
+	/** @return string */
+	public  function getStub(){} 
+	/** @return array */
+	final public static  function getSupportedCompression(){} 
+	/** @return array */
+	final public static  function getSupportedSignatures(){} 
+	/** @return string */
+	public  function getVersion(){} 
+	/** @return bool */
+	public  function hasMetadata(){} 
+	/** @return void */
+	final public static  function interceptFileFuncs(){} 
+	/** @return bool */
+	public  function isBuffering(){} 
+	/** @return mixed */
+	public  function isCompressed(){} 
+	/** @return bool */
+	public  function isFileFormat( int $format ){} 
+	/** @return bool */
+	final public static  function isValidPharFilename( string $filename , bool $executable = true  ){} 
+	/** @return bool */
+	public  function isWritable(){} 
+	/** @return bool */
+	final public static  function loadPhar( string $filename , string $alias  ){} 
+	/** @return bool */
+	final public static  function mapPhar( string $alias , int $dataoffset = 0  ){} 
+	/** @return void */
+	final public static  function mount( string $pharpath , string $externalpath ){} 
+	/** @return void */
+	final public static  function mungServer( array $munglist ){} 
+	/** @return bool */
+	public  function offsetExists( string $offset ){} 
+	/** @return int */
+	public  function offsetGet( string $offset ){} 
+	/** @return void */
+	public  function offsetSet( string $offset , string $value ){} 
+	/** @return bool */
+	public  function offsetUnset( string $offset ){} 
+	/** @return string */
+	final public static  function running( bool $retphar = true  ){} 
+	/** @return bool */
+	public  function setAlias( string $alias ){} 
+	/** @return bool */
+	public  function setDefaultStub( string $index , string $webindex  ){} 
+	/** @return void */
+	public  function setMetadata( mixed $metadata ){} 
+	/** @return void */
+	public  function setSignatureAlgorithm( int $sigtype , string $privatekey  ){} 
+	/** @return bool */
+	public  function setStub( string $stub , int $len = -1  ){} 
+	/** @return void */
+	public  function startBuffering(){} 
+	/** @return void */
+	public  function stopBuffering(){} 
+	/** @return bool */
+	public  function uncompressAllFiles(){} 
+	/** @return bool */
+	final public static  function unlinkArchive( string $archive ){} 
+	/** @return void */
+	final public static  function webPhar( string $alias , string $index = "index.php" , string $f404 , array $mimetypes , callable $rewrites  ){} 
+}
+
+
+class PharData extends Phar {
+/* 方法 */
+	/** @return bool */
+	 function addEmptyDir( string $dirname ){} 
+	/** @return void */
+	public  function addFile( string $file , string $localname  ){} 
+	/** @return bool */
+	 function addFromString( string $localname , string $contents ){} 
+	/** @return array */
+	public  function buildFromDirectory( string $base_dir , string $regex  ){} 
+	/** @return array */
+	 function buildFromIterator( Iterator $iter , string $base_directory  ){} 
+	/** @return object */
+	 function compress( int $compression , string $extension  ){} 
+	/** @return bool */
+	 function compressFiles( int $compression ){} 
+	/** @return void */
+	 function __construct( string $fname , int $flags , string $alias , int $format = Phar::TAR  ){} 
+	/** @return PharData */
+	 function convertToData( int $format , int $compression , string $extension  ){} 
+	/** @return Phar */
+	 function convertToExecutable( int $format , int $compression , string $extension  ){} 
+	/** @return bool */
+	 function copy( string $oldfile , string $newfile ){} 
+	/** @return object */
+	 function decompress( string $extension  ){} 
+	/** @return bool */
+	 function decompressFiles(){} 
+	/** @return bool */
+	 function delMetadata(){} 
+	/** @return bool */
+	 function delete( string $entry ){} 
+	/** @return bool */
+	 function extractTo( string $pathto , array $files , bool $overwrite = false  ){} 
+	/** @return bool */
+	 function isWritable(){} 
+	/** @return void */
+	 function offsetSet( string $offset , string $value ){} 
+	/** @return bool */
+	 function offsetUnset( string $offset ){} 
+	/** @return bool */
+	 function setAlias( string $alias ){} 
+	/** @return bool */
+	 function setDefaultStub( string $index , string $webindex  ){} 
+	/** @return void */
+	public  function setMetadata( mixed $metadata ){} 
+	/** @return void */
+	public  function setSignatureAlgorithm( int $sigtype ){} 
+	/** @return bool */
+	 function setStub( string $stub , int $len = -1  ){} 
+}
+
+class PharFileInfo extends SplFileInfo {
+/* 方法 */
+	/** @return void */
+	public  function chmod( int $permissions ){} 
+	/** @return bool */
+	public  function compress( int $compression ){} 
+	/** @return void */
+	public  function __construct( string $entry ){} 
+	/** @return bool */
+	public  function decompress(){} 
+	/** @return bool */
+	public  function delMetadata(){} 
+	/** @return int */
+	public  function getCRC32(){} 
+	/** @return int */
+	public  function getCompressedSize(){} 
+	/** @return mixed */
+	public  function getMetadata(){} 
+	/** @return int */
+	public  function getPharFlags(){} 
+	/** @return bool */
+	public  function hasMetadata(){} 
+	/** @return bool */
+	public  function isCRCChecked(){} 
+	/** @return bool */
+	public  function isCompressed( int $compression_type = 9021976  ){} 
+	/** @return bool */
+	public  function isCompressedBZIP2(){} 
+	/** @return bool */
+	public  function isCompressedGZ(){} 
+	/** @return bool */
+	public  function setCompressedBZIP2(){} 
+	/** @return bool */
+	public  function setCompressedGZ(){} 
+	/** @return void */
+	public  function setMetadata( mixed $metadata ){} 
+	/** @return bool */
+	public  function setUncompressed(){} 
+}
+
+class PharException extends Exception {}

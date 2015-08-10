@@ -81,6 +81,7 @@ class Testb  extends Ta {
 function ff(){
     return 0;
 }
+
 $t=new Ta();
 echo $t->get_v1()."\n" ;
 echo Ta::DIR."\n";

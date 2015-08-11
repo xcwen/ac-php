@@ -4631,3 +4631,732 @@ class PharFileInfo extends SplFileInfo {
 }
 
 class PharException extends Exception {}
+
+ final class Yaf_Application {
+/* Properties */
+protected $config ;
+protected $dispatcher ;
+protected static $_app ;
+protected $_modules ;
+protected $_running ;
+protected $_environ ;
+/* Methods */
+	/** @return void */
+	public static  function app(){} 
+	/** @return void */
+	public  function bootstrap( Yaf_Bootstrap_Abstract $bootstrap  ){} 
+	/** @return Yaf_Application */
+	public  function clearLastError(){} 
+	/** @return void */
+	private  function __clone(){} 
+	/** @return public__construct */
+	 function nil( mixed $config , string $envrion  ){} 
+	/** @return void */
+	public  function __destruct(){} 
+	/** @return void */
+	public  function environ(){} 
+	/** @return void */
+	public  function execute( callable $entry , string $__args__ ){} 
+	/** @return Yaf_Application */
+	public  function getAppDirectory(){} 
+	/** @return Yaf_Config_Abstract */
+	public  function getConfig(){} 
+	/** @return Yaf_Dispatcher */
+	public  function getDispatcher(){} 
+	/** @return string */
+	public  function getLastErrorMsg(){} 
+	/** @return int */
+	public  function getLastErrorNo(){} 
+	/** @return array */
+	public  function getModules(){} 
+	/** @return void */
+	public  function run(){} 
+	/** @return Yaf_Application */
+	public  function setAppDirectory( string $directory ){} 
+	/** @return void */
+	private  function __sleep(){} 
+	/** @return void */
+	private  function __wakeup(){} 
+}
+
+ abstract class Yaf_Bootstrap_Abstract {
+/* Properties */
+/* Methods */
+}
+ final class Yaf_Dispatcher {
+/* Properties */
+protected $_router ;
+protected $_view ;
+protected $_request ;
+protected $_plugins ;
+protected static $_instance ;
+protected $_auto_render ;
+protected $_return_response ;
+protected $_instantly_flush ;
+protected $_default_module ;
+protected $_default_controller ;
+protected $_default_action ;
+/* Methods */
+	/** @return Yaf_Dispatcher */
+	public  function autoRender( bool $flag  ){} 
+	/** @return Yaf_Dispatcher */
+	public  function catchException( bool $flag  ){} 
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	public  function __construct(){} 
+	/** @return bool */
+	public  function disableView(){} 
+	/** @return Yaf_Response_Abstract */
+	public  function dispatch( Yaf_Request_Abstract $request ){} 
+	/** @return Yaf_Dispatcher */
+	public  function enableView(){} 
+	/** @return Yaf_Dispatcher */
+	public  function flushInstantly( bool $flag  ){} 
+	/** @return Yaf_Application */
+	public  function getApplication(){} 
+	/** @return Yaf_Dispatcher */
+	public static  function getInstance(){} 
+	/** @return Yaf_Request_Abstract */
+	public  function getRequest(){} 
+	/** @return Yaf_Router */
+	public  function getRouter(){} 
+	/** @return Yaf_View_Interface */
+	public  function initView( string $templates_dir , array $options  ){} 
+	/** @return Yaf_Dispatcher */
+	public  function registerPlugin( Yaf_Plugin_Abstract $plugin ){} 
+	/** @return Yaf_Dispatcher */
+	public  function returnResponse( bool $flag ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setDefaultAction( string $action ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setDefaultController( string $controller ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setDefaultModule( string $module ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setErrorHandler( call $callback , int $error_types ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setRequest( Yaf_Request_Abstract $request ){} 
+	/** @return Yaf_Dispatcher */
+	public  function setView( Yaf_View_Interface $view ){} 
+	/** @return void */
+	private  function __sleep(){} 
+	/** @return Yaf_Dispatcher */
+	public  function throwException( bool $flag  ){} 
+	/** @return void */
+	private  function __wakeup(){} 
+}
+
+ abstract class Yaf_Config_Abstract {
+/* Properties */
+protected $_config ;
+protected $_readonly ;
+/* Methods */
+	/** @return mixed */
+	abstract public  function get( string $name , mixed $value ); 
+	/** @return bool */
+	abstract public  function nil(); 
+	/** @return Yaf_Config_Abstract */
+	abstract public  function set(); 
+	/** @return array */
+	abstract public  function toArray(); 
+}
+
+class Yaf_Config_Ini extends Yaf_Config_Abstract implements Iterator , ArrayAccess , Countable {
+/* Properties */
+/* Methods */
+	/** @return void */
+	public  function __construct( string $config_file , string $section  ){} 
+	/** @return void */
+	public  function count(){} 
+	/** @return void */
+	public  function current(){} 
+	/** @return void */
+	public  function __get( string $name  ){} 
+	/** @return void */
+	public  function __isset( string $name ){} 
+	/** @return void */
+	public  function key(){} 
+	/** @return void */
+	public  function next(){} 
+	/** @return void */
+	public  function offsetExists( string $name ){} 
+	/** @return void */
+	public  function offsetGet( string $name ){} 
+	/** @return void */
+	public  function offsetSet( string $name , string $value ){} 
+	/** @return void */
+	public  function offsetUnset( string $name ){} 
+	/** @return void */
+	public  function nil(){} 
+	/** @return void */
+	public  function rewind(){} 
+	/** @return void */
+	public  function __set( string $name , mixed $value ){} 
+	/** @return array */
+	public  function toArray(){} 
+	/** @return void */
+	public  function valid(){} 
+}
+
+
+class Yaf_Config_Simple extends Yaf_Config_Abstract implements Iterator , ArrayAccess , Countable {
+/* Properties */
+protected $_readonly ;
+/* Methods */
+	/** @return void */
+	public  function __construct( string $config_file , string $section=NULL  ){} 
+	/** @return void */
+	public  function count(){} 
+	/** @return void */
+	public  function current(){} 
+	/** @return void */
+	public  function __get( string $name=NULL  ){} 
+	/** @return void */
+	public  function __isset( string $name ){} 
+	/** @return void */
+	public  function key(){} 
+	/** @return void */
+	public  function next(){} 
+	/** @return void */
+	public  function offsetExists( string $name ){} 
+	/** @return void */
+	public  function offsetGet( string $name ){} 
+	/** @return void */
+	public  function offsetSet( string $name , string $value ){} 
+	/** @return void */
+	public  function offsetUnset( string $name ){} 
+	/** @return void */
+	public  function nil(){} 
+	/** @return void */
+	public  function rewind(){} 
+	/** @return void */
+	public  function __set( string $name , string $value ){} 
+	/** @return array */
+	public  function toArray(){} 
+	/** @return void */
+	public  function valid(){} 
+}
+
+ abstract class Yaf_Controller_Abstract {
+/* Properties */
+public $actions ;
+protected $_module ;
+protected $_name ;
+protected $_request ;
+protected $_response ;
+protected $_invoke_args ;
+protected $_view ;
+/* Methods */
+	/** @return void */
+	final private  function __clone(){} 
+	/** @return void */
+	final private  function __construct(){} 
+	/** @return bool */
+	protected  function display( string $tpl , array $parameters=NULL   ){} 
+	/** @return void */
+	public  function forward( string $action , array $paramters=NULL   ){} 
+	/** @return void */
+	public  function getInvokeArg( string $name ){} 
+	/** @return void */
+	public  function getInvokeArgs(){} 
+	/** @return string */
+	public  function getModuleName(){} 
+	/** @return Yaf_Request_Abstract */
+	public  function getRequest(){} 
+	/** @return Yaf_Response_Abstract */
+	public  function getResponse(){} 
+	/** @return Yaf_View_Interface */
+	public  function getView(){} 
+	/** @return void */
+	public  function getViewpath(){} 
+	/** @return void */
+	public  function init(){} 
+	/** @return void */
+	public  function initView( array $options=NULL   ){} 
+	/** @return bool */
+	public  function redirect( string $url ){} 
+	/** @return string */
+	protected  function render( string $tpl , array $parameters=NULL   ){} 
+	/** @return void */
+	public  function setViewpath( string $view_directory ){} 
+}
+
+
+class Yaf_Action_Abstract extends Yaf_Controller_Abstract {
+/* Properties */
+protected $_controller ;
+/* Methods */
+	/** @return publicmixed */
+	abstract  function execute( mixed $arg=NULL  , mixed $__args__=NULL   ); 
+	/** @return Yaf_Controller_Abstract */
+	public  function getController(){} 
+}
+
+ abstract class Yaf_View_Interface {
+/* Methods */
+	/** @return bool */
+	abstract public  function assign( string $name , string $value=NULL   ); 
+	/** @return bool */
+	abstract public  function display( string $tpl , array $tpl_vars=NULL   ); 
+	/** @return void */
+	abstract public  function getScriptPath(); 
+	/** @return string */
+	abstract public  function render( string $tpl , array $tpl_vars=NULL   ); 
+	/** @return void */
+	abstract public  function setScriptPath( string $template_dir ); 
+}
+
+class Yaf_View_Simple implements Yaf_View_Interface {
+/* Properties */
+protected $_tpl_vars ;
+protected $_tpl_dir ;
+/* Methods */
+	/** @return bool */
+	public  function assign( string $name , mixed $value=NULL   ){} 
+	/** @return bool */
+	public  function assignRef( string $name , mixed &$value ){} 
+	/** @return bool */
+	public  function clear( string $name=NULL   ){} 
+	/** @return void */
+	final public  function __construct( string $template_dir , array $options=NULL   ){} 
+	/** @return bool */
+	public  function display( string $tpl , array $tpl_vars=NULL   ){} 
+	/** @return string */
+	public  function eval_( string $tpl_content , array $tpl_vars=NULL   ){} 
+	/** @return void */
+	public  function __get( string $name=NULL   ){} 
+	/** @return string */
+	public  function getScriptPath(){} 
+	/** @return void */
+	public  function __isset( string $name ){} 
+	/** @return string */
+	public  function render( string $tpl , array $tpl_vars=NULL   ){} 
+	/** @return void */
+	public  function __set( string $name , mixed $value ){} 
+	/** @return bool */
+	public  function setScriptPath( string $template_dir ){} 
+}
+
+
+
+class Yaf_Loader {
+/* Properties */
+protected $_local_ns ;
+protected $_library ;
+protected $_global_library ;
+static $_instance ;
+/* Methods */
+	/** @return void */
+	public  function autoload(){} 
+	/** @return void */
+	public  function clearLocalNamespace(){} 
+	/** @return void */
+	private  function __clone(){} 
+	/** @return private__construct */
+	 function nil(){} 
+	/** @return void */
+	public static  function getInstance(){} 
+	/** @return Yaf_Loader */
+	public  function getLibraryPath( bool $is_global = false  ){} 
+	/** @return void */
+	public  function getLocalNamespace(){} 
+	/** @return void */
+	public static  function import(){} 
+	/** @return void */
+	public  function isLocalName(){} 
+	/** @return void */
+	public  function registerLocalNamespace( mixed $prefix ){} 
+	/** @return Yaf_Loader */
+	public  function setLibraryPath( string $directory , bool $is_global = false  ){} 
+	/** @return void */
+	private  function __sleep(){} 
+	/** @return void */
+	private  function __wakeup(){} 
+}
+
+class Yaf_Plugin_Abstract {
+/* Methods */
+	/** @return void */
+	public  function dispatchLoopShutdown( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function dispatchLoopStartup( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function postDispatch( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function preDispatch( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function preResponse( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function routerShutdown( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+	/** @return void */
+	public  function routerStartup( Yaf_Request_Abstract $request , Yaf_Response_Abstract $response ){} 
+}
+
+class Yaf_Registry {
+/* Properties */
+static $_instance ;
+protected $_entries ;
+/* Methods */
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	 function __construct(){} 
+	/** @return void */
+	public static  function del( string $name ){} 
+	/** @return mixed */
+	public static  function get( string $name ){} 
+	/** @return bool */
+	public static  function has( string $name ){} 
+	/** @return bool */
+	public static  function set( string $name , string $value ){} 
+}
+
+class Yaf_Request_Abstract {
+/* Constants */
+	/** @var string */
+	 const  SCHEME_HTTP = http ;
+	/** @var string */
+	 const  SCHEME_HTTPS = https ;
+/* Properties */
+public $module ;
+public $controller ;
+public $action ;
+public $method ;
+protected $params ;
+protected $language ;
+protected $_exception ;
+protected $_base_uri ;
+protected $uri ;
+protected $dispatched ;
+protected $routed ;
+/* Methods */
+	/** @return void */
+	public  function getActionName(){} 
+	/** @return void */
+	public  function getBaseUri(){} 
+	/** @return void */
+	public  function getControllerName(){} 
+	/** @return void */
+	public  function getEnv( string $name , string $default=NULL   ){} 
+	/** @return void */
+	public  function getException(){} 
+	/** @return void */
+	public  function getLanguage(){} 
+	/** @return void */
+	public  function getMethod(){} 
+	/** @return void */
+	public  function getModuleName(){} 
+	/** @return void */
+	public  function getParam( string $name , string $default=NULL   ){} 
+	/** @return void */
+	public  function getParams(){} 
+	/** @return void */
+	public  function getRequestUri(){} 
+	/** @return void */
+	public  function getServer( string $name , string $default=NULL   ){} 
+	/** @return void */
+	public  function isCli(){} 
+	/** @return void */
+	public  function isDispatched(){} 
+	/** @return void */
+	public  function isGet(){} 
+	/** @return void */
+	public  function isHead(){} 
+	/** @return void */
+	public  function isOptions(){} 
+	/** @return void */
+	public  function isPost(){} 
+	/** @return void */
+	public  function isPut(){} 
+	/** @return void */
+	public  function isRouted(){} 
+	/** @return void */
+	public  function isXmlHttpRequest(){} 
+	/** @return void */
+	public  function setActionName( string $action ){} 
+	/** @return bool */
+	public  function setBaseUri( string $uir ){} 
+	/** @return void */
+	public  function setControllerName( string $controller ){} 
+	/** @return void */
+	public  function setDispatched(){} 
+	/** @return void */
+	public  function setModuleName( string $module ){} 
+	/** @return void */
+	public  function setParam( string $name , string $value=NULL   ){} 
+	/** @return void */
+	public  function setRequestUri( string $uir ){} 
+	/** @return void */
+	public  function setRouted( string $flag=NULL   ){} 
+}
+class Yaf_Request_Http extends Yaf_Request_Abstract {
+/* Properties */
+/* Methods */
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	 function __construct(){} 
+	/** @return mixed */
+	public  function get( string $name , string $default=NULL   ){} 
+	/** @return mixed */
+	public  function getCookie( string $name , string $default=NULL   ){} 
+	/** @return void */
+	public  function getFiles(){} 
+	/** @return mixed */
+	public  function getPost( string $name , string $default=NULL   ){} 
+	/** @return mixed */
+	public  function getQuery( string $name , string $default=NULL   ){} 
+	/** @return void */
+	public  function getRequest(){} 
+	/** @return bool */
+	public  function isXmlHttpRequest(){} 
+}
+
+
+
+class Yaf_Request_Simple extends Yaf_Request_Abstract {
+/* Constants */
+	/** @var string */
+	 const  SCHEME_HTTP = http ;
+	/** @var string */
+	 const  SCHEME_HTTPS = https ;
+/* Properties */
+/* Methods */
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	 function __construct(){} 
+	/** @return void */
+	public  function get(){} 
+	/** @return void */
+	public  function getCookie(){} 
+	/** @return void */
+	public  function getFiles(){} 
+	/** @return void */
+	public  function getPost(){} 
+	/** @return void */
+	public  function getQuery(){} 
+	/** @return void */
+	public  function getRequest(){} 
+	/** @return void */
+	public  function isXmlHttpRequest(){} 
+
+}
+class Yaf_Response_Abstract {
+/* Constants */
+	/** @var string */
+	 const  DEFAULT_BODY = "content" ;
+/* Properties */
+protected $_header ;
+protected $_body ;
+protected $_sendheader ;
+/* Methods */
+	/** @return bool */
+	public  function appendBody( string $content , string $key=NULL   ){} 
+	/** @return bool */
+	public  function clearBody( string $key=NULL   ){} 
+	/** @return void */
+	public  function clearHeaders(){} 
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	public  function __construct(){} 
+	/** @return void */
+	public  function __destruct(){} 
+	/** @return mixed */
+	public  function getBody( string $key=NULL   ){} 
+	/** @return void */
+	public  function getHeader(){} 
+	/** @return bool */
+	public  function prependBody( string $content , string $key=NULL   ){} 
+	/** @return void */
+	public  function response(){} 
+	/** @return void */
+	protected  function setAllHeaders(){} 
+	/** @return bool */
+	public  function setBody( string $content , string $key=NULL   ){} 
+	/** @return void */
+	public  function setHeader(){} 
+	/** @return void */
+	public  function setRedirect(){} 
+	/** @return void */
+	private  function __toString(){} 
+}
+abstract class Yaf_Route_Interface {
+/* Methods */
+	/** @return string */
+	abstract public  function assemble( array $info , array $query=NULL   ); 
+	/** @return bool */
+	abstract public  function route( Yaf_Request_Abstract $request ); 
+}
+
+
+class Yaf_Route_Map implements Yaf_Route_Interface {
+/* Properties */
+protected $_ctl_router ;
+protected $_delimeter ;
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return void */
+	public  function __construct( string $controller_prefer = false , string $delimiter = ""  ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+
+abstract class Yaf_Route_Regex extends Yaf_Route_Interface implements Yaf_Route_Interface {
+/* Properties */
+protected $_route ;
+protected $_default ;
+protected $_maps ;
+protected $_verify ;
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return public__construct */
+	 function nil( string $match , array $route , array $map=NULL  , array $verify=NULL  , string $reverse=NULL   ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+
+
+abstract class Yaf_Route_Rewrite extends Yaf_Route_Interface implements Yaf_Route_Interface {
+/* Properties */
+protected $_route ;
+protected $_default ;
+protected $_verify ;
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return void */
+	public  function __construct( string $match , array $route , array $verify=NULL   ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+
+class Yaf_Router {
+/* Properties */
+protected $_routes ;
+protected $_current ;
+/* Methods */
+	/** @return bool */
+	public  function addConfig( Yaf_Config_Abstract $config ){} 
+	/** @return bool */
+	public  function addRoute( string $name , Yaf_Route_Abstract $route ){} 
+	/** @return void */
+	public  function __construct(){} 
+	/** @return string */
+	public  function getCurrentRoute(){} 
+	/** @return Yaf_Route_Interface */
+	public  function getRoute( string $name ){} 
+	/** @return mixed */
+	public  function getRoutes(){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+class Yaf_Route_Simple implements Yaf_Route_Interface {
+/* Properties */
+protected $controller ;
+protected $module ;
+protected $action ;
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return void */
+	public  function __construct( string $module_name , string $controller_name , string $action_name ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+class Yaf_Route_Static implements Yaf_Router {
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return void */
+	public  function match( string $uri ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+
+class Yaf_Route_Supervar implements Yaf_Route_Interface {
+/* Properties */
+protected $_var_name ;
+/* Methods */
+	/** @return string */
+	public  function assemble( array $info , array $query=NULL   ){} 
+	/** @return void */
+	public  function __construct( string $supervar_name ){} 
+	/** @return bool */
+	public  function route( Yaf_Request_Abstract $request ){} 
+}
+
+class Yaf_Session implements Iterator , ArrayAccess , Countable {
+/* Properties */
+protected static $_instance ;
+protected $_session ;
+protected $_started ;
+/* Methods */
+	/** @return void */
+	private  function __clone(){} 
+	/** @return void */
+	public  function __construct(){} 
+	/** @return void */
+	public  function count(){} 
+	/** @return void */
+	public  function current(){} 
+	/** @return void */
+	public  function del( string $name ){} 
+	/** @return void */
+	public  function __get( string $name ){} 
+	/** @return void */
+	public static  function getInstance(){} 
+	/** @return void */
+	public  function has( string $name ){} 
+	/** @return void */
+	public  function __isset( string $name ){} 
+	/** @return void */
+	public  function key(){} 
+	/** @return void */
+	public  function next(){} 
+	/** @return void */
+	public  function offsetExists( string $name ){} 
+	/** @return void */
+	public  function offsetGet( string $name ){} 
+	/** @return void */
+	public  function offsetSet( string $name , string $value ){} 
+	/** @return void */
+	public  function offsetUnset( string $name ){} 
+	/** @return void */
+	public  function rewind(){} 
+	/** @return void */
+	public  function __set( string $name , string $value ){} 
+	/** @return void */
+	private  function __sleep(){} 
+	/** @return void */
+	public  function start(){} 
+	/** @return void */
+	public  function __unset( string $name ){} 
+	/** @return void */
+	public  function valid(){} 
+	/** @return void */
+	private  function __wakeup(){} 
+}
+
+class Yaf_Exception extends Exception {
+/* Methods */
+	/** @return void */
+	public  function __construct(){} 
+	/** @return void */
+	public  function getPrevious(){} 
+}
+
+class Yaf_Exception_TypeError extends Yaf_Exception {}
+class Yaf_Exception_TypeError extends Yaf_Exception{}
+class Yaf_Exception_StartupError extends Yaf_Exception{}
+class Yaf_Exception_DispatchFailed extends Yaf_Exception{}
+class Yaf_Exception_RouterFailed extends Yaf_Exception{}
+class Yaf_Exception_LoadFailed extends Yaf_Exception{}
+class Yaf_Exception_LoadFailed_Module extends Yaf_Exception{}
+class Yaf_Exception_LoadFailed_Controller extends Yaf_Exception{}
+class Yaf_Exception_LoadFailed_Action extends Yaf_Exception{}
+class Yaf_Exception_LoadFailed_View extends Yaf_Exception{}

@@ -1657,14 +1657,14 @@ then this function split it to
        ((string= type "class_member")
 
         (setq tag-name  (nth 1 member-info ))
-        (if (ac-php--tag-name-is-function  tag-name )
+        (if ( string= (nth 0 member-info )  "m" )
             (setq  doc   (concat  tag-name  "(" (nth 2 member-info) ")" )   )
           (setq  doc    tag-name ))
 
         (setq  class-name   (nth 5 member-info) )
         (setq  return-type   (nth 4 member-info) )
         (setq  access   (nth 6 member-info) )
-        (popup-tip (concat class-name  "::"  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   (nth 5 member-info)   ))
+        (popup-tip (concat  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   (nth 5 member-info)   ))
 
         )
        ((string= type "user_function") 

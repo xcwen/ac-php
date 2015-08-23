@@ -224,6 +224,7 @@
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
+        (message "====doc : %s" doc )
         (if ( ac-php--tag-name-is-function item) 
             (setq doc (concat item  doc ")" ) )
           (setq doc item )
@@ -768,6 +769,8 @@ then this function split it to
 
 
                     (setq key-word (propertize key-word 'ac-php-help   (nth 2  x ) ))
+                    (message "=====ac-php-help %s"  (nth 2  x ) )
+
 
                     (setq key-word (propertize key-word 'ac-php-return-type (nth 4  x ) ))
                     (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  x ) ))
@@ -1059,7 +1062,7 @@ then this function split it to
     (list class-list function-list inherit-list )))
 
 (defun  ac-php-gen-el-func (  doc)
-  "DOCSTRING"
+  " example doc 'xxx($x1,$x2)' => $x1 , $x2  "
   (let ( func-str ) 
     (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
         (progn

@@ -9,7 +9,9 @@ const CON_NO="sss";
 $v=$tb->get_v2()->v1;
 
 $ta= new \Test\Testa();
+
 $ta->set_v1("ss");
+
 
 $f=ff();
 

@@ -299,7 +299,7 @@ like this
       "."
     ],
     "php-path-list-without-subdir": []
-  }
+  },
   "lib-filter": {
     "php-file-ext-list": [
       "php",

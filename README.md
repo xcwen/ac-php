@@ -39,6 +39,7 @@ externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 * [Usage](#usage)
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
+* [lager php project config](#lager-php-project-config)
 * [FQA](#fqa)
 
 
@@ -149,7 +150,10 @@ mkdir .tags
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
 
+`ac-php-remake-tags-with-lib` ;; **if you find a error, run it an retest**
+
 `ac-php-remake-tags-all` ;; **if you find a error, run it an retest**
+
 
 `ac-php-find-symbol-at-point`   ;goto define
 
@@ -158,6 +162,7 @@ mkdir .tags
 `ac-php-show-tip` ;; show define at point
 
 `ac-php-cscope-find-egrep-pattern` ;; find current-word in project  
+
 
 need: (setq ac-php-use-cscope-flag  t ) 
 
@@ -295,6 +300,16 @@ like this
     ],
     "php-path-list-without-subdir": []
   }
+  "lib-filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+    ],
+    "php-path-list-without-subdir": []
+  }
+
 }
 ```
 `php-file-ext-list` : file extern name list;
@@ -337,7 +352,18 @@ for exmaple:
     "php-path-list-without-subdir": [
       "./dir3"
      ]
+  },
+  "lib-filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+    ],
+    "php-path-list-without-subdir": [
+     ]
   }
+
 }
 ```
  
@@ -390,7 +416,41 @@ or
 `mkdir /home/jim/.tags `
 
 
+###lager php project config
+config php lib dir  into  `lib-filter` node 
 
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+      "./"
+    ],
+    "php-path-list-without-subdir": [
+     ]
+  },
+  "lib-filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": [
+       "./lib",
+       "./vendor"
+    ],
+    "php-path-list-without-subdir": [
+     ]
+  }
+
+}
+```
+
+if lib php file changed .
+
+use   `ac-php-remake-tags-with-lib`   to remake tags 
 
 ## FQA 
 #  for all any question　

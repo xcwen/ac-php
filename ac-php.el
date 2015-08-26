@@ -91,6 +91,7 @@
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
 ;; (setq debug-on-error t )
+
 ;; (setq ac-php-comm-tags-data-list nil )
 ;; (setq debug-on-error nil )
 
@@ -905,14 +906,22 @@ then this function split it to
   (ac-php-clean-namespace-name (s-trim (replace-regexp-in-string "|.*" "" return-type ) ) ))
   )
 
-(defun ac-php-gen-data ( tags-list project-dir-len )
+(defun ac-php-gen-data ( tags-list project-dir-len  file-type)
   "gen-el-data"
-  (let (
-        (class-list  (nth 0 ac-php-comm-tags-data-list) )
-        (function-list (nth 1 ac-php-comm-tags-data-list) )
-        (inherit-list  (nth 2 ac-php-comm-tags-data-list) )
+  (let ( base-tags-data
+        (class-list  )
+        (function-list )
+        (inherit-list  )
         (file-start-pos project-dir-len ) (count 0 )  add-class-list  )
 
+    (setq  base-tags-data (if (string= file-type  "self"  )
+                              (ac-php-get-tags-data t)  
+                            ac-php-comm-tags-data-list  
+                            ))
+    
+    (setq class-list  (nth 0 base-tags-data) )
+    (setq function-list (nth 1 base-tags-data) )
+    (setq inherit-list  (nth 2 base-tags-data) )
 
     (dolist (line-data tags-list)
       (let (
@@ -1071,105 +1080,134 @@ then this function split it to
           )
       ""
       )))
-(defun ac-php-get-tags-file ()
+(defun ac-php-get-tags-file (&optional is-lib )
   ""
   (let ((tags-dir (ac-php-get-tags-dir)) )
     (if tags-dir
-        (concat   tags-dir ".tags/tags-data.el"  )
+        (concat   tags-dir ".tags/tags-data" (if is-lib "-lib" "" ) ".el"  )
       nil)))
-(defun ac-ph--get-config-path-noti-str ( work-dir path-str)
+
+(defun ac-php--get-config-path-noti-str ( work-dir path-str)
   (if  (s-ends-with? "*.php" path-str )
       (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) work-dir) )
     (format "php-path-list->%s" (f-relative path-str work-dir ))))
+(defun ac-php-get-php-files-from-filter(  work-dir filter-info  )
+  (let (  conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name   ext-list ext-re-str )
+    (when  filter-info
+      (progn
+        ;;get ext list
+        (setq ext-list   (cdr (assoc-string "php-file-ext-list" filter-info)) )
+        (unless ext-list (setq ext-list '["php" "inc"]))
+        (setq ext-re-str
+              (s-concat  "^[^#]+\\.\\("
+                         (s-join "\\|"
+                                 (mapcar
+                                  (lambda(ext) (s-concat "\\(" ext "\\)"   )  )
+                                  ext-list ) ) "\\)$" ))
+        
+        (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
+                                                                  (cdr (assoc-string "php-path-list"  filter-info))
+                                                                  )))
 
-(defun ac-php--get-php-files-from-config (work-dir )
-  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
+        (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
+                                                                  (cdr (assoc-string "php-path-list-without-subdir" filter-info))
+                                                                  )))
+        ;;sort
+        (setq filter-path-list ( sort filter-path-list  'string<))
+
+
+        ;;check contains
+        (let (tmp-union-list check-error-flag) 
+          (dolist ( filter-item-name filter-path-list )
+            (setq check-error-flag nil)
+            (when  (not
+                    (or (f-same?   work-dir filter-item-name )
+                        (s-starts-with?   work-dir filter-item-name ) )
+                    )
+              (progn
+                (setq check-error-flag t)
+                (message "CONFIG FILTER WARRING : [%s] [%s] most in work-dir [%s] "
+                         filter-item-name (ac-php--get-config-path-noti-str work-dir filter-item-name )
+                         work-dir )))
+
+            (unless check-error-flag 
+              (dolist (tmp-item tmp-union-list)
+                (when (s-starts-with?  tmp-item filter-item-name )
+                  (progn
+                    (setq check-error-flag t)
+                    (message "CONFIG FILTER WARRING : [%s] in [%s] "
+                             (ac-php--get-config-path-noti-str work-dir filter-item-name )
+                             (ac-php--get-config-path-noti-str work-dir tmp-item ))
+                    ))))
+
+            (unless check-error-flag
+              (push filter-item-name tmp-union-list )))
+
+          (setq filter-path-list  tmp-union-list))
+
+        (dolist ( filter-item-name filter-path-list )
+          (let (opt-dir also-find-subdir)
+            (if (s-ends-with? "*.php" filter-item-name)
+                (progn
+                  (setq opt-dir (f-parent  filter-item-name ) )
+                  (setq also-find-subdir nil))
+              (progn
+                (setq opt-dir filter-item-name  )
+                (setq also-find-subdir t  ))
+              )
+
+            (setq ret-list (append ret-list (ac-php-find-php-files opt-dir ext-re-str also-find-subdir ) ) )
+
+            ))
+        )
+      )
+    (ac-php--debug  "++++:%S" ret-list)
+    ret-list
+    ))
+
+(defun ac-php--get-php-files-from-config (work-dir  )
+  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  lib-filter-info ext-list ext-re-str)
     (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
     (unless (f-exists?  config-file-name )
       (let ((old-config-value json-encoding-pretty-print) )
         (setq  json-encoding-pretty-print  t)
-        (f-write-text  (json-encode '(:filter
+        (f-write-text  (json-encode '(
+                                      :filter
                                       (
-                                       :php-file-ext-list ("php" "inc")
-                                                          :php-path-list (".")
-                                                          :php-path-list-without-subdir [] 
-                                                          ))) 'utf-8 config-file-name  )
+                                       :php-file-ext-list
+                                       ("php" "inc")
+                                       :php-path-list (".")
+                                       :php-path-list-without-subdir [] 
+                                       )
+                                      :lib-filter
+                                      (
+                                       :php-file-ext-list
+                                       ("php" "inc")
+                                       :php-path-list [] 
+                                       :php-path-list-without-subdir [] 
+                                       )
+
+                                      )
+                                    ) 'utf-8 config-file-name)
         (setq  json-encoding-pretty-print  old-config-value)
         ))
 
     
     
     (setq conf-list (json-read-file  config-file-name  ) )
+
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
-    
+    (setq lib-filter-info  (cdr (assoc-string "lib-filter" conf-list )) )
+    (setq ret-list (ac-php-get-php-files-from-filter work-dir lib-filter-info  ) )
+    ;;处理
+    (let (( filter-list  (ac-php-get-php-files-from-filter work-dir filter-info  )) )
+      (ac-php--debug "filter-list :%S" filter-list)
+      (dolist (item filter-list)
+        (unless (assoc-string (car item ) ret-list  )
+          (push (list ( nth 0 item )  ( nth 1 item ) "self") ret-list )
+          )))
 
-    (if  filter-info
-        (progn
-          ;;get ext list
-          (setq ext-list   (cdr (assoc-string "php-file-ext-list" filter-info)) )
-          (unless ext-list (setq ext-list '["php" "inc"]))
-          (setq ext-re-str
-                (s-concat  "^[^#]+\\.\\("
-                           (s-join "\\|"
-                                   (mapcar
-                                    (lambda(ext) (s-concat "\\(" ext "\\)"   )  )
-                                    ext-list ) ) "\\)$" ))
-          
-          (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
-                                             (cdr (assoc-string "php-path-list"  filter-info))
-                                             )))
-
-          (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
-                                             (cdr (assoc-string "php-path-list-without-subdir" filter-info))
-                                             )))
-          ;;sort
-          (setq filter-path-list ( sort filter-path-list  'string<))
-
-
-          ;;check contains
-          (let (tmp-union-list check-error-flag) 
-            (dolist ( filter-item-name filter-path-list )
-              (setq check-error-flag nil)
-              (when  (not
-                      (or (f-same?   work-dir filter-item-name )
-                          (s-starts-with?   work-dir filter-item-name ) )
-                          )
-                (progn
-                  (setq check-error-flag t)
-                  (message "CONFIG FILTER WARRING : [%s] [%s] most in work-dir [%s] "
-                           filter-item-name (ac-ph--get-config-path-noti-str work-dir filter-item-name )
-                            work-dir )))
-
-              (unless check-error-flag 
-                (dolist (tmp-item tmp-union-list)
-                  (when (s-starts-with?  tmp-item filter-item-name )
-                    (progn
-                      (setq check-error-flag t)
-                      (message "CONFIG FILTER WARRING : [%s] in [%s] "
-                           (ac-ph--get-config-path-noti-str work-dir filter-item-name )
-                           (ac-ph--get-config-path-noti-str work-dir tmp-item ))
-                      ))))
-
-              (unless check-error-flag
-                  (push filter-item-name tmp-union-list )))
-
-            (setq filter-path-list  tmp-union-list))
-
-          (dolist ( filter-item-name filter-path-list )
-            (let (opt-dir also-find-subdir)
-              (if (s-ends-with? "*.php" filter-item-name)
-                  (progn
-                    (setq opt-dir (f-parent  filter-item-name ) )
-                    (setq also-find-subdir nil))
-                (progn
-                  (setq opt-dir filter-item-name  )
-                  (setq also-find-subdir t  ))
-                )
-              (setq ret-list (append ret-list (ac-php-find-php-files opt-dir ext-re-str also-find-subdir ) ) )
-
-              ))
-          )
-      (message "need define  `filter` in  file[%s]  " config-file-name ))
+    (ac-php--debug "===ret-list :%S" ret-list)
     ret-list 
     ))
 
@@ -1177,24 +1215,40 @@ then this function split it to
 (defun ac-php-remake-tags (  )
   " reset tags , if  php source  is changed  "
   (interactive)
-  (ac-php--remake-tags nil)
+  (ac-php--remake-tags "self" nil )
+)
+
+(defun ac-php-remake-tags-with-lib (  )
+  " reset tags , if  php source  is changed  "
+  (interactive)
+  (ac-php--remake-tags "lib" nil )
+  (ac-php--remake-tags "self" nil )
 )
 
 (defun ac-php-remake-tags-all (  )
   "  remake tags without check modify time "
   (interactive)
-  (ac-php--remake-tags  t )
+  (ac-php--remake-tags  "self" t )
 )
 
 
-(defun ac-php--remake-tags ( all-flag )
-  " reset tags , if  php source  is changed  "
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list )  
+(defun ac-php--remake-tags ( file-type check-time-flag )
+  " reset tags , if  php source  is changed
+      opt-flag-value: 0:self , 1:  self + lib , 2 :all remake "
+  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type   )  
+    (message "[%s]do remake %s" file-type tags-dir )
+    ;;check lib  is ok
+    (when (string=  file-type "self" )
+      (when (or ( not (ac-php-get-tags-data t ) )
+                check-time-flag
+                )
+        (ac-php--remake-tags  "lib" check-time-flag )
+        ))
 
-    (message "remake %s" tags-dir )
     (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
     (when (and tags-dir  ac-php-executable )
+
       (setq tags-dir-len (length tags-dir) )
       (setq obj-tags-dir (concat tags-dir ".tags/tags_dir_" (getenv "USER") "/" ))
       (if (not (file-directory-p obj-tags-dir ))
@@ -1202,38 +1256,45 @@ then this function split it to
       (setq file-list (ac-php--get-php-files-from-config tags-dir  ) )
       (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ) )
       
+      
       (dolist (file-item file-list )
 
-        (setq  file-name (nth  0 file-item )  )
-        (setq src-time  (nth 1 file-item ) )
-        (setq obj-file-name   (substring file-name  tags-dir-len   ) )
-        (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
-        (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
-        (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
+        (setq from-type  (nth 2 file-item ) )
+        (unless from-type (setq  from-type "lib")   )
 
-        (push obj-file-name cur-obj-list )
-        ;;check change time
-        (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
-        (when (or (not obj-item) (< (nth 1 obj-item) src-time ) all-flag )
-          ;;gen tags file
-          (message "rebuild %s" file-name )
-          (let ( cmd cmd-output   )
-            (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
-            (ac-php--debug "exec cmd:%s" cmd)
-            (setq cmd-output (shell-command-to-string  cmd) )
-            
-            (when (> (length cmd-output) 3)
-              (princ (concat "phpctags ERROR:" cmd-output ))
-              (delete-file  obj-file-name  )
-              (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))))
-          ;;gen el data file
-          ))
+        (when ( string= from-type file-type )
+          
+          (setq  file-name (nth  0 file-item )  )
+          (setq src-time  (nth 1 file-item ) )
+          (setq obj-file-name   (substring file-name  tags-dir-len   ) )
+          (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
+          (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
+          (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
+
+          (push obj-file-name cur-obj-list )
+          ;;check change time
+          (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
+
+          (when (or (not obj-item) (< (nth 1 obj-item) src-time )  check-time-flag )
+            ;;gen tags file
+            (message "rebuild %s" file-name )
+            (let ( cmd cmd-output   )
+              (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
+              (ac-php--debug "exec cmd:%s" cmd)
+              (setq cmd-output (shell-command-to-string  cmd) )
+              
+              (when (> (length cmd-output) 3)
+                (princ (concat "phpctags ERROR:" cmd-output ))
+                (delete-file  obj-file-name  )
+                (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))))
+            ;;gen el data file
+            )))
 
       (unless last-phpctags-errmsg
         ;;read data
         (let ((temp-list cur-obj-list) tags-list )
           (with-temp-buffer
-            (message "BUILD marge files (count=%d ) start..." (length cur-obj-list) )
+            (message "[%s]BUILD marge files (count=%d ) start..." file-type (length cur-obj-list) )
             (insert "(")
             (while temp-list  
 
@@ -1247,14 +1308,13 @@ then this function split it to
             (goto-char (point-min) )
             (setq  tags-list (read (current-buffer))))
 
-          (message "BUILD marge files end  and then start deal ...")
-          (ac-php-save-data  (ac-php-get-tags-file )  (ac-php-gen-data  tags-list tags-dir-len  ))
-          )
+          (message "[%s]BUILD marge files end  and then start deal ..." file-type)
+          (ac-php-save-data  (ac-php-get-tags-file (string= file-type  "lib") )  (ac-php-gen-data  tags-list tags-dir-len  file-type  )))
          ;;( (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
 
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
-          (message "rebuild cscope  data file " )
+          (message "[%s]rebuild cscope  data file " file-type )
           ;;write cscope.files
           (let ((file-name-list ) cscope-file-name )
             (dolist (file-item file-list )
@@ -1271,7 +1331,7 @@ then this function split it to
 
       (if last-phpctags-errmsg
           (princ last-phpctags-errmsg )
-        (message "BUILD SUCCESS.")
+        (message "[%s]BUILD SUCCESS." file-type)
         ) 
         )))
 
@@ -1298,8 +1358,8 @@ then this function split it to
     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
 
 
-(defun ac-php-get-tags-data ()
-  (let ((tags-file   (ac-php-get-tags-file )))
+(defun ac-php-get-tags-data (&optional is-lib )
+  (let ((tags-file   (ac-php-get-tags-file is-lib )))
     (if tags-file
         (ac-php-load-data  tags-file  )
       ac-php-comm-tags-data-list ))) 

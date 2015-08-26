@@ -4,7 +4,17 @@
       "php",
       "inc"
     ],
-    "php-path-list": ["./"],
+    "php-path-list": [
+      "."
+    ],
+    "php-path-list-without-subdir": []
+  },
+  "lib-filter": {
+    "php-file-ext-list": [
+      "php",
+      "inc"
+    ],
+    "php-path-list": ["./dir1"],
     "php-path-list-without-subdir": []
   }
 }

@@ -1233,6 +1233,7 @@ then this function split it to
         ;;read data
         (let ((temp-list cur-obj-list) tags-list )
           (with-temp-buffer
+            (message "BUILD marge files (count=%d ) start..." (length cur-obj-list) )
             (insert "(")
             (while temp-list  
 
@@ -1246,7 +1247,9 @@ then this function split it to
             (goto-char (point-min) )
             (setq  tags-list (read (current-buffer))))
 
-          (ac-php-save-data  (ac-php-get-tags-file )  (ac-php-gen-data  tags-list tags-dir-len  )))
+          (message "BUILD marge files end  and then start deal ...")
+          (ac-php-save-data  (ac-php-get-tags-file )  (ac-php-gen-data  tags-list tags-dir-len  ))
+          )
          ;;( (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
 
         ;;  TODO do cscope  

@@ -923,6 +923,8 @@ then this function split it to
     (setq function-list (nth 1 base-tags-data) )
     (setq inherit-list  (nth 2 base-tags-data) )
 
+    (message "tags-list deal .... ")
+
     (dolist (line-data tags-list)
       (let (
             (tag-name (nth 0  line-data ))
@@ -1026,6 +1028,8 @@ then this function split it to
           (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type) class-name   access ) (cadr (assoc-string  class-name class-list  t) ) )) 
 
          )))
+
+    (message "tags-list deal end and reset inherit-list ... ")
     ;;reset inherit-list
     (setq  inherit-list (mapcar (lambda (inherit-item )
                                   (let (
@@ -1042,6 +1046,8 @@ then this function split it to
                                         (list class-name parent-name )
                                         ))
                                     )) inherit-list  ))
+
+    (message "  reset inherit-list  class count=%d ... " (length add-class-list ) )
     ;; gen class __construct
     (dolist (cur-class-item add-class-list)
       (let ( member-info (cur-class (nth 0  cur-class-item ) ) (file-pos (nth 1 cur-class-item) ) )
@@ -1064,6 +1070,7 @@ then this function split it to
         ;;todo
       ))
 
+    (message "  reset inherit-list  end  "  )
     
     ;;reset return type
     (list class-list function-list inherit-list )))
@@ -1312,6 +1319,7 @@ then this function split it to
           (ac-php-save-data  (ac-php-get-tags-file (string= file-type  "lib") )  (ac-php-gen-data  tags-list tags-dir-len  file-type  )))
          ;;( (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
 
+
         ;;  TODO do cscope  
         (when (and ac-php-cscope  ac-php-use-cscope-flag )
           (message "[%s]rebuild cscope  data file " file-type )
@@ -1337,11 +1345,14 @@ then this function split it to
 
 
 (defun ac-php-save-data (file data)
+  (message "save to  %s ..." file)
+  ;;(f-write  (format "%S" data ) 'utf-8  file)
   (with-temp-file file
     (let ((standard-output (current-buffer))
           (print-circle t) ; Allow circular data
           )  
-      (prin1 data))))
+      (prin1 data)))
+  )
 
 (defun ac-php-load-data (file)
   (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time  )
@@ -1855,6 +1866,9 @@ then this function split it to
   (unless (null ac-php-template-start-point)
     (let ((pos (point)) sl (snp "")
           (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
+
+      ;;remove & in args  "&$item,$v" => "$item,$v"
+      (setq s (s-replace "&" "" s ) )
 
       (cond ((featurep 'yasnippet)
              (setq s (concat "${" s))

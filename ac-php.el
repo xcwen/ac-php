@@ -1222,7 +1222,7 @@ then this function split it to
 (defun ac-php-remake-tags (  )
   " reset tags , if  php source  is changed  "
   (interactive)
-  (ac-php--remake-tags "self" nil )
+  (ac-php--remake-tags "self" nil  )
 )
 
 (defun ac-php-remake-tags-with-lib (  )
@@ -1242,15 +1242,9 @@ then this function split it to
 (defun ac-php--remake-tags ( file-type check-time-flag )
   " reset tags , if  php source  is changed
       opt-flag-value: 0:self , 1:  self + lib , 2 :all remake "
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type   )  
+  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type  cur-file-item )  
     (message "[%s]do remake %s" file-type tags-dir )
     ;;check lib  is ok
-    (when (string=  file-type "self" )
-      (when (or ( not (ac-php-get-tags-data t ) )
-                check-time-flag
-                )
-        (ac-php--remake-tags  "lib" check-time-flag )
-        ))
 
     (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
@@ -1261,8 +1255,21 @@ then this function split it to
       (if (not (file-directory-p obj-tags-dir ))
           (mkdir obj-tags-dir))
       (setq file-list (ac-php--get-php-files-from-config tags-dir  ) )
+
       (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ) )
       
+
+      (setq cur-file-item (assoc-string (buffer-file-name)  file-list t ))  ;; 
+
+      (when (string=  file-type "self" )
+        (when (or ( not (ac-php-get-tags-data t ) ) ;;not find lib
+                  check-time-flag ;; need all rebuild 
+                  (and cur-file-item  (not (nth 2  cur-file-item ) ) ) ;;cur-file-item is lib : (nth 2  cur-file-item ) = nil
+                  )
+
+          (ac-php--remake-tags  "lib" check-time-flag )
+          ))
+
       
       (dolist (file-item file-list )
 

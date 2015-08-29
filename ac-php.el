@@ -86,8 +86,8 @@
 
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
-
 (defvar ac-php-debug-flag nil)
+
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
 ;; (setq debug-on-error t )
@@ -1087,11 +1087,27 @@ then this function split it to
           )
       ""
       )))
+
+(defun ac-php--get-tags-save-dir(work-dir  )
+  (let ((config (ac-php--get-config work-dir))  tags-save-to-home-dir-flag  ret )
+    (when config
+      (setq tags-save-to-home-dir-flag (cdr (assoc-string "tags-save-to-home-dir" config))  )
+      )
+
+    (setq ret (if  tags-save-to-home-dir-flag
+            (concat (getenv "HOME") "/.ac-php/tags"
+                    (replace-regexp-in-string "[/ ]" "-" work-dir)  ) 
+            (concat work-dir "/.tags" )
+        ))
+    (mkdir ret t)
+    (f-full ret )
+    ))
+
+
 (defun ac-php-get-tags-file (&optional is-lib )
-  ""
   (let ((tags-dir (ac-php-get-tags-dir)) )
     (if tags-dir
-        (concat   tags-dir ".tags/tags-data" (if is-lib "-lib" "" ) ".el"  )
+        (concat  (ac-php--get-tags-save-dir tags-dir)  "/tags-data" (if is-lib "-lib" "" ) ".el"  )
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( work-dir path-str)
@@ -1172,13 +1188,15 @@ then this function split it to
     ret-list
     ))
 
-(defun ac-php--get-php-files-from-config (work-dir  )
-  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  lib-filter-info ext-list ext-re-str)
+(defun ac-php--get-config ( work-dir )
+  (let ( config-file-name )
+    
     (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
     (unless (f-exists?  config-file-name )
       (let ((old-config-value json-encoding-pretty-print) )
         (setq  json-encoding-pretty-print  t)
         (f-write-text  (json-encode '(
+                                      :tags-save-to-home-dir-flag nil 
                                       :filter
                                       (
                                        :php-file-ext-list
@@ -1199,9 +1217,15 @@ then this function split it to
         (setq  json-encoding-pretty-print  old-config-value)
         ))
 
+    (json-read-file  config-file-name  ) 
+
+    ))
+
+(defun ac-php--get-php-files-from-config (work-dir  )
+  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  lib-filter-info ext-list ext-re-str)
     
     
-    (setq conf-list (json-read-file  config-file-name  ) )
+    (setq conf-list  (ac-php--get-config work-dir) )
 
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
     (setq lib-filter-info  (cdr (assoc-string "lib-filter" conf-list )) )
@@ -1214,8 +1238,8 @@ then this function split it to
           (push (list ( nth 0 item )  ( nth 1 item ) "self") ret-list )
           )))
 
-    (ac-php--debug "===ret-list :%S" ret-list)
-    ret-list 
+    ;;(ac-php--debug "===ret-list :%S" ret-list)
+    (list ret-list  (cdr (assoc-string "tags-save-to-home-dir" conf-list ))  )
     ))
 
 
@@ -1242,7 +1266,7 @@ then this function split it to
 (defun ac-php--remake-tags ( file-type check-time-flag )
   " reset tags , if  php source  is changed
       opt-flag-value: 0:self , 1:  self + lib , 2 :all remake "
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type  cur-file-item )  
+  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type  cur-file-item tags-save-to-home-dir-flag )  
     (message "[%s]do remake %s" file-type tags-dir )
     ;;check lib  is ok
 
@@ -1251,13 +1275,17 @@ then this function split it to
     (when (and tags-dir  ac-php-executable )
 
       (setq tags-dir-len (length tags-dir) )
-      (setq obj-tags-dir (concat tags-dir ".tags/tags_dir_" (getenv "USER") "/" ))
-      (if (not (file-directory-p obj-tags-dir ))
-          (mkdir obj-tags-dir))
-      (setq file-list (ac-php--get-php-files-from-config tags-dir  ) )
 
-      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ) )
-      
+      (let ((tmp  (ac-php--get-php-files-from-config tags-dir  )   ))
+        (setq  file-list (nth 0 tmp) )
+        (setq tags-save-to-home-dir-flag (nth 1 tmp))
+        )
+
+      (setq  obj-tags-dir  (concat ( ac-php--get-tags-save-dir  tags-dir ) "/tags_dir_" (getenv "USER") "/"))
+      (if (not (file-directory-p obj-tags-dir ))
+          (mkdir obj-tags-dir t))
+      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ))
+
 
       (setq cur-file-item (assoc-string (buffer-file-name)  file-list t ))  ;; 
 
@@ -1283,15 +1311,16 @@ then this function split it to
           (setq obj-file-name   (substring file-name  tags-dir-len   ) )
           (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
           (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
-          (setq  obj-file-name (concat obj-tags-dir  obj-file-name ))
+          (setq  obj-file-name (f-full (concat obj-tags-dir  obj-file-name )))
 
           (push obj-file-name cur-obj-list )
           ;;check change time
+          (ac-php--debug "obj-file-name %s " obj-file-name  )
           (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
 
           (when (or (not obj-item) (< (nth 1 obj-item) src-time )  check-time-flag )
             ;;gen tags file
-            (message "rebuild %s" file-name )
+            (message "rebuild %s " file-name )
             (let ( cmd cmd-output   )
               (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
               (ac-php--debug "exec cmd:%s" cmd)
@@ -1348,7 +1377,7 @@ then this function split it to
           (princ last-phpctags-errmsg )
         (message "[%s]BUILD SUCCESS." file-type)
         ) 
-        )))
+        )) )
 
 
 (defun ac-php-save-data (file data)
@@ -1437,7 +1466,7 @@ then this function split it to
     (let (  class-member-list )
       (dolist (opt-class check-class-list)
         (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t ))) 
-        (ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
+        ;;(ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
         (dolist (member-info class-member-list)
           (when(ac-php--string=-ignore-care (nth 1 member-info ) member    )
             (setq tag-type (nth 0 member-info)  )
@@ -1858,7 +1887,7 @@ then this function split it to
 
   (if ac-php-use-cscope-flag
       (progn
-        (setq cscope-initial-directory  (concat (ac-php-get-tags-dir) ".tags" )  )
+        (setq cscope-initial-directory  (ac-php--get-tags-save-dir (ac-php-get-tags-dir) )  )
         (cscope-find-egrep-pattern symbol)
         )
     (message "need  config: (setq ac-php-use-cscope-flag t)  ")

@@ -290,6 +290,7 @@ like this
 
 ```json
 {
+  "tags-save-to-home-dir" :true,
   "filter": {
     "php-file-ext-list": [
       "php",
@@ -312,6 +313,11 @@ like this
 
 }
 ```
+
+`tags-save-to-home-dir` : default tags data save `.tags` , if set true, will save  to `~/.ac-php/` 
+it's usefull for  edit remote php file  use sshfs mount.
+
+
 `php-file-ext-list` : file extern name list;
 
 `php-path-list`:  find php files *recursion*  ;
@@ -461,3 +467,6 @@ exec : `M-x`: `ac-php-remake-tags-all`
 
 and retest
 
+# php files is in remote server. 
+
+you can set  `tags-save-to-home-dir :true`  in  `.ac-php-conf.json ` 

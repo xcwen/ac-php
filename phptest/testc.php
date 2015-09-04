@@ -1,7 +1,7 @@
 <?php
 
 
-class Testc {
+abstract class Testc {
 
 
     /**

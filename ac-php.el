@@ -1047,14 +1047,18 @@ then this function split it to
                                         ))
                                     )) inherit-list  ))
 
-    (message "  reset inherit-list  class count=%d ... " (length add-class-list ) )
+    (message "==reset inherit-list  class count=%d ... " (length add-class-list ) )
     ;; gen class __construct
     (dolist (cur-class-item add-class-list)
       (let ( member-info (cur-class (nth 0  cur-class-item ) ) (file-pos (nth 1 cur-class-item) ) )
 
-        (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" ))
-        (if member-info
+        (setq member-info (ac-php-get-class-member-info
+                           class-list '() cur-class
+                           (concat (replace-regexp-in-string ".*\\\\" ""  cur-class  ) "(" ) ))
 
+        (unless member-info
+          (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" )))
+        (if member-info
             ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
             (push   (list  "c"  (concat  cur-class  "(")
                            (nth 2  member-info)
@@ -1067,7 +1071,6 @@ then this function split it to
                          cur-class 
                          ) function-list  )
             )
-        ;;todo
       ))
 
     (message "  reset inherit-list  end  "  )

@@ -223,6 +223,15 @@ run with specific customizations set."
     (setq  ret '("this" "." "tt"     ))
     (ac-php-test--parse-line line-txt ret  )
     ))
+(ert-deftest ac-php-test-parse-line-21 ()
+  "text"
+  (let (line-txt  ret )
+    (setq line-txt "  } else  if ($role   == Erole:: ")
+    (setq  ret '("Erole::" "."      ))
+    (ac-php-test--parse-line line-txt ret  )
+    ))
+
+ 
 
 (ert-deftest ac-php-test-parse-line-11 ()
   (let (line-txt  ret )

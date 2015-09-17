@@ -45,6 +45,12 @@ class Testa {
 
         //$this->set_v1(1);
     }
+
+    //声明函数返回值类型的写法和参数类型
+    function foobar(float $abc , array  $B ): int {
+        return ceil($abc + 1);
+    }
+
 }
 
 

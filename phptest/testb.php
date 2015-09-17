@@ -78,17 +78,26 @@ class Testb  extends Ta {
  * @return   T\Testa 
  */
 
-function ff(){
+function ff() {
     return 0;
 }
 
+
+function php7_ff(): T\Testb {
+    return 0;
+}
+
+
+$f=php7_ff();
+
+
 $t=new Ta();
+
 echo $t->get_v1()."\n" ;
 echo Ta::DIR."\n";
 (new Ta())->set_v1   ($v);
 trim("ss","s");
 
-$f=Test\ff();
 
 $s=new Testb($v1,$v2);
 

@@ -708,7 +708,16 @@ then this function split it to
                 (save-excursion 
                   (goto-char (get-text-property 0 'pos  define-str))
                   (end-of-line)    
-                  (re-search-backward ";" )
+                  
+                  (setq line-txt (buffer-substring-no-properties
+                                  (line-beginning-position)
+                                  (line-end-position )))
+                  
+
+                  (if  (string-match "(" line-txt)
+                      (re-search-backward ".[ \t]*(" ) ;; func
+                    (re-search-backward ".[ \t]*;" ) ;;  p
+                      )
                   ;;(backward-char 1)
                   (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
                   (setq symbol-ret (ac-php-find-symbol-at-point-pri))
@@ -1751,6 +1760,7 @@ then this function split it to
 (defun ac-php--get-cur-word-with-function-flag ( )
   (let (start-pos cur-word)
 	(save-excursion
+      (ac-php--debug "ac-php--get-cur-word-with-function-flag:%S" (point)  )
 	  (skip-chars-backward "a-z0-9A-Z_\\\\")
 	  (setq start-pos (point))
 	  (skip-chars-forward "a-z0-9A-Z_\\\\")

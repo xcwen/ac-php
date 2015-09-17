@@ -196,7 +196,17 @@ define class function   return type:
  * @return classtype 
  */
 public function get_v1()
+
 ```
+
+or define use php7 :
+
+```php
+public function get_v1() :classtype  {
+
+}
+```
+
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)

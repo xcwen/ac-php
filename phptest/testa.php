@@ -12,8 +12,9 @@ class Testa {
     /**
      * @var   string 
      */
-    public $v1;
+    public $v1 ;
     
+    public $v3  ;
     /**
      * @var   string 
      */
@@ -47,8 +48,8 @@ class Testa {
     }
 
     //声明函数返回值类型的写法和参数类型
-    function foobar(float $abc , array  $B ): int {
-        return ceil($abc + 1);
+    function php7_func( ): Testa{
+        return new Testa() ;
     }
 
 }

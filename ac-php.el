@@ -1661,10 +1661,9 @@ then this function split it to
 
 (defun ac-php--goto-local-var-def ( local-var )
   (let ( )
-
     (ac-php-location-stack-push)
     (beginning-of-defun)
-    (re-search-forward (concat "\\" local-var) )
+    (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
     (ac-php-location-stack-push)
     ))
 

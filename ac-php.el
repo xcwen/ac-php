@@ -1659,32 +1659,51 @@ then this function split it to
     ret
     ))
 
+(defun ac-php--goto-local-var-def ( local-var )
+  (let ( )
+
+    (ac-php-location-stack-push)
+    (beginning-of-defun)
+    (re-search-forward (concat "\\" local-var) )
+    (ac-php-location-stack-push)
+    ))
 
 (defun ac-php-find-symbol-at-point (&optional prefix)
   (interactive "P")
   ;;检查是类还是 符号 
-  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos tmp-arr)
-    (when symbol-ret
-      (setq type (car symbol-ret ))
-      (cond
-       ((or (string= type "class_member")  (string= type "user_function") )
-        
-        (setq tmp-arr  (s-split ":" (nth 1 symbol-ret) ) )
-        (cond
-         ((s-matches-p "system$" (nth 0 tmp-arr) )
-          (progn ;;system
-            (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1 tmp-arr) )))
-            ))
-         (t
-          (progn 
-            (setq jump-pos  (nth 1  symbol-ret ) )
-            (ac-php-location-stack-push)
-            (ac-php-goto-location jump-pos )
-            (ac-php-location-stack-push)
-            )
-          ))
-        ) 
-       )) ) )
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos tmp-arr local-var  local-var-flag )
+    (setq local-var (ac-php-get-cur-word-with-dollar ) )
+    (setq local-var-flag  (s-matches-p "^\\$"  local-var)  )
+
+    
+    
+    (if symbol-ret
+        (progn 
+          (setq type (car symbol-ret ))
+          (if   (and (not (string= type "class_member") ) local-var-flag  )
+              ( ac-php--goto-local-var-def local-var  )
+            (cond
+             ((or (string= type "class_member")  (string= type "user_function") )
+              
+              (setq tmp-arr  (s-split ":" (nth 1 symbol-ret) ) )
+              (cond
+               ((s-matches-p "system$" (nth 0 tmp-arr) )
+                (progn ;;system function
+                  (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1 tmp-arr) )))
+                  ))
+               (t
+                (progn 
+                  (setq jump-pos  (nth 1  symbol-ret ) )
+                  (ac-php-location-stack-push)
+                  (ac-php-goto-location jump-pos )
+                  (ac-php-location-stack-push)
+                  )
+                ))
+              ) 
+             )))
+      (when local-var-flag ( ac-php--goto-local-var-def local-var  ) )
+      )
+    ))
 
 
 (defun ac-php-gen-def ()
@@ -1757,6 +1776,16 @@ then this function split it to
       (ac-php-clean-namespace-name (buffer-substring-no-properties start-pos (point)))
 	  )
     )) 
+(defun ac-php-get-cur-word-with-dollar ( )
+  (let (start-pos cur-word)
+	(save-excursion
+	  (skip-chars-backward "\\$a-z0-9A-Z_")
+	  (setq start-pos (point))
+	  (skip-chars-forward "\\$a-z0-9A-Z_")
+      (ac-php-clean-namespace-name (buffer-substring-no-properties start-pos (point)))
+	  )
+    )) 
+
 (defun ac-php--get-cur-word-with-function-flag ( )
   (let (start-pos cur-word)
 	(save-excursion

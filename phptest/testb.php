@@ -49,6 +49,8 @@ class Testb  extends Ta {
      */
 	public $get_v2;
 
+	static public $static_v;
+
 
 
 

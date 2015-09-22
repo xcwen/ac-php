@@ -819,7 +819,7 @@ then this function split it to
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-prefix) ) )
 
-    ;;用户函数 + class  
+    ;;user func + class  
     (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
         (progn 
           (setq cur-word (substring-no-properties cur-word 1 ))
@@ -1101,7 +1101,6 @@ then this function split it to
           (setq func-str (s-trim (match-string 1 doc) ) )
           (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "," func-str  ) )
           (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str  ) )
-          ;;(concat func-name "(<#" func-str "#>)" )
           )
       ""
       )))
@@ -1660,6 +1659,7 @@ then this function split it to
     ))
 
 (defun ac-php--goto-local-var-def ( local-var )
+  "goto local-var like vim - gd" 
   (let ( )
     (ac-php-location-stack-push)
     (beginning-of-defun)

@@ -2000,7 +2000,7 @@ then this function split it to
 
 (when (featurep 'auto-complete) 
   
-  (ac-define-source php
+  (eval  '(ac-define-source php
     '((candidates . ac-php-candidate)
       (candidate-face . ac-php-candidate-face)
       (selection-face . ac-php-selection-face)
@@ -2009,14 +2009,14 @@ then this function split it to
       (document . ac-php-document)
       (action . ac-php-action)
       (cache)
-      (symbol . "p")))
+      (symbol . "p"))) )
 
 
-  (ac-define-source php-template
+ (eval  '(ac-define-source php-template
     '((candidates . ac-php-template-candidate)
       (prefix . ac-php-template-prefix)
       (requires . 0)
       (action .  ac-php-template-action)
       (document . ac-php-template-document )
       (cache)
-      (symbol . "t"))))
+      (symbol . "t")))))

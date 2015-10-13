@@ -45,6 +45,15 @@ class Testb  extends Ta {
     /**
      * define value same as function
 
+     * @return TestB 
+     */
+    public function get_v1(){
+        
+    }
+
+    /**
+     * define value same as function
+
      * @var   TestB 
      */
 	public $get_v2;

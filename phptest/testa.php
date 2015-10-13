@@ -39,8 +39,11 @@ class Testa {
         $this->do_f("s","ss");
     }
 
-
-
+       
+    /** 
+	 *
+     * @return   Testa 
+	 */
     public function get_v1(){
         return "sfa" ;
 

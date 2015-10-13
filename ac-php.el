@@ -1474,6 +1474,33 @@ then this function split it to
     (list member type-str )
     ))
 
+(defun ac-php-get-class-member-return-type (class-list inherit-list  class-name member )
+  "get class member return type from super classes "
+  (let ((check-class-list ) (ret ) find-flag  type-str tmp-ret tag-type )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
+    
+    (setq tmp-ret (ac-php--get-item-info member ) )
+    (setq member (nth 0 tmp-ret))
+    (setq type-str (nth 1 tmp-ret))
+
+    (let (  class-member-list )
+      (dolist (opt-class check-class-list)
+        (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t ))) 
+        ;;(ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
+        (dolist (member-info class-member-list)
+          (when (and  (ac-php--string=-ignore-care (nth 1 member-info ) member    )
+                      (string= (nth 0 member-info)  "m")
+                      (nth 4 member-info)
+                      )
+            (setq ret (nth 4 member-info) )
+              
+            (setq find-flag t)
+            (return)))
+        (if find-flag (return) )
+        ))
+    (ac-php--debug "return-type ac-php-get-class-member-info  ret=%S" ret)
+    ret))
+
 
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
@@ -1503,6 +1530,13 @@ then this function split it to
               (return))))
         (if find-flag (return) )
         ))
+
+    (when (and
+           (string= "m" (nth 0 ret ) ) ;;member
+           (not (nth 4 ret )));; return type :nil
+
+      (setf (nth 4 ret) (ac-php-get-class-member-return-type  class-list inherit-list  class-name member ) ))
+
     (ac-php--debug "ac-php-get-class-member-info  ret=%S" ret)
     ret))
 

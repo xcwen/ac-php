@@ -814,7 +814,7 @@ then this function split it to
 
 (defun ac-php-candidate-other ( tags-data)
   
-  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value  start-word-pos (function-list (nth 1 tags-data )  ) key-word func-name  end-flag  )
+  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value  start-word-pos (function-list (nth 1 tags-data )  ) key-word func-name  )
 
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-prefix) ) )
@@ -823,12 +823,9 @@ then this function split it to
     (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
         (progn 
           (setq cur-word (substring-no-properties cur-word 1 ))
-          (setq end-flag (string= (substring-no-properties cur-word  -1   )  "\\" ))
           (dolist (function-item function-list )
             (when (s-prefix-p  cur-word (nth 1 function-item )  t )
-              (if end-flag
-                  (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
-                (setq key-word  (substring-no-properties (nth  1  function-item )  (1- start-word-pos )))) 
+              (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
 
               (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
               (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
@@ -2014,23 +2011,22 @@ then this function split it to
 
 
 (defun ac-php-prefix ()
-  (or (ac-prefix-symbol)
-      (let ((c (char-before)) ret )
-        (when (or
-               ;; ->
-               (and (eq ?> c) (eq ?- (char-before (1- (point)))))
-               ;; :: 
-               (and (eq ?: c) (eq ?: (char-before (1- (point))))))
+  (let ((c (char-before)) ret )
+    (when (or
+           ;; ->
+           (and (eq ?> c) (eq ?- (char-before (1- (point)))))
+           ;; :: 
+           (and (eq ?: c) (eq ?: (char-before (1- (point))))))
 
-          (setq  ret (point)))
-        (unless ret
-          (save-excursion
-            (skip-chars-backward "a-z0-9A-Z_\\\\")
-            (setq ret (point))
-            )
-          )
-        ret
-        )))
+      (setq  ret (point)))
+    (unless ret
+      (save-excursion
+        (skip-chars-backward "a-z0-9A-Z_\\\\")
+        (setq ret (point))
+        )
+      )
+    ret
+    ))
 
 (when (featurep 'auto-complete) 
   

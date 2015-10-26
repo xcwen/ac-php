@@ -629,7 +629,7 @@ then this function split it to
 
 (defun ac-php-get-class-at-point( &optional pos  )
 
-  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str frist-key-str  (class-list (nth 0 (ac-php-get-tags-data)) ) )
+  (let (line-txt old-line-txt  key-line-txt  key-list   tmp-key-list frist-class-name  frist-key  ret-str frist-key-str  (class-list (nth 0 (ac-php-get-tags-data)) ) reset-array-to-class-function-flag )
     
     ;; default use cur point 
     (unless  pos (setq pos (point) ))
@@ -639,8 +639,16 @@ then this function split it to
                      pos  )))
 
     (setq old-line-txt line-txt)
+    ;;  array($xxx, "abc" ) => $xxx->abc
+    ;;(setq line-string  (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  "$server->on('sdfa',array($this, \"sss" ))
+    (setq line-txt (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  line-txt ))
+    (ac-php--debug "line-txt:%s" line-txt)
 
-    (if (ac-php-check-not-in-string-or-comment pos)
+    (setq reset-array-to-class-function-flag (not (string= line-txt old-line-txt )))
+
+    (if (or (ac-php-check-not-in-string-or-comment pos)
+            reset-array-to-class-function-flag
+            )
         (progn
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt ))) 
@@ -1704,11 +1712,12 @@ then this function split it to
 (defun ac-php-find-symbol-at-point (&optional prefix)
   (interactive "P")
   ;;检查是类还是 符号 
-  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type jump-pos tmp-arr local-var  local-var-flag )
+  (let (symbol-ret  type jump-pos tmp-arr local-var  local-var-flag )
     (setq local-var (ac-php-get-cur-word-with-dollar ) )
     (setq local-var-flag  (s-matches-p "^\\$"  local-var)  )
 
     
+    (setq symbol-ret  (ac-php-find-symbol-at-point-pri) )
     (unless symbol-ret
       (setq symbol-ret (ac-php-find-symbol-at-point-pri t))
       ) 

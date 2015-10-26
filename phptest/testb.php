@@ -77,8 +77,11 @@ class Testb  extends Ta {
         if ($testv->set_v1("s") && $testv->set_v1() ){
 
         }
+        $f=array($this->v8, "do_f" );
+
 
         $this->get_v2()->set_v1("s");
+        
 
 
         

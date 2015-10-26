@@ -641,7 +641,7 @@ then this function split it to
     (setq old-line-txt line-txt)
     ;;  array($xxx, "abc" ) => $xxx->abc
     ;;(setq line-string  (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  "$server->on('sdfa',array($this, \"sss" ))
-    (setq line-txt (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  line-txt ))
+    (setq line-txt (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_> \t-]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  line-txt ))
     (ac-php--debug "line-txt:%s" line-txt)
 
     (setq reset-array-to-class-function-flag (not (string= line-txt old-line-txt )))

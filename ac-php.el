@@ -1602,12 +1602,15 @@ then this function split it to
 (defun ac-php--get-namespace-from-classname (classname)
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
-(defun ac-php-find-symbol-at-point-pri ()
+(defun ac-php-find-symbol-at-point-pri ( &optional  as-function-flag)
   (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data ret)
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
-    (setq cur-word  (ac-php--get-cur-word-with-function-flag ))
+    (if as-function-flag 
+        (setq cur-word  (concat (ac-php--get-cur-word ) "(" )) 
+      (setq cur-word  (ac-php--get-cur-word-with-function-flag ))
+      )
     (ac-php--debug "key-str-list==begin:cur-word:%s" cur-word )
     (setq key-str-list (ac-php-get-class-at-point  ))
 
@@ -1706,6 +1709,9 @@ then this function split it to
     (setq local-var-flag  (s-matches-p "^\\$"  local-var)  )
 
     
+    (unless symbol-ret
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri t))
+      ) 
     
     (if symbol-ret
         (progn 
@@ -1739,7 +1745,7 @@ then this function split it to
 (defun ac-php-gen-def ()
   "DOCSTRING"
   (interactive)
-  (let (line-txt (cur-word  (ac-php-get-cur-word ) ) )
+  (let (line-txt (cur-word  (ac-php--get-cur-word ) ) )
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
@@ -1797,7 +1803,7 @@ then this function split it to
         (ac-php-candidate-class tags-data key-str-list  )
       (ac-php-candidate-other tags-data))
     ))
-(defun ac-php-get-cur-word ( )
+(defun ac-php--get-cur-word ( )
   (let (start-pos cur-word)
 	(save-excursion
 	  (skip-chars-backward "a-z0-9A-Z_\\\\")

@@ -262,6 +262,9 @@ class Testa {
         $q=new SplQueue ();
         $q->push(11);
 
+       //jump for class function point
+        $f=array($this->v8, "test_A" );
+        $f();
 
     }
 

@@ -79,6 +79,7 @@ class Testb  extends Ta {
         }
         $f=array($this->v8, "do_f" );
 
+        $f();
 
         $this->get_v2()->set_v1("s");
         

@@ -84,6 +84,7 @@
 (if (featurep 'php-mode)  (require 'php-mode))
 (if (featurep 'popup) (require 'popup) )
 
+(defvar ac-php-php-executable (executable-find "php") )
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
 (defvar ac-php-debug-flag nil)
@@ -1292,9 +1293,10 @@ then this function split it to
     (message "[%s]do remake %s" file-type tags-dir )
     ;;check lib  is ok
 
+    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
     (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when (and tags-dir  ac-php-executable )
+    (when (and tags-dir  ac-php-executable ac-php-php-executable )
 
       (setq tags-dir-len (length tags-dir) )
 

@@ -47,7 +47,7 @@
 ;; save it as .emacs  then restart emacs  and open php file to test
 ;;
 ;;(setq package-archives
-;;      '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+;;      '(("melpa" . "https://melpa.org/packages/")) )
 ;;
 ;;(package-initialize)
 ;;(unless (package-installed-p 'ac-php )

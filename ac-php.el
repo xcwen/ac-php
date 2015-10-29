@@ -1465,7 +1465,7 @@ then this function split it to
     (while (and (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )))
                 (not (assoc-string   tmp-class check-class-list )))
 
-      (push  (ac-php-clean-namespace-name (nth 0 (s-split "," tmp-class)) ) check-class-list )
+      (push (ac-php--get-class-name-from-parent-define tmp-class ) check-class-list )
       )
     (nreverse check-class-list )
     ))
@@ -1566,7 +1566,10 @@ then this function split it to
         ))
     ret
     ))
-
+(defun  ac-php--get-class-name-from-parent-define(  parent-list-str )
+    " '\\Class1,interface1' => Class1  "
+    (ac-php-clean-namespace-name (s-trim (nth 0 (s-split ","  parent-list-str )) ) )
+)
 
 (defun ac-php-get-class-name-by-key-list( tags-data key-list-str )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
@@ -1581,7 +1584,11 @@ then this function split it to
           (if (string= item "__parent__" )
               (progn
                 (setq cur-class (nth 1 (assoc-string cur-class inherit-list  t ))  ) 
-                (if (not cur-class) (setq cur-class "") ))
+
+                (if cur-class
+                    (setq cur-class (ac-php--get-class-name-from-parent-define cur-class )) 
+                    (setq cur-class "")
+                ))
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))
               (setq cur-class (if  member-info
@@ -1639,6 +1646,7 @@ then this function split it to
                       (setq cur-word (nth (1- (length key-arr)) key-arr ))))
 
                   (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list ))
+                  (ac-php--debug "class. key-str-list = %s "  key-str-list )
                   (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list ))
 
                   (ac-php--debug "class.member= %s.%s " class-name  cur-word )

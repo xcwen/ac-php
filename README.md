@@ -86,7 +86,7 @@ cp ~/.emacs ~/.emacs.bak
 save it as `~/.emacs`
 ```elisp
   (setq package-archives
-        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+        '(("melpa" . "https://melpa.org/packages/")) )
   (package-initialize)
   (unless (package-installed-p 'ac-php )
     (package-refresh-contents)
@@ -119,7 +119,7 @@ emacs ~/ac-php/phptest/testb.php
 * install `ac-php` from melpa
 ```elisp
   (setq package-archives
-        '(("melpa" . "http://melpa.milkbox.net/packages/")) )
+        '(("melpa" . "https://melpa.org/packages/")) )
 ```
 
 "M-x" :`package-list-packages`  find  `ac-php` install

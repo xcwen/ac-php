@@ -19,6 +19,8 @@ core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ...
 
 externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 
+externed:  Redis ,Swoole 
+
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
 * support user self class system

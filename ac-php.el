@@ -1018,14 +1018,8 @@ then this function split it to
          ((string= tag-type "f")
           ;;  check in type field
           ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  "function kk(){"  "f"  ("namespace". "xxx" )  "return_type" )
-       ;;get  return type
-
+          ;;get  return type
           (setq return-type  (nth  5 line-data ))
-          (unless return-type 
-            (setq return-type  (if (string-match
-                                    (concat ".*::[ \t]*\\("ac-php-word-re-str "\\).*")  doc)
-                                   (ac-php-clean-namespace-name (match-string 1  doc  ) )
-                                 "")))
 
           (setq scope (nth 4   line-data ))
           (when (and  (car scope   )
@@ -1041,19 +1035,30 @@ then this function split it to
           ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  nil  "d"  ("namespace". "xxx" )   "return_type" )
           (setq scope (nth 4   line-data ))
 
-          (if   scope   
-              (progn ;class
-                (setq class-name  (cdr scope) )
-                (setq doc  tag-name )
-                (setq access (nth 5 line-data) )
-                (setq return-type (nth 6 line-data))
-                
-                (when (not (assoc-string class-name class-list t ))
-                  (push (list class-name nil ) class-list))
+          (let ( (scope-type (car scope) ) )
+            (cond
+             ( (string= scope-type "namespace" )
+               (progn
+                 (setq tag-name  (concat (cdr scope) "\\" tag-name ) )
+                 (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )
+                 ) 
+               )
+             ( (string= scope-type "class" )
+               (progn ;class
+                 (setq class-name  (cdr scope) )
+                 (setq doc  tag-name )
+                 (setq access (nth 5 line-data) )
+                 (setq return-type (nth 6 line-data))
+                 
+                 (when (not (assoc-string class-name class-list t ))
+                   (push (list class-name nil ) class-list))
 
-                (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type)  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
-                )
-            (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )))
+                 ;; TODO  use `cadr' to save to class-list  ,,maybe has  better way,
+                 (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type)  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
+                 ))
+             (t
+              (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )))))
+
          ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
 
           ;;("Testb"  "/home/jim/ac-php/phptest/testb.php:5"  nil  "c" ("namespace"."Test") "Testa" )

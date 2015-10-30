@@ -981,6 +981,8 @@ then this function split it to
     (list class-list function-list inherit-list )
     ))
 
+;;for auto check file  
+
 (defun ac-php-gen-data ( tags-list project-dir-len  file-type)
   "gen-el-data"
   (let ( base-tags-data

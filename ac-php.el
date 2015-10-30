@@ -926,6 +926,60 @@ then this function split it to
   (when return-type 
   (ac-php-clean-namespace-name (s-trim (replace-regexp-in-string "|.*" "" return-type ) ) ))
   )
+(defun ac-php--gen-data-end-deal(  class-list function-list inherit-list  add-class-list)
+    ""
+  (let ()
+    
+    (message " reset inherit-list ...  count=%d " (length inherit-list) )
+    ;;reset inherit-list
+    (setq  inherit-list (mapcar (lambda (inherit-item )
+
+                                  (let (
+                                        (class-name (nth 0 inherit-item))
+                                        (parent-name (nth 1 inherit-item)) cur-namespace check-classname )
+                                    (if (s-index-of "\\" parent-name )
+                                        inherit-item
+                                      (progn
+                                        (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
+                                        ;;check class in namespace
+                                        (setq check-classname (concat cur-namespace "\\" parent-name ) )
+                                        (when (assoc-string check-classname class-list t )
+                                          (setq parent-name  check-classname))
+                                        (list class-name parent-name )
+                                        ))
+                                    )) inherit-list  ))
+
+    (message " add-class-list count=%d ... " (length add-class-list ) )
+    ;; gen class __construct
+    (dolist (cur-class-item add-class-list)
+      (let ( member-info (cur-class (nth 0  cur-class-item ) ) (file-pos (nth 1 cur-class-item) ) )
+
+        (setq member-info (ac-php-get-class-member-info
+                           class-list '() cur-class
+                           (concat (replace-regexp-in-string ".*\\\\" ""  cur-class  ) "(" ) ))
+
+        (unless member-info
+          (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" )))
+        (if member-info
+            ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
+            (push   (list  "c"  (concat  cur-class  "(")
+                           (nth 2  member-info)
+                           (nth 3  member-info) 
+                           cur-class 
+                           ) function-list  )
+          (push   (list  "c"  (concat  cur-class  "(")
+                         "" 
+                         file-pos
+                         cur-class 
+                         ) function-list  )
+            )
+      ))
+
+    (message "  reset inherit-list  end  "  )
+
+
+    (list class-list function-list inherit-list )
+    ))
 
 (defun ac-php-gen-data ( tags-list project-dir-len  file-type)
   "gen-el-data"
@@ -1050,54 +1104,9 @@ then this function split it to
 
          )))
 
-    (message "tags-list deal end and reset inherit-list ... ")
-    ;;reset inherit-list
-    (setq  inherit-list (mapcar (lambda (inherit-item )
-                                  (let (
-                                        (class-name (nth 0 inherit-item))
-                                        (parent-name (nth 1 inherit-item)) cur-namespace check-classname )
-                                    (if (s-index-of "\\" parent-name )
-                                        inherit-item
-                                      (progn
-                                        (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
-                                        ;;check class in namespace
-                                        (setq check-classname (concat cur-namespace "\\" parent-name ) )
-                                        (when (assoc-string check-classname class-list t )
-                                          (setq parent-name  check-classname))
-                                        (list class-name parent-name )
-                                        ))
-                                    )) inherit-list  ))
-
-    (message "==reset inherit-list  class count=%d ... " (length add-class-list ) )
-    ;; gen class __construct
-    (dolist (cur-class-item add-class-list)
-      (let ( member-info (cur-class (nth 0  cur-class-item ) ) (file-pos (nth 1 cur-class-item) ) )
-
-        (setq member-info (ac-php-get-class-member-info
-                           class-list '() cur-class
-                           (concat (replace-regexp-in-string ".*\\\\" ""  cur-class  ) "(" ) ))
-
-        (unless member-info
-          (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  "__construct(" )))
-        (if member-info
-            ;;(push   (list  "f"  (concat tag-name "(") (concat tag-name  "()" ) file-pos  tag-name  ) function-list  )
-            (push   (list  "c"  (concat  cur-class  "(")
-                           (nth 2  member-info)
-                           (nth 3  member-info) 
-                           cur-class 
-                           ) function-list  )
-          (push   (list  "c"  (concat  cur-class  "(")
-                         "" 
-                         file-pos
-                         cur-class 
-                         ) function-list  )
-            )
-      ))
-
-    (message "  reset inherit-list  end  "  )
     
-    ;;reset return type
-    (list class-list function-list inherit-list )))
+    (ac-php--gen-data-end-deal  class-list function-list inherit-list  add-class-list)
+    ))
 
 (defun  ac-php-gen-el-func (  doc)
   " example doc 'xxx($x1,$x2)' => $x1 , $x2  "

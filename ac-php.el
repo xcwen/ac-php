@@ -1338,10 +1338,11 @@ then this function split it to
     ))
 
 
-(defun ac-php-get-tags-file (&optional is-lib )
+(defun ac-php-get-tags-file (&optional is-cache2)
   (let ((tags-dir (ac-php-get-tags-dir)) )
     (if tags-dir
-        (concat  (ac-php--get-tags-save-dir tags-dir)  "/tags-data" (if is-lib "-lib" "" ) ".el"  )
+        (concat  (ac-php--get-tags-save-dir tags-dir)  "/tags-data" (if is-cache2 "-cache2" "" ) ".el"  )
+      
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( work-dir path-str)
@@ -1531,8 +1532,8 @@ then this function split it to
     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))
 
 
-(defun ac-php-get-tags-data (&optional is-lib )
-  (let ((tags-file   (ac-php-get-tags-file is-lib )))
+(defun ac-php-get-tags-data (&optional is-cache2 )
+  (let ((tags-file   (ac-php-get-tags-file is-cache2 )))
     (if tags-file
         (ac-php-load-data  tags-file  )
       ac-php-comm-tags-data-list ))) 

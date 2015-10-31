@@ -87,6 +87,8 @@
 (defvar ac-php-php-executable (executable-find "php") )
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
+(defvar ac-php-cache1-file-count 10)
+
 (defvar ac-php-debug-flag nil)
 
 ;;(setq ac-php-debug-flag t)
@@ -978,18 +980,196 @@ then this function split it to
     (message "  reset inherit-list  end  "  )
 
 
-    (list class-list function-list inherit-list )
+    (list class-list function-list inherit-list add-class-list  )
     ))
 
-(defun ac-php-gen-data ( tags-list project-dir-len  file-type)
+(defun ac-php--cache-files-save  (file-path cache1-files cache2-files  )
+
+  (let ((old-config-value json-encoding-pretty-print) json-data)
+    (setq  json-encoding-pretty-print  t)
+    (setq  json-data
+           (json-encode (list
+                         :cache1-files   cache1-files 
+                         :cache2-files   cache2-files 
+                         )))
+
+    (f-write-text json-data 'utf-8 file-path)
+    (setq  json-encoding-pretty-print  old-config-value)
+    )
+  ) 
+
+;;for auto check file  
+(defun ac-php--reset-cache-files-and-rebuild-file  (tags-dir do-all-flag )
+    "DOCSTRING cache1-files: last edit files:  cache2-files: others"
+  (let ( tags-dir-len cache1-file-list cache2-file-list  cache-file-info file-list tags-save-to-home-dir-flag save-tags-dir obj-tags-list all-file-list  last-phpctags-errmsg update-tag-file-list  cache-file-name )
+
+    (message "do remake %s"  tags-dir )
+    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
+    (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
+    (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
+
+    ;;get last-save-info
+    (setq save-tags-dir (ac-php--get-tags-save-dir tags-dir) )
+    (setq tags-dir-len (length tags-dir))
+    
+    (message " REBUILD start  ")
+    (setq cache-file-name (f-join save-tags-dir "cache-files.json"  ) )
+    (unless (f-exists?  cache-file-name )
+      ( ac-php--cache-files-save  cache-file-name [] [] ))
+    (setq cache-file-info (json-read-file  cache-file-name)  )
+
+    (setq cache1-file-list  (cdr (assoc-string "cache1-files"  cache-file-info)) )
+    (setq cache2-file-list  (cdr (assoc-string "cache2-files"  cache-file-info)) )
+    
+
+    (message " REBUILD: load file  modify time  start")
+    (let ((tmp  (ac-php--get-php-files-from-config tags-dir  )   ))
+      (setq  file-list (nth 0 tmp) )
+      (setq tags-save-to-home-dir-flag (nth 1 tmp))
+      )
+    (setq obj-tags-list (ac-php--get-obj-tags-file-list  save-tags-dir ) )
+    
+    (message " REBUILD:  rebuild file start")
+    
+    (let  ( file-name src-time  obj-file-name   obj-item ) 
+      (dolist (file-item file-list )
+
+        (setq  file-name (nth  0 file-item )  )
+        (setq src-time  (nth 1 file-item ) )
+        (setq obj-file-name   (substring file-name  tags-dir-len   ) )
+        (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
+        (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
+        (setq obj-file-name (f-full (concat (ac-php--get-obj-tags-dir save-tags-dir )   obj-file-name )))
+
+        ;;check change time
+        (ac-php--debug "obj-file-name %s " obj-file-name  )
+        (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
+
+        (push (list file-name src-time obj-file-name ) all-file-list)
+
+        (when (or (not obj-item) (< (nth 1 obj-item) src-time )  do-all-flag )
+          ;;gen tags file
+          (message "rebuild %s " file-name )
+          (let ( cmd cmd-output )
+            (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
+            (ac-php--debug "exec cmd:%s" cmd)
+            (setq cmd-output (shell-command-to-string  cmd) )
+            
+            (when (> (length cmd-output) 3)
+              (delete-file  obj-file-name  )
+              (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
+              (return) ;;break
+              ))
+          (push file-name update-tag-file-list )
+          ;;gen el data file
+          )))
+
+
+
+    (if (not last-phpctags-errmsg )
+      (let ( (new-all-file-list-count (length all-file-list ) )
+             new-cache1-file-list new-cache2-file-list
+             reset-cache1-tags-flag
+             reset-cache2-tags-flag
+             )
+        ;;sort by modiy time
+        (setq new-cache2-file-list  (sort  all-file-list #'(lambda (a1 a2)
+                                (> (nth  1 a1) (nth 1 a2) )))) 
+        
+
+        ;;set new-cache1-file-list new-cache2-file-list 
+        (let ( (new-cur-add-count 0) )
+          (while (and   new-cache2-file-list  (< new-cur-add-count  ac-php-cache1-file-count ) )
+
+            (push (car  new-cache2-file-list) new-cache1-file-list )
+            (setq new-cache2-file-list (cdr  new-cache2-file-list))
+            (setq new-cur-add-count (1+ new-cur-add-count ) ))
+          )
+        
+        ;;set reset-cache1-tags-flag  reset-cache2-tags-flag
+        (if  do-all-flag
+            (progn
+              (setq reset-cache1-tags-flag  t )
+              (setq reset-cache2-tags-flag  t )
+              )
+          (dolist (file-name update-tag-file-list )
+            (cond
+             ((assoc-string file-name    cache1-file-list   )
+              (setq reset-cache1-tags-flag  t )
+              )
+             ((assoc-string file-name   cache2-file-list  ) ;; 
+              (setq reset-cache1-tags-flag  t ) 
+              (setq reset-cache2-tags-flag  t )
+              (return)
+              )
+             (t
+              (setq reset-cache1-tags-flag  t )
+              (setq reset-cache2-tags-flag  t )
+              (return)
+              ) ;;no find  
+             )))
+        
+        (let (add-class-list)  
+          (when reset-cache2-tags-flag
+
+            (message " REBUILD:  cache2-file-list ... ")
+            (setq add-class-list (ac-php--gen-data-from-el-tags  new-cache2-file-list  "cache2" tags-dir-len  add-class-list  ))
+            )
+
+          (when reset-cache1-tags-flag
+            (message " REBUILD:  cache1-file-list ... ")
+            (ac-php--gen-data-from-el-tags  new-cache1-file-list "cache1"  tags-dir-len add-class-list )
+            ))
+        ;;reset cscope
+        (ac-php--remake-cscope tags-dir all-file-list   )
+
+        (ac-php--cache-files-save  cache-file-name  new-cache1-file-list  new-cache2-file-list  )
+
+        (message "REBUILD SUCCESS ")
+        )
+      (progn ;;error 
+        (message last-phpctags-errmsg)
+        nil)))
+  )
+
+(defun ac-php--gen-data-from-el-tags  ( file-list cache-type tags-dir-len add-class-list )
+  "DOCSTRING"
+  (let ( tags-list )
+    (message "[%s]BUILD marge files (count=%d ) start..." cache-type (length file-list) )
+    (with-temp-buffer
+      (insert "(")
+      (while file-list 
+
+        (goto-char (point-max) )
+        (insert-file-contents (nth 2 (car  file-list )))
+        (setq  file-list (cdr  file-list)))
+
+      (goto-char (point-max) )
+      (insert ")")
+
+      (goto-char (point-min) )
+      (setq  tags-list (read (current-buffer))))
+
+    (message "[%s]BUILD marge files end  and then start deal ..." cache-type)
+
+    (let (tmp-ret )
+      (setq tmp-ret (ac-php-gen-data  tags-list tags-dir-len  cache-type add-class-list ) )
+      
+      (ac-php-save-data  (ac-php-get-tags-file (string= cache-type  "cache2") )
+                         (list (nth 0 tmp-ret) (nth 1 tmp-ret)  (nth 2 tmp-ret)  ) )
+      (nth 3 tmp-ret ))
+    ))
+
+
+(defun ac-php-gen-data ( tags-list project-dir-len  cache-type add-class-list)
   "gen-el-data"
   (let ( base-tags-data
         (class-list  )
         (function-list )
         (inherit-list  )
-        (file-start-pos project-dir-len ) (count 0 )  add-class-list  )
+        (file-start-pos project-dir-len ) (count 0 )  )
 
-    (setq  base-tags-data (if (string= file-type  "self"  )
+    (setq  base-tags-data (if (string=  cache-type  "cache1"  )
                               (ac-php-get-tags-data t)  
                             ac-php-comm-tags-data-list  
                             ))
@@ -1109,8 +1289,9 @@ then this function split it to
 
          )))
 
-    
-    (ac-php--gen-data-end-deal  class-list function-list inherit-list  add-class-list)
+    (if (string= cache-type  "cache1")
+        (ac-php--gen-data-end-deal  class-list function-list inherit-list  add-class-list )
+      (list class-list function-list inherit-list  add-class-list ))
     ))
 
 (defun  ac-php-gen-el-func (  doc)
@@ -1151,6 +1332,7 @@ then this function split it to
   (if  (s-ends-with? "*.php" path-str )
       (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) work-dir) )
     (format "php-path-list->%s" (f-relative path-str work-dir ))))
+
 (defun ac-php-get-php-files-from-filter(  work-dir filter-info  )
   (let (  conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name   ext-list ext-re-str )
     (when  filter-info
@@ -1221,7 +1403,6 @@ then this function split it to
             ))
         )
       )
-    (ac-php--debug  "++++:%S" ret-list)
     ret-list
     ))
 
@@ -1241,14 +1422,6 @@ then this function split it to
                                        :php-path-list (".")
                                        :php-path-list-without-subdir [] 
                                        )
-                                      :lib-filter
-                                      (
-                                       :php-file-ext-list
-                                       ("php" "inc")
-                                       :php-path-list [] 
-                                       :php-path-list-without-subdir [] 
-                                       )
-
                                       )
                                     ) 'utf-8 config-file-name)
         (setq  json-encoding-pretty-print  old-config-value)
@@ -1259,167 +1432,62 @@ then this function split it to
     ))
 
 (defun ac-php--get-php-files-from-config (work-dir  )
-  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  lib-filter-info ext-list ext-re-str)
+  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
     
     
     (setq conf-list  (ac-php--get-config work-dir) )
 
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
-    (setq lib-filter-info  (cdr (assoc-string "lib-filter" conf-list )) )
-    (setq ret-list (ac-php-get-php-files-from-filter work-dir lib-filter-info  ) )
-    ;;处理
-    (let (( filter-list  (ac-php-get-php-files-from-filter work-dir filter-info  )) )
-      (ac-php--debug "filter-list :%S" filter-list)
-      (dolist (item filter-list)
-        (unless (assoc-string (car item ) ret-list  )
-          (push (list ( nth 0 item )  ( nth 1 item ) "self") ret-list )
-          )))
-
+    (setq ret-list (ac-php-get-php-files-from-filter work-dir filter-info  ) )
     ;;(ac-php--debug "===ret-list :%S" ret-list)
     (list ret-list  (cdr (assoc-string "tags-save-to-home-dir" conf-list ))  )
     ))
 
 
-(defun ac-php-remake-tags (  )
+(defun ac-php-remake-tags ( )
   " reset tags , if  php source  is changed  "
   (interactive)
-  (ac-php--remake-tags "self" nil  )
-)
-
-(defun ac-php-remake-tags-with-lib (  )
-  " reset tags , if  php source  is changed  "
-  (interactive)
-  (when (ac-php--remake-tags "lib" nil )
-    (ac-php--remake-tags "self" nil ))
+  (ac-php--reset-cache-files-and-rebuild-file  (ac-php-get-tags-dir) nil )
 )
 
 (defun ac-php-remake-tags-all (  )
   "  remake tags without check modify time "
   (interactive)
-  (ac-php--remake-tags  "self" t )
+  (ac-php--reset-cache-files-and-rebuild-file  (ac-php-get-tags-dir) t)
 )
 
-
-(defun ac-php--remake-tags ( file-type check-time-flag )
-  " reset tags , if  php source  is changed
-      opt-flag-value: 0:self , 1:  self + lib , 2 :all remake "
-  (let ((tags-dir (ac-php-get-tags-dir) ) tags-dir-len file-list  obj-tags-dir file-name obj-file-name cur-obj-list src-time   obj-item cmd  el-data last-phpctags-errmsg obj-tags-list from-type  cur-file-item tags-save-to-home-dir-flag  ret lib-deal-ret)  
-    (message "[%s]do remake %s" file-type tags-dir )
-    ;;check lib  is ok
-
-    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
-    (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
-    (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when (and tags-dir  ac-php-executable ac-php-php-executable )
-
+(defun ac-php--remake-cscope (  tags-dir all-file-list )
+  "DOCSTRING"
+  (let ( tags-dir-len)
+    (when (and ac-php-cscope  ac-php-use-cscope-flag )
+      (message "rebuild cscope  data file " )
       (setq tags-dir-len (length tags-dir) )
-
-      (let ((tmp  (ac-php--get-php-files-from-config tags-dir  )   ))
-        (setq  file-list (nth 0 tmp) )
-        (setq tags-save-to-home-dir-flag (nth 1 tmp))
-        )
-
-      (setq  obj-tags-dir  (concat ( ac-php--get-tags-save-dir  tags-dir ) "/tags_dir_" (getenv "USER") "/"))
-      (if (not (file-directory-p obj-tags-dir ))
-          (mkdir obj-tags-dir t))
-      (setq obj-tags-list (ac-php-find-php-files obj-tags-dir  "\\.el$" t ))
-
-
-      (setq cur-file-item (assoc-string (buffer-file-name)  file-list t ))  ;; 
-
-      (setq lib-deal-ret t)
-      (when (string=  file-type "self" )
-        (when (or ( not (ac-php-get-tags-data t ) ) ;;not find lib
-                  check-time-flag ;; need all rebuild 
-                  (and cur-file-item  (not (nth 2  cur-file-item ) ) ) ;;cur-file-item is lib : (nth 2  cur-file-item ) = nil
-                  )
-
-          (setq lib-deal-ret (ac-php--remake-tags  "lib" check-time-flag ) )
-          ))
-
-      (when lib-deal-ret  
-        (dolist (file-item file-list )
-
-          (setq from-type  (nth 2 file-item ) )
-          (unless from-type (setq  from-type "lib")   )
-
-          (when ( string= from-type file-type )
-            
-            (setq  file-name (nth  0 file-item )  )
-            (setq src-time  (nth 1 file-item ) )
-            (setq obj-file-name   (substring file-name  tags-dir-len   ) )
-            (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
-            (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
-            (setq  obj-file-name (f-full (concat obj-tags-dir  obj-file-name )))
-
-            (push obj-file-name cur-obj-list )
-            ;;check change time
-            (ac-php--debug "obj-file-name %s " obj-file-name  )
-            (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
-
-            (when (or (not obj-item) (< (nth 1 obj-item) src-time )  check-time-flag )
-              ;;gen tags file
-              (message "rebuild %s " file-name )
-              (let ( cmd cmd-output   )
-                (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
-                (ac-php--debug "exec cmd:%s" cmd)
-                (setq cmd-output (shell-command-to-string  cmd) )
-                
-                (when (> (length cmd-output) 3)
-                  (princ (concat "phpctags ERROR:" cmd-output ))
-                  (delete-file  obj-file-name  )
-                  (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))))
-              ;;gen el data file
-              )))
-
-        (unless last-phpctags-errmsg
-          ;;read data
-          (let ((temp-list cur-obj-list) tags-list )
-            (with-temp-buffer
-              (message "[%s]BUILD marge files (count=%d ) start..." file-type (length cur-obj-list) )
-              (insert "(")
-              (while temp-list  
-
-                (goto-char (point-max) )
-                (insert-file-contents (car   temp-list ))
-                (setq temp-list (cdr  temp-list)))
-
-              (goto-char (point-max) )
-              (insert ")")
-
-              (goto-char (point-min) )
-              (setq  tags-list (read (current-buffer))))
-
-            (message "[%s]BUILD marge files end  and then start deal ..." file-type)
-            (ac-php-save-data  (ac-php-get-tags-file (string= file-type  "lib") )  (ac-php-gen-data  tags-list tags-dir-len  file-type  )))
-          ;;( (ac-php-get-tags-file ) (ac-php-gen-data  tags-lines tags-dir-len)  )
-
-
-          ;;  TODO do cscope  
-          (when (and ac-php-cscope  ac-php-use-cscope-flag )
-            (message "[%s]rebuild cscope  data file " file-type )
-            ;;write cscope.files
-            (let ((file-name-list ) cscope-file-name )
-              (dolist (file-item file-list )
-                (setq cscope-file-name (concat "../" (substring (nth  0 file-item ) tags-dir-len)  ))
-                (push  cscope-file-name   file-name-list ))
-              (f-write
-               (s-join  "\n" file-name-list )
-               'utf-8
-               (concat tags-dir ".tags/cscope.files" ) ))
-            (shell-command-to-string
-             (concat " cd " tags-dir ".tags &&  cscope -bkq -i cscope.files  ") ) )
-
-          )
-
-        (if last-phpctags-errmsg
-            (princ last-phpctags-errmsg )
-          (message "[%s]BUILD SUCCESS." file-type)
-          (setq ret t)
-          ) 
-        ))
-    ret
+      ;;write cscope.files
+      (let ((file-name-list ) cscope-file-name )
+        (dolist (file-item all-file-list )
+          (setq cscope-file-name (concat "../" (substring (nth  0 file-item ) tags-dir-len)  ))
+          (push  cscope-file-name   file-name-list ))
+        (f-write
+         (s-join  "\n" file-name-list )
+         'utf-8
+         (concat tags-dir ".tags/cscope.files" ) ))
+      (shell-command-to-string
+       (concat " cd " tags-dir ".tags &&  cscope -bkq -i cscope.files  ") ) )
     ))
+
+
+
+(defun  ac-php--get-obj-tags-dir( save-tags-dir )
+    (concat  save-tags-dir "/tags_dir_" (getenv "USER") "/"))
+
+(defun  ac-php--get-obj-tags-file-list( save-tags-dir )
+  "DOCSTRING"
+  (let ( (obj-tags-dir ( ac-php--get-obj-tags-dir save-tags-dir ) ))
+    (if (not (file-directory-p obj-tags-dir ))
+        (mkdir obj-tags-dir t))
+    (ac-php-find-php-files obj-tags-dir  "\\.el$" t )
+    ))
+
 
 
 (defun ac-php-save-data (file data)

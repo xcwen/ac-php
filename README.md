@@ -152,7 +152,6 @@ mkdir .tags
 
 `ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
 
-`ac-php-remake-tags-with-lib` ;; **if you find a error, run it an retest**
 
 `ac-php-remake-tags-all` ;; **if you find a error, run it an retest**
 
@@ -315,15 +314,6 @@ like this
       "."
     ],
     "php-path-list-without-subdir": []
-  },
-  "lib-filter": {
-    "php-file-ext-list": [
-      "php",
-      "inc"
-    ],
-    "php-path-list": [
-    ],
-    "php-path-list-without-subdir": []
   }
 
 }
@@ -374,16 +364,6 @@ for exmaple:
       "./dir3"
      ]
   },
-  "lib-filter": {
-    "php-file-ext-list": [
-      "php",
-      "inc"
-    ],
-    "php-path-list": [
-    ],
-    "php-path-list-without-subdir": [
-     ]
-  }
 
 }
 ```
@@ -437,41 +417,6 @@ or
 `mkdir /home/jim/.tags `
 
 
-###lager php project config
-config php lib dir  into  `lib-filter` node 
-
-```json
-{
-  "filter": {
-    "php-file-ext-list": [
-      "php",
-      "inc"
-    ],
-    "php-path-list": [
-      "./"
-    ],
-    "php-path-list-without-subdir": [
-     ]
-  },
-  "lib-filter": {
-    "php-file-ext-list": [
-      "php",
-      "inc"
-    ],
-    "php-path-list": [
-       "./lib",
-       "./vendor"
-    ],
-    "php-path-list-without-subdir": [
-     ]
-  }
-
-}
-```
-
-if lib php file changed .
-
-use   `ac-php-remake-tags-with-lib`   to remake tags 
 
 ## FQA 
 #  for all any question　

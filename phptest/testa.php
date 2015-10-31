@@ -24,6 +24,7 @@ class Testa {
         $v=trim($v);
         $this->v1=$v;
         $this->DIR;
+        $this->php7_func();
     }
 
     public function __construct(   ){

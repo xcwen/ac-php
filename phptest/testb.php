@@ -74,6 +74,8 @@ class Testb  extends Ta {
         
         $this->set_v1($v,$v2);
 
+        $this->set_v1($v,$v2);
+
         if ($testv->set_v1("s") && $testv->set_v1() ){
 
         }

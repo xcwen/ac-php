@@ -363,8 +363,7 @@ for exmaple:
     "php-path-list-without-subdir": [
       "./dir3"
      ]
-  },
-
+  }
 }
 ```
  

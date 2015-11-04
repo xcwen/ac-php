@@ -1364,13 +1364,17 @@ then this function split it to
                                   (lambda(ext) (s-concat "\\(" ext "\\)"   )  )
                                   ext-list ) ) "\\)$" ))
         
-        (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
-                                                                  (cdr (assoc-string "php-path-list"  filter-info))
-                                                                  )))
+        (setq  filter-path-list
+               (append filter-path-list
+                       (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
+                               (cdr (assoc-string "php-path-list"  filter-info))
+                               )))
 
-        (setq  filter-path-list  (append filter-path-list (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
-                                                                  (cdr (assoc-string "php-path-list-without-subdir" filter-info))
-                                                                  )))
+        (setq  filter-path-list
+               (append filter-path-list
+                       (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
+                               (cdr (assoc-string "php-path-list-without-subdir" filter-info))
+                               )))
         ;;sort
         (setq filter-path-list ( sort filter-path-list  'string<))
 

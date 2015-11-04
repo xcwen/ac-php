@@ -1035,8 +1035,12 @@ then this function split it to
             (setq cmd-output (shell-command-to-string  cmd) )
             
             (when (> (length cmd-output) 3)
-              (delete-file  obj-file-name  )
-              (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
+              (when  (f-exists? obj-file-name  )
+                (f-delete obj-file-name  ))
+              (if ( f-exists? ac-php-executable    )
+                  (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
+                (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-executable ))
+                )
               (return) ;;break
               ))
           (push file-name update-tag-file-list )
@@ -1045,6 +1049,7 @@ then this function split it to
 
     (list last-phpctags-errmsg all-file-list  update-tag-file-list)
     ))
+
 (defun ac-php--build-final-tags-from-each-el-tags ( tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
 
   (let ( tags-dir-len

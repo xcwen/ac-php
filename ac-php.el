@@ -79,9 +79,9 @@
 
 (require 'ac-php-comm-tags-data )
 
-(if (featurep 'auto-complete) (require 'auto-complete) )
-(if (featurep 'php-mode)  (require 'php-mode))
-(if (featurep 'popup) (require 'popup) )
+(require 'auto-complete) 
+(require 'php-mode)
+(require 'popup) 
 
 (defvar ac-php-php-executable (executable-find "php") )
 (defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
@@ -2160,25 +2160,24 @@ then this function split it to
     ret
     ))
 
-(when (featurep 'auto-complete) 
-  
-  (eval  '(ac-define-source php
-    '((candidates . ac-php-candidate)
-      (candidate-face . ac-php-candidate-face)
-      (selection-face . ac-php-selection-face)
-      (prefix . ac-php-prefix)
-      (requires . 0)
-      (document . ac-php-document)
-      (action . ac-php-action)
-      (cache)
-      (symbol . "p"))) )
+
+(eval  '(ac-define-source php
+          '((candidates . ac-php-candidate)
+            (candidate-face . ac-php-candidate-face)
+            (selection-face . ac-php-selection-face)
+            (prefix . ac-php-prefix)
+            (requires . 0)
+            (document . ac-php-document)
+            (action . ac-php-action)
+            (cache)
+            (symbol . "p"))) )
 
 
- (eval  '(ac-define-source php-template
-    '((candidates . ac-php-template-candidate)
-      (prefix . ac-php-template-prefix)
-      (requires . 0)
-      (action .  ac-php-template-action)
-      (document . ac-php-template-document )
-      (cache)
-      (symbol . "t")))))
+(eval  '(ac-define-source php-template
+          '((candidates . ac-php-template-candidate)
+            (prefix . ac-php-template-prefix)
+            (requires . 0)
+            (action .  ac-php-template-action)
+            (document . ac-php-template-document )
+            (cache)
+            (symbol . "t"))))

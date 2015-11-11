@@ -73,10 +73,9 @@
 
 (provide 'ac-php)
 
-
 (require 'json)
-(require 's)
-(require 'f)
+(require 's) ;;https://github.com/magnars/s.el
+(require 'f) ;;https://github.com/rejeep/f.el
 
 (require 'ac-php-comm-tags-data )
 

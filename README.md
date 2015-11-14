@@ -429,3 +429,12 @@ and retest
 # php files is in remote server. 
 
 you can set  `tags-save-to-home-dir :true`  in  `.ac-php-conf.json ` 
+
+# for large project 
+cp  ac-php/mktags.sh to you project root.
+
+ exec it when you want rebuild tags.
+
+more info in: https://github.com/xcwen/ac-php/issues/10
+
+

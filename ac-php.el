@@ -90,6 +90,7 @@
 
 (defvar ac-php-debug-flag nil)
 
+;; FOR TEST
 ;;(setq ac-php-debug-flag t)
 ;;(setq ac-php-debug-flag nil)
 ;; (setq debug-on-error t )
@@ -125,6 +126,7 @@
 (defvar ac-php-tag-last-data-list nil) ;;(("/home/xxx/projecj/.tags".(  1213141011  data )   ))
 
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
+
 
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)
@@ -1475,6 +1477,8 @@ then this function split it to
   ( ac-php--remake-tags  (ac-php-get-tags-dir) nil )
 )
 
+
+
 (defun ac-php-remake-tags-all (  )
   "  remake tags without check modify time "
   (interactive)
@@ -2181,3 +2185,4 @@ then this function split it to
             (document . ac-php-template-document )
             (cache)
             (symbol . "t"))))
+

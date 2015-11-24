@@ -1,0 +1,126 @@
+;;; ac-php.el --- Auto Completion source for php for GNU Emacs
+
+;; Copyright (C) 2014 - 2015 jim 
+
+;; Author: xcwenn@qq.com [https://github.com/xcwen]
+;; URL: https://github.com/xcwen/ac-php
+;; Keywords: completion, convenience, intellisense
+;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1") (s "1") (f "1"))
+
+
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; thanks auto-complete-clang , ac-php ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
+
+;;; Commentary: 
+;; Auto Completion source for php. 
+;; Only support  Linux and OSX , not support Windows
+;; More info and **example** at : https://github.com/xcwen/ac-php 
+;;
+
+;;; Code:
+
+(provide 'ac-php-company)
+
+
+(require 'cl-lib)
+(require 'company)
+(require 'ac-php-core)
+
+
+
+(defun company-ac-php-annotation (item)
+  ( let( doc  ) 
+        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
+        (if ( ac-php--tag-name-is-function item) 
+             (concat doc ")"   )  
+          "")))
+
+
+(defun company-ac-php-fuzzy-match (prefix candidate)
+  (cl-subsetp (string-to-list prefix)
+              (string-to-list candidate)))
+
+(defun company-ac-php--prefix ()
+ (buffer-substring (point) (save-excursion (skip-chars-backward "a-z0-9A-Z_\\\\" )
+                                           (point)))
+      )
+
+
+(defun  company-ac-php-candidate  (arg)
+  (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len )
+    (setq ac-php-prefix-str (company-ac-php--prefix))
+    (setq  ac-php-prefix-str-len  (length ac-php-prefix-str  ) )
+
+    (dolist (  candidate-item (ac-php-candidate) )
+      (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
+      (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))  
+             (if (ac-php--tag-name-is-function  candidate-item  )
+                 (dolist (item (split-string raw-help "\n"))
+                   (let ( args-list (option-start-index 1000000 ) (i 0) find-flag
+                                    (item-pre-str "" ) )
+                     (setq args-list (s-split  ","   item)  )
+                     (dolist (arg args-list   )
+                       (when (and  (not find-flag) (s-matches-p "=" arg ) )
+                         (setq find-flag t)
+                         (setq option-start-index i )
+                         )
+                       (setf (nth i args-list) ( replace-regexp-in-string "=.*" "" arg ))
+                       (setq i (1+ i ) ))
+
+                     (setq i 0)
+                     (dolist (arg args-list   )
+                       (when (>= i  option-start-index )
+                         (push (propertize  candidate-item  'ac-php-help  (concat item-pre-str   )  )  ac-php-company-list  ))
+                       (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
+                       (setq i (1+ i )))
+                     (push  (propertize  candidate-item   'ac-php-help  (concat item-pre-str  ) ) ac-php-company-list ))
+                   )
+               (push  candidate-item   ac-php-company-list  )
+               ))
+
+      )
+    ac-php-company-list
+    ))
+ 
+
+(defun company-ac-php-backend (command &optional arg &rest ignored)
+  (interactive (list 'interactive))
+
+  (case command
+    (interactive (company-begin-backend 'company-ac-php-backend))
+    (prefix (and (eq major-mode 'php-mode)
+                 (company-ac-php--prefix  )
+                 )
+            )
+    (candidates
+     (company-ac-php-candidate arg ))
+    (annotation (company-ac-php-annotation arg))
+    (duplicates t)
+    (post-completion (let( (doc)  )
+                      (when ( ac-php--tag-name-is-function arg)
+                        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))
+                        (insert  (concat doc  ")") )
+                        (company-template-c-like-templatify (concat arg   doc  ")") )
+                          )
+                       ;;(setq company-backends  (list 'company-ac-php-args-list-backend) )
+
+                       ;;(company-complete  ;;)
+                       ;;(setq  company-backends tmp)
+                       ) )
+    ;;(no-cache 't)
+    ))
+
+

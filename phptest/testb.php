@@ -71,10 +71,11 @@ class Testb  extends Ta {
         /** @var  $v \Test\Testa  */
         
         $this->v8->do_f("s");
-        
+        $this->do_f(sdfa,"ss");
         $this->set_v1($v,$v2);
 
         $this->set_v1($v,$v2);
+        $this->do_f();
 
         if ($testv->set_v1("s") && $testv->set_v1() ){
 
@@ -84,7 +85,6 @@ class Testb  extends Ta {
         $f();
 
         $this->get_v2()->set_v1("s");
-        
         $a=Test\CON_NAME;
 
         
@@ -117,5 +117,4 @@ trim("ss","s");
 
 
 $s=new Testb($v1,$v2);
-
 (new Ta())->set_v1("s");

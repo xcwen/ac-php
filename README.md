@@ -39,6 +39,7 @@ externed:  Redis ,Swoole
 * [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
+* [Usage Company](#usage-company)
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [lager php project config](#lager-php-project-config)
@@ -126,6 +127,7 @@ emacs ~/ac-php/phptest/testb.php
 
 * emacs php-mode function  define
 
+
 ```elisp
   (add-hook 'php-mode-hook
             '(lambda ()
@@ -138,6 +140,8 @@ emacs ~/ac-php/phptest/testb.php
                (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
                ))
 ```
+
+
 
 
 * mkdir ".tags"  in root of project
@@ -169,6 +173,17 @@ need: (setq ac-php-use-cscope-flag  t )
 
 
 
+## Usage Company
+```elisp
+(add-hook 'php-mode-hook
+          '(lambda ()
+             (require 'ac-php-company)
+             (company-mode t)
+             (add-to-list 'company-backends 'company-ac-php-backend )))
+```
+use  `M-x: company-complete` for complete
+
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/company-1.png)
 
 
 ## Php Doc for complete  

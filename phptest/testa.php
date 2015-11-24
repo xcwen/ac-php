@@ -21,6 +21,7 @@ class Testa {
     const DIR="sss";
     public function set_v1($v,$v2){
 
+        $this->
         $v=trim($v);
         $this->v1=$v;
         $this->DIR;

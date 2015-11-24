@@ -130,7 +130,7 @@ emacs ~/ac-php/phptest/testb.php
 
 * emacs php-mode function  define
 
-work for auto-complete-mode  , Company-mode config  at [here](#usage-company)
+work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)**
 
 ```elisp
   (add-hook 'php-mode-hook

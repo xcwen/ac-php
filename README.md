@@ -2,6 +2,8 @@
 
 emacs auto-complete for php
 
+support  `auto-complete`  and `company-mode`
+
 use [phpctags](https://github.com/xcwen/phpctags) gen tags 
 
 and use `ac-php`  work with tags 

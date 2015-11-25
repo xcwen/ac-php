@@ -1,5 +1,3 @@
-;;; ac-php-core.el --- Auto Completion source for php for GNU Emacs
-
 ;; Copyright (C) 2014 - 2015 jim 
 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]

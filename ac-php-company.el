@@ -1,5 +1,3 @@
-;;; ac-php.el --- Auto Completion source for php for GNU Emacs
-
 ;; Copyright (C) 2014 - 2015 jim 
 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
@@ -32,21 +30,20 @@
 
 ;;; Code:
 
+
 (provide 'ac-php-company)
-
-
 (require 'cl-lib)
-(require 'company)
+(when (featurep 'company) (require 'company))
 (require 'ac-php-core)
 
 
 
 (defun company-ac-php-annotation (item)
   ( let( doc  ) 
-        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-        (if ( ac-php--tag-name-is-function item) 
-             (concat doc ")"   )  
-          "")))
+    (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
+    (if ( ac-php--tag-name-is-function item) 
+        (concat doc ")"   )  
+      "")))
 
 
 (defun company-ac-php-fuzzy-match (prefix candidate)
@@ -54,9 +51,9 @@
               (string-to-list candidate)))
 
 (defun company-ac-php--prefix ()
- (buffer-substring (point) (save-excursion (skip-chars-backward "a-z0-9A-Z_\\\\" )
-                                           (point)))
-      )
+  (buffer-substring (point) (save-excursion (skip-chars-backward "a-z0-9A-Z_\\\\" )
+                                            (point)))
+  )
 
 
 (defun  company-ac-php-candidate  (arg)
@@ -67,34 +64,34 @@
     (dolist (  candidate-item (ac-php-candidate) )
       (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
       (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))  
-             (if (ac-php--tag-name-is-function  candidate-item  )
-                 (dolist (item (split-string raw-help "\n"))
-                   (let ( args-list (option-start-index 1000000 ) (i 0) find-flag
-                                    (item-pre-str "" ) )
-                     (setq args-list (s-split  ","   item)  )
-                     (dolist (arg args-list   )
-                       (when (and  (not find-flag) (s-matches-p "=" arg ) )
-                         (setq find-flag t)
-                         (setq option-start-index i )
-                         )
-                       (setf (nth i args-list) ( replace-regexp-in-string "=.*" "" arg ))
-                       (setq i (1+ i ) ))
+        (if (ac-php--tag-name-is-function  candidate-item  )
+            (dolist (item (split-string raw-help "\n"))
+              (let ( args-list (option-start-index 1000000 ) (i 0) find-flag
+                               (item-pre-str "" ) )
+                (setq args-list (s-split  ","   item)  )
+                (dolist (arg args-list   )
+                  (when (and  (not find-flag) (s-matches-p "=" arg ) )
+                    (setq find-flag t)
+                    (setq option-start-index i )
+                    )
+                  (setf (nth i args-list) ( replace-regexp-in-string "=.*" "" arg ))
+                  (setq i (1+ i ) ))
 
-                     (setq i 0)
-                     (dolist (arg args-list   )
-                       (when (>= i  option-start-index )
-                         (push (propertize  candidate-item  'ac-php-help  (concat item-pre-str   )  )  ac-php-company-list  ))
-                       (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
-                       (setq i (1+ i )))
-                     (push  (propertize  candidate-item   'ac-php-help  (concat item-pre-str  ) ) ac-php-company-list ))
-                   )
-               (push  candidate-item   ac-php-company-list  )
-               ))
+                (setq i 0)
+                (dolist (arg args-list   )
+                  (when (>= i  option-start-index )
+                    (push (propertize  candidate-item  'ac-php-help  (concat item-pre-str   )  )  ac-php-company-list  ))
+                  (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
+                  (setq i (1+ i )))
+                (push  (propertize  candidate-item   'ac-php-help  (concat item-pre-str  ) ) ac-php-company-list ))
+              )
+          (push  candidate-item   ac-php-company-list  )
+          ))
 
       )
     ac-php-company-list
     ))
- 
+
 
 (defun company-ac-php-backend (command &optional arg &rest ignored)
   (interactive (list 'interactive))
@@ -110,11 +107,11 @@
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
     (post-completion (let( (doc)  )
-                      (when ( ac-php--tag-name-is-function arg)
-                        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))
-                        (insert  (concat doc  ")") )
-                        (company-template-c-like-templatify (concat arg   doc  ")") )
-                          )
+                       (when ( ac-php--tag-name-is-function arg)
+                         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))
+                         (insert  (concat doc  ")") )
+                         (company-template-c-like-templatify (concat arg   doc  ")") )
+                         )
                        ;;(setq company-backends  (list 'company-ac-php-args-list-backend) )
 
                        ;;(company-complete  ;;)
@@ -122,5 +119,4 @@
                        ) )
     ;;(no-cache 't)
     ))
-
 

@@ -41,7 +41,7 @@
 (require 'popup) 
 
 (defvar ac-php-php-executable (executable-find "php") )
-(defvar ac-php-executable (concat  (file-name-directory load-file-name) "phpctags"))
+(defvar ac-php-ctags-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
 (defvar ac-php-cache1-file-count 10)
 
@@ -896,20 +896,21 @@ then this function split it to
 
     (list class-list function-list inherit-list add-class-list  )
     ))
-
-(defun ac-php--cache-files-save  (file-path cache1-files )
-
-  (let ((old-config-value json-encoding-pretty-print) json-data)
+(defun ac-php--json-save-data(file-path data-list )
+  (let ((old-config-value json-encoding-pretty-print) json-data )
     (setq  json-encoding-pretty-print  t)
     (setq  json-data
-           (json-encode (list
-                         :cache1-files   cache1-files 
-                         )))
+           (json-encode data-list ))
 
     (f-write-text json-data 'utf-8 file-path)
     (setq  json-encoding-pretty-print  old-config-value)
-    )
+    ))
+
+
+(defun ac-php--cache-files-save  (file-path cache1-files )
+  (ac-php--json-save-data file-path (list :cache1-files   cache1-files)  )
   ) 
+
 (defun ac-php--rebuild-file-list ( tags-dir   save-tags-dir  do-all-flag )
     "DOCSTRING"
   (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg)
@@ -924,7 +925,7 @@ then this function split it to
 
     (message " REBUILD:  rebuild file start")
     
-    (let  ( file-name src-time  obj-file-name   obj-item ) 
+    (let  ( file-name src-time  obj-file-name   obj-item all-opt-list tmp-array) 
       (dolist (file-item file-list )
 
         (setq  file-name (nth  0 file-item )  )
@@ -942,24 +943,31 @@ then this function split it to
 
         (when (or (not obj-item) (< (nth 1 obj-item) src-time )  do-all-flag )
           ;;gen tags file
-          (message "rebuild %s " file-name )
-          (let ( cmd cmd-output )
-            (setq cmd (concat ac-php-executable  " -f \"" obj-file-name "\" \""   file-name "\""  ) )
-            (ac-php--debug "exec cmd:%s" cmd)
-            (setq cmd-output (shell-command-to-string  cmd) )
-            
-            (when (> (length cmd-output) 3)
-              (when  (f-exists? obj-file-name  )
-                (f-delete obj-file-name  ))
-              (if ( f-exists? ac-php-executable    )
-                  (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
-                (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-executable ))
-                )
-              (return) ;;break
-              ))
+          (setq tmp-array  ["" ""])
+          (aset tmp-array 0 file-name)
+          (aset tmp-array 1 obj-file-name)
+          (push  (copy-sequence tmp-array) all-opt-list )
           (push file-name update-tag-file-list )
           ;;gen el data file
-          )))
+          ))
+
+      ;;all-opt-list
+      
+      (let ( cmd cmd-output  (opt-file-name  (f-join save-tags-dir "opt-file.json")) )
+
+        (ac-php--json-save-data  opt-file-name all-opt-list )
+        (message "parser php files count=[%d] ,wait ... " (length all-opt-list ))
+        (setq cmd (concat ac-php-ctags-executable  " --files="  opt-file-name ) )
+        (ac-php--debug "exec cmd:%s" cmd)
+        (setq cmd-output (shell-command-to-string  cmd) )
+        
+        (when (> (length cmd-output) 3)
+          (if ( f-exists? ac-php-ctags-executable    )
+              (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
+            (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-ctags-executable ))
+            )
+          ))
+      )
 
     (list last-phpctags-errmsg all-file-list  update-tag-file-list)
     ))
@@ -1046,9 +1054,9 @@ then this function split it to
     (message "do remake %s"  tags-dir )
     
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
-    (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
+    (if (not ac-php-ctags-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when ( and ac-php-php-executable  ac-php-executable  tags-dir)
+    (when ( and ac-php-php-executable  ac-php-ctags-executable  tags-dir)
 
       ;;get last-save-info
       (setq save-tags-dir (ac-php--get-tags-save-dir tags-dir) )
@@ -1350,20 +1358,17 @@ then this function split it to
     (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
     (when (or (not (f-exists?  config-file-name ) )
              ( =  (f-size  config-file-name ) 0 ))
-      (let ((old-config-value json-encoding-pretty-print) )
-        (setq  json-encoding-pretty-print  t)
-        (f-write-text  (json-encode '(
-                                      :filter
-                                      (
-                                       :php-file-ext-list
-                                       ("php")
-                                       :php-path-list (".")
-                                       :php-path-list-without-subdir [] 
-                                       )
-                                      )
-                                    ) 'utf-8 config-file-name)
-        (setq  json-encoding-pretty-print  old-config-value)
-        ))
+      (ac-php--json-save-data config-file-name 
+                              '(
+                                :filter
+                                (
+                                 :php-file-ext-list
+                                 ("php")
+                                 :php-path-list (".")
+                                 :php-path-list-without-subdir [] 
+                                 )
+                                )
+                              ))
 
     (json-read-file  config-file-name  ) 
 

@@ -1,9 +1,7 @@
 {
-  "tags-save-to-home-dir-flag": null,
   "filter": {
     "php-file-ext-list": [
-      "php",
-      "inc"
+      "php"
     ],
     "php-path-list": [
       "."

@@ -18,6 +18,7 @@ abstract class Testc {
     public function get_v3(){
         return $this->v3;
         //$this->set_v1(1);
+
     }
 
 

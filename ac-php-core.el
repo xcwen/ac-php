@@ -1047,7 +1047,7 @@ then this function split it to
     
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
     (if (not ac-php-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
-    (if (not tags-dir) (message "no find .tags dir in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
+    (if (not tags-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
     (when ( and ac-php-php-executable  ac-php-executable  tags-dir)
 
       ;;get last-save-info
@@ -1242,17 +1242,15 @@ then this function split it to
       )))
 
 (defun ac-php--get-tags-save-dir(work-dir  )
-  (let ((config (ac-php--get-config work-dir))  tags-save-to-home-dir-flag  ret )
-    (when config
-      (setq tags-save-to-home-dir-flag (cdr (assoc-string "tags-save-to-home-dir" config))  )
-      )
+  (let (  ret )
+    
+    (setq ret (concat (getenv "HOME") "/.ac-php/tags"
+                      (replace-regexp-in-string "[/ ]" "-"
+                                                (replace-regexp-in-string  "/$" ""  work-dir )
+                                                )  ))
 
-    (setq ret (if  tags-save-to-home-dir-flag
-            (concat (getenv "HOME") "/.ac-php/tags"
-                    (replace-regexp-in-string "[/ ]" "-" work-dir)  ) 
-            (concat work-dir "/.tags" )
-        ))
-    (mkdir ret t)
+    (unless (f-exists?  ret  )
+      (mkdir ret t))
     (f-full ret )
     ))
 
@@ -1350,15 +1348,15 @@ then this function split it to
   (let ( config-file-name )
     
     (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
-    (unless (f-exists?  config-file-name )
+    (when (or (not (f-exists?  config-file-name ) )
+             ( =  (f-size  config-file-name ) 0 ))
       (let ((old-config-value json-encoding-pretty-print) )
         (setq  json-encoding-pretty-print  t)
         (f-write-text  (json-encode '(
-                                      :tags-save-to-home-dir-flag nil 
                                       :filter
                                       (
                                        :php-file-ext-list
-                                       ("php" "inc")
+                                       ("php")
                                        :php-path-list (".")
                                        :php-path-list-without-subdir [] 
                                        )
@@ -1380,7 +1378,7 @@ then this function split it to
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
     (setq ret-list (ac-php-get-php-files-from-filter work-dir filter-info  ) )
     ;;(ac-php--debug "===ret-list :%S" ret-list)
-    (list ret-list  (cdr (assoc-string "tags-save-to-home-dir" conf-list ))  )
+    (list ret-list    )
     ))
 
 
@@ -1400,21 +1398,22 @@ then this function split it to
 
 (defun ac-php--remake-cscope (  tags-dir all-file-list )
   "DOCSTRING"
-  (let ( tags-dir-len)
+  (let ( tags-dir-len save-dir)
     (when (and ac-php-cscope  ac-php-use-cscope-flag )
       (message "rebuild cscope  data file " )
       (setq tags-dir-len (length tags-dir) )
       ;;write cscope.files
+      (setq save-dir (ac-php--get-tags-save-dir  tags-dir) )
       (let ((file-name-list ) cscope-file-name )
         (dolist (file-item all-file-list )
-          (setq cscope-file-name (concat "../" (substring (nth  0 file-item ) tags-dir-len)  ))
+          (setq cscope-file-name (concat tags-dir  (substring (nth  0 file-item ) tags-dir-len)  ))
           (push  cscope-file-name   file-name-list ))
         (f-write
          (s-join  "\n" file-name-list )
          'utf-8
-         (concat tags-dir ".tags/cscope.files" ) ))
+         (concat  save-dir  "cscope.files" ) ))
       (shell-command-to-string
-       (concat " cd " tags-dir ".tags &&  cscope -bkq -i cscope.files  ") ) )
+       (concat " cd " save-dir "  &&  cscope -bkq -i cscope.files  ") ) )
     ))
 
 
@@ -1475,11 +1474,15 @@ then this function split it to
     (unless tags-dir
       (setq tags-dir ( expand-file-name  default-directory) ))
 
-    (while (not (or (file-exists-p  (concat tags-dir  ".tags" )) (string= tags-dir "/") ))
+    (while (not (or
+                 (file-exists-p  (concat tags-dir  ".ac-php-conf.json" ))
+                 (file-exists-p  (concat tags-dir  ".tags" ))
+                    (string= tags-dir "/") ))
       (setq tags-dir  ( file-name-directory (directory-file-name  tags-dir ) ) ))
     (if (string= tags-dir "/") (setq tags-dir nil )   )
     tags-dir
     ))
+
 (defun ac-php--get-check-class-list ( class-name inherit-list )
   "DOCSTRING"
   (let ((tmp-class class-name )

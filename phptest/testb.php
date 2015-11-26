@@ -85,7 +85,9 @@ class Testb  extends Ta {
         $f();
 
         $this->get_v2()->set_v1("s");
+
         $a=Test\CON_NAME;
+
 
         
     }

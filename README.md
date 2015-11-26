@@ -148,12 +148,13 @@ work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)*
 
 
 
-* mkdir ".tags"  in root of project
+* create file ".ac-php-conf.json"  in root of project
 
 ``` bash
 cd /project/to/path #  root dir of project
-mkdir .tags
+touch .ac-php-conf.json 
 ```
+
 * DONE 
 
 *  command 
@@ -301,29 +302,33 @@ class Testa {
 
 
 ## Tags
-tags file location dir is in  `.tags`   for example:  `/project/to/path/.tags`
+tags file location dir is in  `~/.ac-php/project_dir`   for example:  `~/.ac-php/tags-home-jim-ac-php-phptest/`
+
 ```bash
-localhost:~/ac-php/phptest/.tags$ tree .
-.
+localhost:~/.ac-php$ tree tags-home-jim-ac-php-phptest/
+tags-home-jim-ac-php-phptest/
+├── cache-files.json
+├── tags-data-cache2.el
 ├── tags-data.el
 └── tags_dir_jim
     ├── a.el
+    ├── dir1-sss.el
     ├── testa.el
-    └── testb.el
-1 directory, 4 files
+    ├── testb.el
+    └── testc.el
+1 directory, 8 files
 ```
 
 ### Configue PHP file Search 
 
-config file name  is `.ac-php-conf.json`  it's at  `.tags` location dir ,
+config file name  is `.ac-php-conf.json`
 
-when run `ac-php-remake-tags`  will gen `.ac-php-conf.json` if it's not find ;
+when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when  it's empty 
 
 like this
 
 ```json
 {
-  "tags-save-to-home-dir" :true,
   "filter": {
     "php-file-ext-list": [
       "php",
@@ -334,12 +339,8 @@ like this
     ],
     "php-path-list-without-subdir": []
   }
-
 }
 ```
-
-`tags-save-to-home-dir` : default tags data save `.tags` , if set true, will save  to `~/.ac-php/` 
-it's usefull for  edit remote php file  use sshfs mount.
 
 
 `php-file-ext-list` : file extern name list;
@@ -421,18 +422,18 @@ you need fix testa.php  error and re run `ac-php-remake-tags`
 
 if show:
 ```
-no find .tags dir in path list :/home/jim/phptest/ 
+no find  file .ac-php-conf.json dir in path list :/home/jim/phptest/ 
 ```
 
-you need *mkdir ".tags" in root of project*
+you need *create file ".ac-php-conf.json" in root of project*
 
 like this:
 
-`mkdir /home/jim/phptest/.tags`
+`touch /home/jim/phptest/.ac-php-conf.json`
 
 or
 
-`mkdir /home/jim/.tags `
+`touch /home/jim/.ac-php-conf.json`
 
 
 

@@ -972,15 +972,16 @@ then this function split it to
 
         (ac-php-mode t)
         (setq ac-php-rebuild-tmp-data (list  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag ) )
+
         (setq ac-php-rebuild-tmp-error-msg nil )
         (setq ac-php-phptags-index-progress 0)
         (force-mode-line-update)
+
 
         (set-process-sentinel
          process
          '(lambda ( process event)
             
-            (message "EVENT %S" event)
             (ac-php-mode 0)
             (cond
              ((string-match "finished" event)
@@ -1135,10 +1136,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     (message "do remake %s"  tags-dir )
     
+    (unless ( f-exists? ac-php-ctags-executable    )
+      (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))
+
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
-    (if (not ac-php-ctags-executable ) (message "no find cmd:  phpctags  please  reinstall ac-php  "   ) )
     (if (not tags-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when ( and ac-php-php-executable  ac-php-ctags-executable  tags-dir)
+    (when ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  tags-dir)
 
       ;;get last-save-info
       (setq save-tags-dir (ac-php--get-tags-save-dir tags-dir) )

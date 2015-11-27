@@ -963,7 +963,7 @@ then this function split it to
         
         (when (> (length cmd-output) 3)
           (if ( f-exists? ac-php-ctags-executable    )
-              (setq last-phpctags-errmsg (format "phpctags[%s] ERROR:%s " file-name cmd-output  ))
+              (setq last-phpctags-errmsg (format "phpctags ERROR:%s "  cmd-output  ))
             (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-ctags-executable ))
             )
           ))

@@ -66,6 +66,7 @@
 
 (defvar ac-php-prefix-str "")
 
+(defvar ac-php-phptags-index-progress  0 )
 
 ;;data 
 (defvar ac-php-tag-last-data-list nil) ;;(("/home/xxx/projecj/.tags".(  1213141011  data )   ))
@@ -911,6 +912,9 @@ then this function split it to
   (ac-php--json-save-data file-path (list :cache1-files   cache1-files)  )
   ) 
 
+
+(defvar ac-php-rebuild-tmp-data nil)
+(defvar ac-php-rebuild-tmp-error-msg nil )
 (defun ac-php--rebuild-file-list ( tags-dir   save-tags-dir  do-all-flag )
     "DOCSTRING"
   (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg)
@@ -953,24 +957,99 @@ then this function split it to
 
       ;;all-opt-list
       
-      (let ( cmd cmd-output  (opt-file-name  (f-join save-tags-dir "opt-file.json")) )
+      (let* (
+             (opt-file-name  (f-join save-tags-dir "opt-file.json"))
+             process)
 
         (ac-php--json-save-data  opt-file-name all-opt-list )
-        (message "parser php files count=[%d] ,wait ... " (length all-opt-list ))
-        (setq cmd (concat ac-php-ctags-executable  " --files="  opt-file-name ) )
-        (ac-php--debug "exec cmd:%s" cmd)
-        (setq cmd-output (shell-command-to-string  cmd) )
+        (setq process  (start-process
+                        "ac-phptags"
+                        "*AC-PHPTAGS*"
+                        ac-php-ctags-executable
+                        (concat "--files=" opt-file-name )
+                        ))
+
+
+        (ac-php-mode t)
+        (setq ac-php-rebuild-tmp-data (list  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag ) )
+        (setq ac-php-rebuild-tmp-error-msg nil )
+        (setq ac-php-phptags-index-progress 0)
+        (force-mode-line-update)
+
+        (set-process-sentinel
+         process
+         '(lambda ( process event)
+            
+            (message "EVENT %S" event)
+            (ac-php-mode 0)
+            (cond
+             ((string-match "finished" event)
+
+              ;;tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag
+              (ac-php--build-final-tags-from-each-el-tags
+               (nth 0 ac-php-rebuild-tmp-data )
+               (nth 1 ac-php-rebuild-tmp-data )
+               (nth 2 ac-php-rebuild-tmp-data )
+               (nth 3 ac-php-rebuild-tmp-data )
+               (nth 4 ac-php-rebuild-tmp-data )
+               )
+              
+              )
+             ((string-match "exited abnormally" event)
+              (message "ERROR ----- ")
+              ))))
+
+        (set-process-filter process 'ac-php-phptags-index-process-filter)
+        )
+    
+
+      ;; (let ( cmd cmd-output   )
+
+      ;;   (ac-php--json-save-data  opt-file-name all-opt-list )
+      ;;   (message "parser php files count=[%d] ,wait ... " (length all-opt-list ))
+      ;;   (setq cmd (concat ac-php-ctags-executable  " --files="   ) )
+      ;;   (ac-php--debug "exec cmd:%s" cmd)
+      ;;   (setq cmd-output (shell-command-to-string  cmd) )
         
-        (when (> (length cmd-output) 3)
-          (if ( f-exists? ac-php-ctags-executable    )
-              (setq last-phpctags-errmsg (format "phpctags ERROR:%s "  cmd-output  ))
-            (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-ctags-executable ))
-            )
-          ))
+      ;;   (when (> (length cmd-output) 3)
+      ;;     (if ( f-exists? ac-php-ctags-executable    )
+      ;;         (setq last-phpctags-errmsg (format "phpctags ERROR:%s "  cmd-output  ))
+      ;;       (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-ctags-executable ))
+      ;;       )
+      ;;     ))
+
       )
 
-    (list last-phpctags-errmsg all-file-list  update-tag-file-list)
+    ;;(list last-phpctags-errmsg all-file-list  update-tag-file-list)
     ))
+
+
+(defun ac-php-phptags-index-process-filter (process strings &optional silent)
+  "Process status updates for the indexing process.
+
+Non-nil SILENT will supress extra status info in the minibuffer."
+
+
+  (dolist  (string (split-string strings "\n" ) ) 
+  (cond
+   ((string-match "PHPParser:" string)
+
+    (setq ac-php-rebuild-tmp-error-msg  (concat ac-php-rebuild-tmp-error-msg  "\n" string ) )
+    
+    )
+
+   ((string-match "\\([0-9]+\\)%" string)
+    (let ((progress (string-to-number (match-string 1 string))))
+
+
+      (setq ac-php-phptags-index-progress progress)
+
+      (force-mode-line-update)
+      )
+    )
+   )))
+
+
 
 (defun ac-php--build-final-tags-from-each-el-tags ( tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
 
@@ -1043,7 +1122,10 @@ then this function split it to
 
     (ac-php--cache-files-save  cache-file-name  new-cache1-file-list  )
 
-    (message "REBUILD SUCCESS ")
+    (if ac-php-rebuild-tmp-error-msg
+        (message "REBUILD END :ERROR %s" ac-php-rebuild-tmp-error-msg )
+      (message "REBUILD SUCCESS ")
+      )
     )
   )
 ;;for auto check file  
@@ -1062,17 +1144,20 @@ then this function split it to
       (setq save-tags-dir (ac-php--get-tags-save-dir tags-dir) )
 
       
-      (let ((tmp-ret (ac-php--rebuild-file-list  tags-dir   save-tags-dir  do-all-flag)))
-        (setq  last-phpctags-errmsg  (nth 0 tmp-ret) )
-        (setq  all-file-list (nth 1 tmp-ret) )
-        (setq  update-tag-file-list (nth 2 tmp-ret) )
-        )
+      (ac-php--rebuild-file-list  tags-dir   save-tags-dir  do-all-flag)
 
-      (if (not last-phpctags-errmsg );;SUCC
-          (ac-php--build-final-tags-from-each-el-tags  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
-        (progn ;;error 
-          (message last-phpctags-errmsg)
-          nil)))
+      ;; (let ((tmp-ret (ac-php--rebuild-file-list  tags-dir   save-tags-dir  do-all-flag)))
+      ;;   (setq  last-phpctags-errmsg  (nth 0 tmp-ret) )
+      ;;   (setq  all-file-list (nth 1 tmp-ret) )
+      ;;   (setq  update-tag-file-list (nth 2 tmp-ret) )
+      ;;   )
+
+      ;; (if (not last-phpctags-errmsg );;SUCC
+      ;;     (ac-php--build-final-tags-from-each-el-tags  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
+      ;;   (progn ;;error 
+      ;;     (message last-phpctags-errmsg)
+      ;;     nil))
+      )
     ))
 
 (defun ac-php--gen-data-from-el-tags  ( file-list cache-type tags-dir-len add-class-list )
@@ -1951,6 +2036,37 @@ then this function split it to
     (message "need  config: (setq ac-php-use-cscope-flag t)  ")
     )
   )
+
+;; mode --- info 
+(defcustom ac-php-mode-line
+  '(:eval (format "AP%s"
+                  ( ac-php-mode-line-project-status)))
+  "Mode line lighter for AC-PHP.
+
+Set this variable to nil to disable the lighter."
+  :group 'ac-php
+  :type 'sexp
+  :risky t)
+
+(defun ac-php-mode-line-project-status ()
+  "Report status of current project index."
+  (format ":%02d%%%%%%%%" ac-php-phptags-index-progress   )
+    )
+
+
+(define-minor-mode ac-php-mode
+  "AC-PHP "
+  :lighter ac-php-mode-line
+  :global nil 
+  :group 'ac-php
+  (cond (ac-php-mode
+         ;; Enable ac-php-mode
+         )
+        (t
+         ;; Disable ac-php-mode
+         ;; Disable semantic
+         )))
+
 
 
 

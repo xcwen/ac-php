@@ -319,7 +319,7 @@ tags-home-jim-ac-php-phptest/
 1 directory, 8 files
 ```
 
-### Configue PHP file Search 
+### Configue PHP file Search for Lager Project
 
 config file name  is `.ac-php-conf.json`
 
@@ -331,8 +331,7 @@ like this
 {
   "filter": {
     "php-file-ext-list": [
-      "php",
-      "inc"
+      "php"
     ],
     "php-path-list": [
       "."
@@ -372,8 +371,7 @@ for exmaple:
 {
   "filter": {
     "php-file-ext-list": [
-      "php",
-      "inc"
+      "php"
     ],
     "php-path-list": [
       "./dir1",
@@ -447,11 +445,5 @@ exec : `M-x`: `ac-php-remake-tags-all`
 and retest
 
 
-# for large project 
-cp  ac-php/mktags.sh to you project root.
-
- exec it when you want rebuild tags.
-
-more info in: https://github.com/xcwen/ac-php/issues/10
 
 

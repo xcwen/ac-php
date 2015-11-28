@@ -1043,9 +1043,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (let ((progress (string-to-number (match-string 1 string))))
 
 
-      (setq ac-php-phptags-index-progress progress)
-
-      (force-mode-line-update)
+      (unless(= ac-php-phptags-index-progress progress )
+        (setq ac-php-phptags-index-progress progress)
+        (force-mode-line-update))
       )
     )
    )))

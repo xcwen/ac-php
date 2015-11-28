@@ -45,7 +45,7 @@ externed:  Redis ,Swoole
 * [Usage Company](#usage-company)
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
-* [lager php project config](#lager-php-project-config)
+* [large php project config](#configue-php-file-search-for-large-project)
 * [FQA](#fqa)
 
 
@@ -319,7 +319,7 @@ tags-home-jim-ac-php-phptest/
 1 directory, 8 files
 ```
 
-### Configue PHP file Search for Lager Project
+### Configue PHP file Search for Large Project
 
 config file name  is `.ac-php-conf.json`
 

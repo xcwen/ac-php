@@ -3,7 +3,6 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24") ( php-mode "1") (yasnippet "0.8.0") (xcscope "1") (s "1") (f "1"))
 
 
 
@@ -39,6 +38,7 @@
 
 (require 'php-mode)
 (require 'popup) 
+(require 'dash) 
 
 (defvar ac-php-php-executable (executable-find "php") )
 (defvar ac-php-ctags-executable (concat  (file-name-directory load-file-name) "phpctags"))
@@ -851,9 +851,10 @@ then this function split it to
     ;;reset inherit-list
     (setq  inherit-list (mapcar (lambda (inherit-item )
 
-                                  (let (
-                                        (class-name (nth 0 inherit-item))
-                                        (parent-name (nth 1 inherit-item)) cur-namespace check-classname )
+                                  (-let (
+                                         ((class-name parent-name  ) inherit-item)
+                                        (cur-namespace) (check-classname) )
+
                                     (if (s-index-of "\\" parent-name )
                                         inherit-item
                                       (progn

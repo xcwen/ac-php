@@ -106,10 +106,18 @@ function php7_ff(): T\Testb {
     return 0;
 }
 
+function php7_ff($test): T\Testb {
+    return 0;
+}
+
+function php7_ff($a,$b): T\Testb {
+    return 0;
+}
+
+
 
 $f=php7_ff();
-
-
+split("dsfa","ad");
 $t=new Ta();
 
 echo $t->get_v1()."\n" ;

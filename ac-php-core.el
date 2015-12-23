@@ -496,7 +496,7 @@ then this function split it to
   (let ()
    (setq item-name (nth 0 (s-split "(" item-name  )) )
   (or
-   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\" item-name "\\)[ \t]*;") 1  nil  )
+   ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\\\" item-name "\\)[ \t]*;") 1  nil  )
    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
   ))
 
@@ -1242,6 +1242,24 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 
           (push   (list  tag-type  (concat tag-name "(" ) (ac-php-gen-el-func doc)  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
+         ((string= tag-type "v")
+          ;;  check in type field
+          ;;("test_a"  "/home/jim/phpctags/a.php:4"  nil  "v" ("namespace"."tts") "string" )
+          ;;get  return type
+          (setq return-type  (nth  5 line-data ))
+
+
+          
+          ;; (setq scope (nth 4   line-data ))
+          ;; (when (and  (car scope   )
+          ;;             (string= "namespace" (car scope) )
+          ;;             )
+          ;;   (setq  tag-name   (concat (cdr scope ) "\\" tag-name) ))
+
+
+
+          (push   (list  tag-type  tag-name  tag-name  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
+
          ((string= tag-type "d")
 
           ;;("kk"  "/home/jim/ac-php/phptest/a.php:19"  nil  "d"  ("namespace". "xxx" )   "return_type" )
@@ -1857,11 +1875,22 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (progn 
           (setq type (car symbol-ret ))
           (if   (and (not (string= type "class_member") ) local-var-flag  )
-              ( ac-php--goto-local-var-def local-var  )
+             (let ((item-info (nth 3 symbol-ret)) )
+               (if  (string=  (nth 0  item-info ) "v")
+                   (progn 
+                     (setq jump-pos  (nth 1  symbol-ret ) )
+                     (ac-php-location-stack-push)
+                     (ac-php-goto-location jump-pos )
+                     (ac-php-location-stack-push)
+                     )
+                 ( ac-php--goto-local-var-def local-var  )
+                 ) 
+              )
             (cond
              ((or (string= type "class_member")  (string= type "user_function") )
               
               (setq tmp-arr  (s-split ":" (nth 1 symbol-ret) ) )
+
               (cond
                ((s-matches-p "system$" (nth 0 tmp-arr) )
                 (progn ;;system function

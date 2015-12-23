@@ -3,7 +3,7 @@ namespace Test;
 require "testa.php";
 use  Test  as T ;
 use  Test\Testa as Ta ;
-use  Test\Testd; 
+use  Test\Testb; 
 
 class Testb  extends Ta {
 
@@ -54,7 +54,7 @@ class Testb  extends Ta {
     /**
      * define value same as function
 
-     * @var   TestB 
+     * @var   Testa 
      */
 	public $get_v2;
 
@@ -115,8 +115,8 @@ function php7_ff($a,$b): T\Testb {
 }
 
 
-
-$f=php7_ff();
+\Test\CON_NAME
+$fadfaf=php7_ff();
 split("dsfa","ad");
 $t=new Ta();
 

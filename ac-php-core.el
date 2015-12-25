@@ -1036,6 +1036,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (cond
    ((string-match "PHPParser:" string)
 
+
     (setq ac-php-rebuild-tmp-error-msg  (concat ac-php-rebuild-tmp-error-msg  "\n" string ) )
     
     )
@@ -1063,6 +1064,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
          reset-cache1-tags-flag
          reset-cache2-tags-flag
          )
+
       (message " REBUILD final start  ")
       (setq cache-file-name (f-join save-tags-dir "cache-files.json"  ) )
       ;;init data
@@ -1166,14 +1168,16 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 (defun ac-php--gen-data-from-el-tags  ( file-list cache-type tags-dir-len add-class-list )
   "DOCSTRING"
-  (let ( tags-list )
+  (let ( tags-list  tmp-file-name)
     (message "[%s]BUILD marge files (count=%d ) start..." cache-type (length file-list) )
     (with-temp-buffer
       (insert "(")
       (while file-list 
 
         (goto-char (point-max) )
-        (insert-file-contents (nth 2 (car  file-list )))
+        (setq tmp-file-name (nth 2 (car  file-list )) )
+        (when (f-exists? tmp-file-name )
+          (insert-file-contents (nth 2 (car  file-list ))) )
         (setq  file-list (cdr  file-list)))
 
       (goto-char (point-max) )

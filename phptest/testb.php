@@ -115,9 +115,10 @@ function php7_ff($a,$b): T\Testb {
 }
 
 
-\Test\CON_NAME
-$fadfaf=php7_ff();
 split("dsfa","ad");
+/**
+   @var Ta
+ */
 $t=new Ta();
 
 echo $t->get_v1()."\n" ;

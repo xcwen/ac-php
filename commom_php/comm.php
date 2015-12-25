@@ -1,9 +1,351 @@
+<?php
 /* Local Variables: */
 /*  (setq ac-php-comm-tags-data-list nil ) */
 /*  End: */
 
 
-<?php
+class MongoCollection {
+/* 常量 */
+	/** @var int */
+	 const  ASCENDING = 1 ;
+	/** @var int */
+	 const  DESCENDING = -1 ;
+/* Fields */
+	/** @var MongoDB */
+	 public  $db = NULL ;
+	/** @var integer */
+	 public  $w ;
+	/** @var integer */
+	 public  $wtimeout ;
+/* 方法 */
+	/** @return array */
+	public  function aggregate( array $pipeline , array $options=NULL   ){} 
+	/** @return MongoCommandCursor */
+	public  function aggregateCursor( array $command , array $options=NULL   ){} 
+	/** @return mixed */
+	public  function batchInsert( array $a , array $options = array()  ){} 
+	/** @return void */
+	public  function __construct( MongoDB $db , string $name ){} 
+	/** @return int */
+	public  function count( array $query = array() , int $limit = 0 , int $skip = 0  ){} 
+	/** @return array */
+	public  function createDBRef( mixed $document_or_id ){} 
+	/** @return bool */
+	public  function createIndex( array $keys , array $options = array()  ){} 
+	/** @return array */
+	public  function deleteIndex( string_or_array $keys ){} 
+	/** @return array */
+	public  function deleteIndexes(){} 
+	/** @return array */
+	public  function distinct( string $key , array $query=NULL   ){} 
+	/** @return array */
+	public  function drop(){} 
+	/** @return bool */
+	public  function ensureIndex( string_or_array $key_or_keys , array $options = array()  ){} 
+	/** @return MongoCursor */
+	public  function find( array $query = array() , array $fields = array()  ){} 
+	/** @return array */
+	public  function findAndModify( array $query , array $update=NULL  , array $fields=NULL  , array $options=NULL   ){} 
+	/** @return array */
+	public  function findOne( array $query = array() , array $fields = array() , array $options = array()  ){} 
+	/** @return MongoCollection */
+	public  function __get( string $name ){} 
+	/** @return array */
+	public  function getDBRef( array $ref ){} 
+	/** @return array */
+	public  function getIndexInfo(){} 
+	/** @return string */
+	public  function getName(){} 
+	/** @return array */
+	public  function getReadPreference(){} 
+	/** @return bool */
+	public  function getSlaveOkay(){} 
+	/** @return array */
+	public  function getWriteConcern(){} 
+	/** @return array */
+	public  function group( mixed $keys , array $initial , MongoCode $reduce , array $options = array()  ){} 
+	/** @return bool|array */
+	public  function insert( array_or_object $a , array $options = array()  ){} 
+	/** @return array[MongoCommandCursor] */
+	public  function parallelCollectionScan( int $num_cursors ){} 
+	/** @return bool|array */
+	public  function remove( array $criteria = array() , array $options = array()  ){} 
+	/** @return mixed */
+	public  function save( array_or_object $a , array $options = array()  ){} 
+	/** @return bool */
+	public  function setReadPreference( string $read_preference , array $tags=NULL   ){} 
+	/** @return bool */
+	public  function setSlaveOkay( bool $ok = true  ){} 
+	/** @return bool */
+	public  function setWriteConcern( mixed $w , int $wtimeout=NULL   ){} 
+	/** @return string */
+	static protected  function toIndexString( mixed $keys ){} 
+	/** @return string */
+	public  function __toString(){} 
+	/** @return bool|array */
+	public  function update( array $criteria , array $new_object , array $options = array()  ){} 
+	/** @return array */
+	public  function validate( bool $scan_data = FALSE  ){} 
+}
+interface MongoCursorInterface extends Iterator {
+/* Methods */
+	/** @return MongoCursorInterface */
+	abstract public  function batchSize( int $batchSize ); 
+	/** @return bool */
+	abstract public  function dead(); 
+	/** @return array */
+	abstract public  function getReadPreference(); 
+	/** @return array */
+	abstract public  function info(); 
+	/** @return MongoCursorInterface */
+	abstract public  function setReadPreference( string $read_preference , array $tags=NULL   ); 
+	/** @return MongoCursorInterface */
+	abstract public  function timeout( int $ms ); 
+}
+
+class MongoCommandCursor implements MongoCursorInterface , Iterator {
+/* Methods */
+	/** @return MongoCommandCursor */
+	public  function batchSize( int $batchSize ){} 
+	/** @return void */
+	public  function __construct( MongoClient $connection , string $ns , array $command = array() ){} 
+	/** @return MongoCommandCursor */
+	public static  function createFromDocument( MongoClient $connection , string $hash , array $document ){} 
+	/** @return array */
+	public  function current(){} 
+	/** @return bool */
+	public  function dead(){} 
+	/** @return array */
+	public  function getReadPreference(){} 
+	/** @return array */
+	public  function info(){} 
+	/** @return int */
+	public  function key(){} 
+	/** @return void */
+	public  function next(){} 
+	/** @return array */
+	public  function rewind(){} 
+	/** @return MongoCommandCursor */
+	public  function setReadPreference( string $read_preference , array $tags=NULL   ){} 
+	/** @return MongoCommandCursor */
+	public  function timeout( int $ms ){} 
+	/** @return bool */
+	public  function valid(){} 
+}
+
+class MongoCursor implements MongoCursorInterface , Iterator {
+    /* Static Fields */
+	/** @var boolean */
+    static  $slaveOkay = FALSE ;
+	/** @var integer */
+    static  $timeout = 30000 ;
+    /* 方法 */
+	/** @return MongoCursor */
+	public  function addOption( string $key , mixed $value ){} 
+	/** @return MongoCursor */
+	public  function awaitData( bool $wait = true  ){} 
+	/** @return MongoCursor */
+	public  function batchSize( int $batchSize ){} 
+	/** @return void */
+	public  function __construct( MongoClient $connection , string $ns , array $query = array() , array $fields = array()  ){} 
+	/** @return int */
+	public  function count( bool $foundOnly = FALSE  ){} 
+	/** @return array */
+	public  function current(){} 
+	/** @return bool */
+	public  function dead(){} 
+	/** @return void */
+	protected  function doQuery(){} 
+	/** @return array */
+	public  function explain(){} 
+	/** @return MongoCursor */
+	public  function fields( array $f ){} 
+	/** @return array */
+	public  function getNext(){} 
+	/** @return array */
+	public  function getReadPreference(){} 
+	/** @return bool */
+	public  function hasNext(){} 
+	/** @return MongoCursor */
+	public  function hint( mixed $index ){} 
+	/** @return MongoCursor */
+	public  function immortal( bool $liveForever = true  ){} 
+	/** @return array */
+	public  function info(){} 
+	/** @return string|int */
+	public  function key(){} 
+	/** @return MongoCursor */
+	public  function limit( int $num ){} 
+	/** @return MongoCursor */
+	public  function maxTimeMS( int $ms ){} 
+	/** @return array */
+	public  function next(){} 
+	/** @return MongoCursor */
+	public  function partial( bool $okay = true  ){} 
+	/** @return void */
+	public  function reset(){} 
+	/** @return void */
+	public  function rewind(){} 
+	/** @return MongoCursor */
+	public  function setFlag( int $flag , bool $set = true  ){} 
+	/** @return MongoCursor */
+	public  function setReadPreference( string $read_preference , array $tags=NULL   ){} 
+	/** @return MongoCursor */
+	public  function skip( int $num ){} 
+	/** @return MongoCursor */
+	public  function slaveOkay( bool $okay = true  ){} 
+	/** @return MongoCursor */
+	public  function snapshot(){} 
+	/** @return MongoCursor */
+	public  function sort( array $fields ){} 
+	/** @return MongoCursor */
+	public  function tailable( bool $tail = true  ){} 
+	/** @return MongoCursor */
+	public  function timeout( int $ms ){} 
+	/** @return bool */
+	public  function valid(){} 
+}
+
+class MongoDB {
+    /* 常量 */
+	/** @var int */
+    const  PROFILING_OFF = 0 ;
+	/** @var int */
+    const  PROFILING_SLOW = 1 ;
+	/** @var int */
+    const  PROFILING_ON = 2 ;
+    /* Fields */
+	/** @var integer */
+    public  $w = 1 ;
+	/** @var integer */
+    public  $wtimeout = 10000 ;
+    /* 方法 */
+	/** @return array */
+	public  function authenticate( string $username , string $password ){} 
+	/** @return array */
+	public  function command( array $command , array $options = array()  ){} 
+	/** @return void */
+	public  function __construct( MongoClient $conn , string $name ){} 
+	/** @return MongoCollection */
+	public  function createCollection( string $name , array $options=NULL   ){} 
+	/** @return array */
+	public  function createDBRef( string $collection , mixed $document_or_id ){} 
+	/** @return array */
+	public  function drop(){} 
+	/** @return array */
+	public  function dropCollection( mixed $coll ){} 
+	/** @return array */
+	public  function execute( mixed $code , array $args = array()  ){} 
+	/** @return bool */
+	public  function forceError(){} 
+	/** @return MongoCollection */
+	public  function __get( string $name ){} 
+	/** @return array */
+	public  function getCollectionInfo( array $options = array()  ){} 
+	/** @return array */
+	public  function getCollectionNames( array $options = array()  ){} 
+	/** @return array */
+	public  function getDBRef( array $ref ){} 
+	/** @return MongoGridFS */
+	public  function getGridFS( string $prefix = "fs"  ){} 
+	/** @return int */
+	public  function getProfilingLevel(){} 
+	/** @return array */
+	public  function getReadPreference(){} 
+	/** @return bool */
+	public  function getSlaveOkay(){} 
+	/** @return array */
+	public  function getWriteConcern(){} 
+	/** @return array */
+	public  function lastError(){} 
+	/** @return array */
+	public  function listCollections( array $options = array()  ){} 
+	/** @return array */
+	public  function prevError(){} 
+	/** @return array */
+	public  function repair( bool $preserve_cloned_files = FALSE , bool $backup_original_files = FALSE  ){} 
+	/** @return array */
+	public  function resetError(){} 
+	/** @return MongoCollection */
+	public  function selectCollection( string $name ){} 
+	/** @return int */
+	public  function setProfilingLevel( int $level ){} 
+	/** @return bool */
+	public  function setReadPreference( string $read_preference , array $tags=NULL   ){} 
+	/** @return bool */
+	public  function setSlaveOkay( bool $ok = true  ){} 
+	/** @return bool */
+	public  function setWriteConcern( mixed $w , int $wtimeout=NULL   ){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
+class MongoClient {
+/* 常量 */
+    /** @var string  */
+    const VERSION ="";
+
+    /** @var string  */
+    const DEFAULT_HOST = "localhost" ;
+    /** @var int*/
+    const DEFAULT_PORT = 27017 ;
+
+    /** @var string*/
+    const RP_PRIMARY = "primary" ;
+
+    /** @var string*/
+    const RP_PRIMARY_PREFERRED = "primaryPreferred" ;
+    /** @var string*/
+    const RP_SECONDARY = "secondary" ;
+    /** @var string*/
+    const RP_SECONDARY_PREFERRED = "secondaryPreferred" ;
+    /** @var string*/
+    const RP_NEAREST = "nearest" ;
+    /* 属性 */
+
+    /** @var boolean  */
+    public $connected = FALSE ;
+
+    /** @var string*/
+    public $status = NULL ;
+    /** @var string*/
+    protected $server = NULL ;
+    /** @var boolean  */
+    protected $persistent = NULL ;
+/* 方法 */
+    public function __construct ( string $server = "mongodb://localhost:27017" , array $options = array("connect" => TRUE)  ) {}
+	/** @return bool */
+	public  function close( boolean_string $connection=NULL   ){} 
+	/** @return bool */
+	public  function connect(){} 
+	/** @return array */
+	public  function dropDB( mixed $db ){} 
+	/** @return MongoDB */
+	public  function __get( string $dbname ){} 
+	/** @return array */
+	public static  function getConnections(){} 
+	/** @return array */
+	public  function getHosts(){} 
+	/** @return array */
+	public  function getReadPreference(){} 
+	/** @return array */
+	public  function getWriteConcern(){} 
+	/** @return bool */
+	public  function killCursor( string $server_hash , int_MongoInt64 $id ){} 
+	/** @return array */
+	public  function listDBs(){} 
+	/** @return MongoCollection */
+	public  function selectCollection( string $db , string $collection ){} 
+	/** @return MongoDB */
+	public  function selectDB( string $name ){} 
+	/** @return bool */
+	public  function setReadPreference( string $read_preference , array $tags=NULL   ){} 
+	/** @return bool */
+	public  function setWriteConcern( mixed $w , int $wtimeout=NULL   ){} 
+	/** @return string */
+	public  function __toString(){} 
+}
+
 
 class SplDoublyLinkedList implements Iterator , ArrayAccess , Countable {
     /* 方法 */

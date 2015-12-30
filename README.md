@@ -159,22 +159,58 @@ touch .ac-php-conf.json
 
 *  command 
 
-`ac-php-remake-tags` ;; **if source is changed ,re run this commond for update tags**
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
-`ac-php-remake-tags-all` ;; **if you find a error, run it an retest**
+<colgroup>
+<col  class="org-left" />
 
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">cmd</th>
+<th scope="col" class="org-left">info</th>
+</tr>
+</thead>
 
-`ac-php-find-symbol-at-point`   ;goto define
+<tbody>
+<tr>
+<td class="org-left"> ac-php-remake-tags</td>
+<td class="org-left"> if source is changed ,re run this commond for update tags </td>
+</tr>
 
-`ac-php-location-stack-back`    ;go back
+<tr>
+<td class="org-left"> ac-php-remake-tags-all</td>
+<td class="org-left"> **if you find a error, run it an retest**</td>
+</tr>
 
-`ac-php-show-tip` ;; show define at point
+<tr>
+<td class="org-left"> ac-php-find-symbol-at-point</td>
+<td class="org-left"> goto define </td>
+</tr>
 
-`ac-php-cscope-find-egrep-pattern` ;; find current-word in project  
+<tr>
+<td class="org-left"> ac-php-location-stack-back</td>
+<td class="org-left"> go back </td>
+</tr>
 
+<tr>
+<td class="org-left"> ac-php-show-tip </td>
+<td class="org-left"> show define at point </td>
+</tr>
 
-need: (setq ac-php-use-cscope-flag  t ) 
+<tr>
+<td class="org-left"> ac-php-cscope-find-egrep-pattern </td>
+<td class="org-left"> find current-word in project
+
+ <br/>need: (setq ac-php-use-cscope-flag  t ) 
+</td>
+</tr>
+
+</tbody>
+</table>
+
 
 
 

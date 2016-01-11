@@ -77,6 +77,13 @@
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)
 
+(defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php/tags")
+  "PATH for ctags to be saved, default value is \"~/.ac-php/tags\" as base for
+directories.
+
+This path get extended with the directory tree of the project that you are
+indexing the tags for.")
+
 (defvar ac-php-max-bookmark-count 500 )
 (defun ac-php-location-stack-push ()
   (let ((bm (ac-php-current-location)))
@@ -1363,7 +1370,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--get-tags-save-dir(work-dir  )
   (let (  ret )
     
-    (setq ret (concat (getenv "HOME") "/.ac-php/tags"
+    (setq ret (concat ac-php-tags-path
                       (replace-regexp-in-string "[/ ]" "-"
                                                 (replace-regexp-in-string  "/$" ""  work-dir )
                                                 )  ))

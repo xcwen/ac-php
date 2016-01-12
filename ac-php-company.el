@@ -3,9 +3,6 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24") ( php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1") (s "1") (f "1"))
-
-
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

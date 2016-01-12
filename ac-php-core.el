@@ -1698,21 +1698,27 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-class-member-list (class-list inherit-list  class-name  )
   "DOCSTRING"
   (setq  class-name (ac-php-clean-namespace-name  class-name) )
-  (let ( (check-class-list ) (ret ) find-flag  )
+  (let ( (check-class-list ) (ret ) find-flag   )
     (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
     (ac-php--debug "check-class-list %S" check-class-list)
 
-    (let (  class-member-list tmp-data  )
+    (let (  class-member-list tmp-data  unique-list member-name  )
       (dolist (opt-class check-class-list)
         (setq tmp-data (assoc-string  opt-class class-list  t ) )
         (setq  class-member-list  (copy-tree (nth 1 tmp-data )))  ;;copy-tree : will not change tags-data
+        
+        (dolist (member-info class-member-list )
+          (setq member-name  (nth 1 member-info) )
+          (unless (assoc-string  unique-list  t)
+            (push member-info ret  )
+            (push member-name unique-list )
+            )
+          ) 
 
-        (if ret 
-            (nconc ret class-member-list)
-          (setq ret class-member-list  ) )
         ))
     ret
     ))
+
 (defun  ac-php--get-class-name-from-parent-define(  parent-list-str )
     " '\\Class1,interface1' => Class1  "
     (ac-php-clean-namespace-name (s-trim (nth 0 (s-split ","  parent-list-str )) ) )

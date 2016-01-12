@@ -27,8 +27,6 @@
 
 ;;; Code:
 
-
-(provide 'ac-php-company)
 (require 'cl-lib)
 (when (featurep 'company) (require 'company))
 (require 'ac-php-core)
@@ -117,3 +115,4 @@
     ;;(no-cache 't)
     ))
 
+(provide 'ac-php-company)

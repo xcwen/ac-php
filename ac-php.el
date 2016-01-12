@@ -70,9 +70,6 @@
 
 ;;; Code:
 
-
-(provide 'ac-php)
-
 (require 'ac-php-core)
 
 (require 'auto-complete) 
@@ -283,5 +280,5 @@
             (cache)
             (symbol . "t"))))
 
-
-
+(provide 'ac-php)
+;;; ac-php.el ends here

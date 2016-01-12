@@ -27,14 +27,11 @@
 ;; More info and **example** at : https://github.com/xcwen/ac-php 
 ;;
 
-
-(provide 'ac-php-core)
-
 (require 'json)
 (require 's) ;;https://github.com/magnars/s.el
 (require 'f) ;;https://github.com/rejeep/f.el
 
-(require 'ac-php-comm-tags-data )
+(require 'ac-php-comm-tags-data)
 
 (require 'php-mode)
 (require 'popup) 
@@ -2111,8 +2108,4 @@ Set this variable to nil to disable the lighter."
          ;; Disable semantic
          )))
 
-
-
-
-
-
+(provide 'ac-php-core)

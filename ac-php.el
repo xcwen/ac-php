@@ -179,6 +179,7 @@
 
               (push item ss)))
         (push item ss)))
+    (setq ss (reverse ss) )
 
 
       

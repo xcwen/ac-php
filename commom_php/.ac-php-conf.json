@@ -1,8 +1,7 @@
 {
   "filter": {
     "php-file-ext-list": [
-      "php",
-      "inc"
+      "php"
     ],
     "php-path-list": [
       "."

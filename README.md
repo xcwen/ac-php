@@ -46,6 +46,7 @@ externed:  Redis ,Swoole
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [large php project config](#configue-php-file-search-for-large-project)
+* [disable cscope config](#disable-cscope-config)
 * [FQA](#fqa)
 
 
@@ -102,7 +103,6 @@ save it as `~/.emacs`
             '(lambda ()
                (auto-complete-mode t)
                (require 'ac-php)
-               ;;(setq ac-php-use-cscope-flag  t ) ;;enable cscope
                (setq ac-sources  '(ac-source-php ) )
                (yas-global-mode 1)
                (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
@@ -138,7 +138,6 @@ work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)*
                (auto-complete-mode t)
                (require 'ac-php)
                (setq ac-sources  '(ac-source-php ) )
-               ;;(setq ac-php-use-cscope-flag  t )  ;;enable cscope
                (yas-global-mode 1)
                (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
                (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
@@ -203,8 +202,7 @@ touch .ac-php-conf.json
 <tr>
 <td class="org-left"> ac-php-cscope-find-egrep-pattern </td>
 <td class="org-left"> find current-word in project
-
- <br/>need: (setq ac-php-use-cscope-flag  t ) 
+ <br/>
 </td>
 </tr>
 
@@ -355,6 +353,8 @@ tags-home-jim-ac-php-phptest/
 1 directory, 8 files
 ```
 
+
+
 ### Configue PHP file Search for Large Project
 
 config file name  is `.ac-php-conf.json`
@@ -365,6 +365,7 @@ like this
 
 ```json
 {
+  "use-cscope" : true,
   "filter": {
     "php-file-ext-list": [
       "php"
@@ -438,6 +439,8 @@ filter result is:
 
 `31.php` `33.php` will not gen tags;
 
+### Disable Cscope Config
+set `use-cscope:  false`  in `.ac-php-conf.json`
 
 
 ### Rebuild Tags 

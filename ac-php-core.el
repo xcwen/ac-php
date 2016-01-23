@@ -1475,6 +1475,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
              ( =  (f-size  config-file-name ) 0 ))
       (ac-php--json-save-data config-file-name 
                               '(
+                                :use-cscope t 
                                 :filter
                                 (
                                  :php-file-ext-list
@@ -1489,6 +1490,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     ))
 
+(defun  ac-php--get-use-cscope-from-config-file (work-dir) 
+  (let ( conf-list  )
+    (setq conf-list  (ac-php--get-config work-dir) )
+    (cdr (assoc-string "use-cscope" conf-list )) 
+    )
+)
 (defun ac-php--get-php-files-from-config (work-dir  )
   (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
     
@@ -1519,7 +1526,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--remake-cscope (  tags-dir all-file-list )
   "DOCSTRING"
   (let ( tags-dir-len save-dir)
-    (when (and ac-php-cscope  ac-php-use-cscope-flag )
+    (when (and ac-php-cscope
+               (or (ac-php--get-use-cscope-from-config-file  tags-dir)
+               ac-php-use-cscope-flag )
+               )
       (message "rebuild cscope  data file " )
       (setq tags-dir-len (length tags-dir) )
       ;;write cscope.files
@@ -2074,15 +2084,16 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                 (let (cscope-no-mouse-prompts)
                   (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))
                 ))
-
-  (if ac-php-use-cscope-flag
-      (progn
-        (setq cscope-initial-directory  (ac-php--get-tags-save-dir (ac-php-get-tags-dir) )  )
-        (cscope-find-egrep-pattern symbol)
-        )
-    (message "need  config: (setq ac-php-use-cscope-flag t)  ")
-    )
-  )
+  (let (work-dir ( ac-php-get-tags-dir ))
+    
+    (if (or ac-php-use-cscope-flag
+            (ac-php--get-use-cscope-from-config-file work-dir   )) 
+        (progn
+          (setq cscope-initial-directory  (ac-php--get-tags-save-dir (ac-php-get-tags-dir) )  )
+          (cscope-find-egrep-pattern symbol)
+          )
+      (message "need  config:  .ac-php-conf.json -> use-cscope:true  ")
+    )))
 
 ;; mode --- info 
 (defcustom ac-php-mode-line

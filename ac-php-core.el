@@ -533,6 +533,7 @@ then this function split it to
   (interactive)
   (let ()
     (setq ac-php-debug-flag  (not ac-php-debug-flag) )
+    (setq debug-on-error ac-php-debug-flag  )
     (message "set:  ac-php-debug-flag: %s " ac-php-debug-flag )
     ))
 
@@ -807,10 +808,10 @@ then this function split it to
         )) 
     ret-list))
 ;;; ==============BEGIN
-(defun ac-php-find-php-files ( work-dir regex also-find-subdir )
+(defun ac-php-find-php-files ( project-root-dir regex also-find-subdir )
   "get all php file list"
   (let (results sub-results files file-name file-dir-flag file-change-time file-change-unixtime )
-    (setq files (directory-files-and-attributes work-dir t))
+    (setq files (directory-files-and-attributes project-root-dir t))
     (dolist  (file-item  files )
       (setq file-name  (nth 0 file-item ) )
       (setq file-dir-flag  (nth 1 file-item ) )
@@ -920,14 +921,14 @@ then this function split it to
 
 (defvar ac-php-rebuild-tmp-data nil)
 (defvar ac-php-rebuild-tmp-error-msg nil )
-(defun ac-php--rebuild-file-list ( tags-dir   save-tags-dir  do-all-flag )
+(defun ac-php--rebuild-file-list ( project-root-dir   save-tags-dir  do-all-flag )
     "DOCSTRING"
   (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg)
 
-    (setq tags-dir-len (length tags-dir))
+    (setq tags-dir-len (length project-root-dir))
 
     (message " REBUILD: load file  modify time  start")
-    (let ((tmp  (ac-php--get-php-files-from-config tags-dir  )   ))
+    (let ((tmp  (ac-php--get-php-files-from-config project-root-dir  )   ))
       (setq  file-list (nth 0 tmp) )
       )
     (setq obj-tags-list (ac-php--get-obj-tags-file-list  save-tags-dir ) )
@@ -976,7 +977,7 @@ then this function split it to
 
 
         (ac-php-mode t)
-        (setq ac-php-rebuild-tmp-data (list  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag ) )
+        (setq ac-php-rebuild-tmp-data (list  project-root-dir save-tags-dir all-file-list update-tag-file-list do-all-flag ) )
 
         (setq ac-php-rebuild-tmp-error-msg nil )
         (setq ac-php-phptags-index-progress 0)
@@ -991,7 +992,7 @@ then this function split it to
             (cond
              ((string-match "finished" event)
 
-              ;;tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag
+              ;;project-root-dir save-tags-dir all-file-list update-tag-file-list do-all-flag
               (ac-php--build-final-tags-from-each-el-tags
                (nth 0 ac-php-rebuild-tmp-data )
                (nth 1 ac-php-rebuild-tmp-data )
@@ -1058,7 +1059,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 
 
-(defun ac-php--build-final-tags-from-each-el-tags ( tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
+(defun ac-php--build-final-tags-from-each-el-tags ( project-root-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
 
   (let ( tags-dir-len
          cache1-file-list cache-file-info 
@@ -1079,7 +1080,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
       (setq cache1-file-list  (cdr (assoc-string "cache1-files"  cache-file-info)) )
 
-      (setq tags-dir-len (length tags-dir))
+      (setq tags-dir-len (length project-root-dir))
     ;;sort by modiy time
     (setq new-cache2-file-list  (sort  all-file-list #'(lambda (a1 a2)
                                                          (> (nth  1 a1) (nth 1 a2) )))) 
@@ -1125,7 +1126,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (ac-php--gen-data-from-el-tags  new-cache1-file-list "cache1"  tags-dir-len add-class-list )
 
         ;;reset cscope 
-        (ac-php--remake-cscope tags-dir all-file-list   )
+        (ac-php--remake-cscope project-root-dir all-file-list   )
         ))
 
     (ac-php--cache-files-save  cache-file-name  new-cache1-file-list  )
@@ -1137,33 +1138,33 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     )
   )
 ;;for auto check file  
-(defun ac-php--remake-tags (tags-dir do-all-flag )
+(defun ac-php--remake-tags (project-root-dir do-all-flag )
   "DOCSTRING cache1-files: last edit files:  cache2-files: others"
   (let (  save-tags-dir all-file-list  last-phpctags-errmsg update-tag-file-list  )
 
-    (message "do remake %s"  tags-dir )
+    (message "do remake %s"  project-root-dir )
     
     (unless ( f-exists? ac-php-ctags-executable    )
       (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))
 
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
-    (if (not tags-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  tags-dir)
+    (if (not project-root-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
+    (when ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
 
       ;;get last-save-info
-      (setq save-tags-dir (ac-php--get-tags-save-dir tags-dir) )
+      (setq save-tags-dir (ac-php--get-tags-save-dir project-root-dir) )
 
       
-      (ac-php--rebuild-file-list  tags-dir   save-tags-dir  do-all-flag)
+      (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)
 
-      ;; (let ((tmp-ret (ac-php--rebuild-file-list  tags-dir   save-tags-dir  do-all-flag)))
+      ;; (let ((tmp-ret (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)))
       ;;   (setq  last-phpctags-errmsg  (nth 0 tmp-ret) )
       ;;   (setq  all-file-list (nth 1 tmp-ret) )
       ;;   (setq  update-tag-file-list (nth 2 tmp-ret) )
       ;;   )
 
       ;; (if (not last-phpctags-errmsg );;SUCC
-      ;;     (ac-php--build-final-tags-from-each-el-tags  tags-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
+      ;;     (ac-php--build-final-tags-from-each-el-tags  project-root-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
       ;;   (progn ;;error 
       ;;     (message last-phpctags-errmsg)
       ;;     nil))
@@ -1364,12 +1365,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       ""
       )))
 
-(defun ac-php--get-tags-save-dir(work-dir  )
+(defun ac-php--get-tags-save-dir(project-root-dir  )
   (let (  ret )
     
     (setq ret (concat ac-php-tags-path "/tags"
                       (replace-regexp-in-string "[/ ]" "-"
-                                                (replace-regexp-in-string  "/$" ""  work-dir )
+                                                (replace-regexp-in-string  "/$" ""  project-root-dir )
                                                 )  ))
 
     (unless (f-exists?  ret  )
@@ -1379,18 +1380,18 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 
 (defun ac-php-get-tags-file (&optional is-cache2)
-  (let ((tags-dir (ac-php-get-tags-dir)) )
-    (if tags-dir
-        (concat  (ac-php--get-tags-save-dir tags-dir)  "/tags-data" (if is-cache2 "-cache2" "" ) ".el"  )
+  (let ((project-root-dir (ac-php--get-project-root-dir)) )
+    (if project-root-dir
+        (concat  (ac-php--get-tags-save-dir project-root-dir)  "/tags-data" (if is-cache2 "-cache2" "" ) ".el"  )
       
       nil)))
 
-(defun ac-php--get-config-path-noti-str ( work-dir path-str)
+(defun ac-php--get-config-path-noti-str ( project-root-dir path-str)
   (if  (s-ends-with? "*.php" path-str )
-      (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) work-dir) )
-    (format "php-path-list->%s" (f-relative path-str work-dir ))))
+      (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) project-root-dir) )
+    (format "php-path-list->%s" (f-relative path-str project-root-dir ))))
 
-(defun ac-php-get-php-files-from-filter(  work-dir filter-info  )
+(defun ac-php-get-php-files-from-filter(  project-root-dir filter-info  )
   (let (  conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name   ext-list ext-re-str )
     (when  filter-info
       (progn
@@ -1406,13 +1407,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         
         (setq  filter-path-list
                (append filter-path-list
-                       (mapcar (lambda (path-str) (f-join  work-dir   path-str) )
+                       (mapcar (lambda (path-str) (f-join  project-root-dir   path-str) )
                                (cdr (assoc-string "php-path-list"  filter-info))
                                )))
 
         (setq  filter-path-list
                (append filter-path-list
-                       (mapcar (lambda (path-str)  (f-join work-dir  path-str "*.php" )  )
+                       (mapcar (lambda (path-str)  (f-join project-root-dir  path-str "*.php" )  )
                                (cdr (assoc-string "php-path-list-without-subdir" filter-info))
                                )))
         ;;sort
@@ -1424,14 +1425,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (dolist ( filter-item-name filter-path-list )
             (setq check-error-flag nil)
             (when  (not
-                    (or (f-same?   work-dir filter-item-name )
-                        (s-starts-with?   work-dir filter-item-name ) )
+                    (or (f-same?   project-root-dir filter-item-name )
+                        (s-starts-with?   project-root-dir filter-item-name ) )
                     )
               (progn
                 (setq check-error-flag t)
-                (message "CONFIG FILTER WARRING : [%s] [%s] most in work-dir [%s] "
-                         filter-item-name (ac-php--get-config-path-noti-str work-dir filter-item-name )
-                         work-dir )))
+                (message "CONFIG FILTER WARRING : [%s] [%s] most in project-root-dir [%s] "
+                         filter-item-name (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
+                         project-root-dir )))
 
             (unless check-error-flag 
               (dolist (tmp-item tmp-union-list)
@@ -1439,8 +1440,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                   (progn
                     (setq check-error-flag t)
                     (message "CONFIG FILTER WARRING : [%s] in [%s] "
-                             (ac-php--get-config-path-noti-str work-dir filter-item-name )
-                             (ac-php--get-config-path-noti-str work-dir tmp-item ))
+                             (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
+                             (ac-php--get-config-path-noti-str project-root-dir tmp-item ))
                     ))))
 
             (unless check-error-flag
@@ -1467,10 +1468,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     ret-list
     ))
 
-(defun ac-php--get-config ( work-dir )
+(defun ac-php--get-config ( project-root-dir )
   (let ( config-file-name )
     
-    (setq config-file-name (f-join work-dir ".ac-php-conf.json"  ) )
+    (setq config-file-name (f-join project-root-dir ".ac-php-conf.json"  ) )
     (when (or (not (f-exists?  config-file-name ) )
              ( =  (f-size  config-file-name ) 0 ))
       (ac-php--json-save-data config-file-name 
@@ -1490,20 +1491,20 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     ))
 
-(defun  ac-php--get-use-cscope-from-config-file (work-dir) 
+(defun  ac-php--get-use-cscope-from-config-file (project-root-dir) 
   (let ( conf-list  )
-    (setq conf-list  (ac-php--get-config work-dir) )
+    (setq conf-list  (ac-php--get-config project-root-dir) )
     (cdr (assoc-string "use-cscope" conf-list )) 
     )
 )
-(defun ac-php--get-php-files-from-config (work-dir  )
+(defun ac-php--get-php-files-from-config (project-root-dir  )
   (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
     
     
-    (setq conf-list  (ac-php--get-config work-dir) )
+    (setq conf-list  (ac-php--get-config project-root-dir) )
 
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
-    (setq ret-list (ac-php-get-php-files-from-filter work-dir filter-info  ) )
+    (setq ret-list (ac-php-get-php-files-from-filter project-root-dir filter-info  ) )
     ;;(ac-php--debug "===ret-list :%S" ret-list)
     (list ret-list    )
     ))
@@ -1512,7 +1513,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-remake-tags ( )
   " reset tags , if  php source  is changed  "
   (interactive)
-  ( ac-php--remake-tags  (ac-php-get-tags-dir) nil )
+  ( ac-php--remake-tags  (ac-php--get-project-root-dir) nil )
 )
 
 
@@ -1520,23 +1521,23 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-remake-tags-all (  )
   "  remake tags without check modify time "
   (interactive)
-  ( ac-php--remake-tags  (ac-php-get-tags-dir) t)
+  ( ac-php--remake-tags  (ac-php--get-project-root-dir) t)
 )
 
-(defun ac-php--remake-cscope (  tags-dir all-file-list )
+(defun ac-php--remake-cscope (  project-root-dir all-file-list )
   "DOCSTRING"
   (let ( tags-dir-len save-dir)
     (when (and ac-php-cscope
-               (or (ac-php--get-use-cscope-from-config-file  tags-dir)
+               (or (ac-php--get-use-cscope-from-config-file  project-root-dir)
                ac-php-use-cscope-flag )
                )
       (message "rebuild cscope  data file " )
-      (setq tags-dir-len (length tags-dir) )
+      (setq tags-dir-len (length project-root-dir) )
       ;;write cscope.files
-      (setq save-dir (ac-php--get-tags-save-dir  tags-dir) )
+      (setq save-dir (ac-php--get-tags-save-dir  project-root-dir) )
       (let ((file-name-list ) cscope-file-name )
         (dolist (file-item all-file-list )
-          (setq cscope-file-name (concat tags-dir  (substring (nth  0 file-item ) tags-dir-len)  ))
+          (setq cscope-file-name (concat project-root-dir  (substring (nth  0 file-item ) tags-dir-len)  ))
           (push  cscope-file-name   file-name-list ))
         (f-write
          (s-join  "\n" file-name-list )
@@ -1594,23 +1595,24 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 ;;; ==============END
 
-(defun ac-php-get-tags-dir  ()
+(defun ac-php--get-project-root-dir  ()
   "DOCSTRING"
-  (let (tags-dir tags-file) 
+  (let (project-root-dir tags-file) 
     (when (buffer-file-name) 
-      (setq tags-dir (file-name-directory (buffer-file-name)  ))
+      (setq project-root-dir (file-name-directory (buffer-file-name)  ))
     )
 
-    (unless tags-dir
-      (setq tags-dir ( expand-file-name  default-directory) ))
+    (unless project-root-dir
+      (setq project-root-dir ( expand-file-name  default-directory) ))
 
     (while (not (or
-                 (file-exists-p  (concat tags-dir  ".ac-php-conf.json" ))
-                 (file-exists-p  (concat tags-dir  ".tags" ))
-                    (string= tags-dir "/") ))
-      (setq tags-dir  ( file-name-directory (directory-file-name  tags-dir ) ) ))
-    (if (string= tags-dir "/") (setq tags-dir nil )   )
-    tags-dir
+                 (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
+                 (file-exists-p  (concat project-root-dir  ".tags" ))
+                 (string= project-root-dir "/")
+                 ))
+      (setq project-root-dir  ( file-name-directory (directory-file-name  project-root-dir ) ) ))
+    (if (string= project-root-dir "/") (setq project-root-dir nil )   )
+    project-root-dir
     ))
 
 (defun ac-php--get-check-class-list ( class-name inherit-list )
@@ -1818,7 +1820,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                       (progn 
                         (setq member-info (ac-php-get-class-member-info (nth 0 tags-data)  (nth 2 tags-data)  class-name cur-word ) )
                         (if member-info
-                            (setq ret (list "class_member"  (concat (ac-php-get-tags-dir)  (nth 3 member-info)  )      (nth 4 member-info) member-info )  )
+                            (setq ret (list "class_member"  (concat (ac-php--get-project-root-dir)  (nth 3 member-info)  )      (nth 4 member-info) member-info )  )
                           (progn
                             (message "no find %s.%s " class-name cur-word  )
                             )
@@ -1860,7 +1862,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                         (setf file-pos  (format "system:function.%s"     (nth 1 function-item ) ) ) 
                           )
                       )
-                    (setq ret (list "user_function"  (concat (ac-php-get-tags-dir)  file-pos   )      (nth 4 function-item) function-item  ) )
+                    (setq ret (list "user_function"  (concat (ac-php--get-project-root-dir)  file-pos   )      (nth 4 function-item) function-item  ) )
                     
                     (setq find-flag t)
                     (return )))
@@ -2084,12 +2086,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                 (let (cscope-no-mouse-prompts)
                   (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))
                 ))
-  (let (work-dir ( ac-php-get-tags-dir ))
+  (let ((project-root-dir ( ac-php--get-project-root-dir )))
     
     (if (or ac-php-use-cscope-flag
-            (ac-php--get-use-cscope-from-config-file work-dir   )) 
+            (ac-php--get-use-cscope-from-config-file project-root-dir   )) 
         (progn
-          (setq cscope-initial-directory  (ac-php--get-tags-save-dir (ac-php-get-tags-dir) )  )
+          (setq cscope-initial-directory  (ac-php--get-tags-save-dir (ac-php--get-project-root-dir) )  )
           (cscope-find-egrep-pattern symbol)
           )
       (message "need  config:  .ac-php-conf.json -> use-cscope:true  ")

@@ -946,7 +946,7 @@ then this function split it to
         (setq obj-file-name (f-full (concat (ac-php--get-obj-tags-dir save-tags-dir )   obj-file-name )))
 
         ;;check change time
-        (ac-php--debug "obj-file-name %s " obj-file-name  )
+        ;;(ac-php--debug "obj-file-name %s " obj-file-name  )
         (setq obj-item (assoc-string obj-file-name obj-tags-list t ))
 
         (push (list file-name src-time obj-file-name ) all-file-list)
@@ -961,6 +961,7 @@ then this function split it to
           ;;gen el data file
           ))
 
+      (ac-php--debug  " ac-php--rebuild-file-list all-list : count=%d " (length all-file-list) )
       ;;all-opt-list
       
       (let* (
@@ -1070,22 +1071,26 @@ Non-nil SILENT will supress extra status info in the minibuffer."
          reset-cache2-tags-flag
          )
 
-      (message " REBUILD final start  ")
-      (setq cache-file-name (f-join save-tags-dir "cache-files.json"  ) )
-      ;;init data
-      (unless (f-exists?  cache-file-name )
-        ( ac-php--cache-files-save  cache-file-name [] ))
+    (ac-php--debug "all-file-list end  : count(%d ) " (length all-file-list) )
+    (message " REBUILD final start   ")
+    (setq cache-file-name (f-join save-tags-dir "cache-files.json"  ) )
+    ;;init data
+    (unless (f-exists?  cache-file-name )
+      ( ac-php--cache-files-save  cache-file-name [] ))
 
-      (setq cache-file-info (json-read-file  cache-file-name)  )
+    (setq cache-file-info (json-read-file  cache-file-name)  )
 
-      (setq cache1-file-list  (cdr (assoc-string "cache1-files"  cache-file-info)) )
+    (setq cache1-file-list  (cdr (assoc-string "cache1-files"  cache-file-info)) )
 
-      (setq tags-dir-len (length project-root-dir))
+    (setq tags-dir-len (length project-root-dir))
+
+    (ac-php--debug "all-file-list end  1111 : count(%d ) " (length all-file-list) )
     ;;sort by modiy time
-    (setq new-cache2-file-list  (sort  all-file-list #'(lambda (a1 a2)
+    (setq new-cache2-file-list  (sort  (copy-tree  all-file-list) #'(lambda (a1 a2)
                                                          (> (nth  1 a1) (nth 1 a2) )))) 
     
 
+    (ac-php--debug "all-file-list end  22222 : count(%d ) " (length all-file-list) )
     ;;set new-cache1-file-list new-cache2-file-list 
     (let ( (new-cur-add-count 0) )
       (while (and   new-cache2-file-list  (< new-cur-add-count  ac-php-cache1-file-count ) )
@@ -1505,7 +1510,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
     (setq ret-list (ac-php-get-php-files-from-filter project-root-dir filter-info  ) )
-    ;;(ac-php--debug "===ret-list :%S" ret-list)
+    (ac-php--debug " ac-php--get-php-files-from-config: %d"  (length  ret-list) )
     (list ret-list    )
     ))
 
@@ -1531,6 +1536,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                (or (ac-php--get-use-cscope-from-config-file  project-root-dir)
                ac-php-use-cscope-flag )
                )
+      (ac-php--debug "ac-php--remake-cscope  %d"  (length  all-file-list) )
       (message "rebuild cscope  data file " )
       (setq tags-dir-len (length project-root-dir) )
       ;;write cscope.files

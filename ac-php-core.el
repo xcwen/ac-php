@@ -165,6 +165,15 @@ indexing the tags for.")
     )
 
 
+(defmacro ac-php--list-push-subitem (item opt-list key-str)
+  "push a to list[\"xx\"] "
+  ;; TODO  use `cadr' to save to class-list  ,,maybe has  better way,
+  `(let () 
+     (when (not (assoc-string ,key-str ,opt-list  t ))
+       (push (list ,key-str  nil ) ,opt-list 
+             ))
+     (push  ,item (cadr (assoc-string  ,key-str ,opt-list t) )  ) )
+  )
 
 (defun ac-php-check-not-in-string-or-comment (pos)
   "ac-php-check-in-string-or-comment"
@@ -854,23 +863,29 @@ then this function split it to
     
     (message " reset inherit-list ...  count=%d " (length inherit-list) )
     ;;reset inherit-list
-    (setq  inherit-list (mapcar (lambda (inherit-item )
+    (setq  inherit-list
+           (mapcar
+            (lambda (inherit-item )
 
-                                  (-let (
-                                         ((class-name parent-name  ) inherit-item)
-                                        (cur-namespace) (check-classname) )
+              (-let
+                  (((class-name parent-name-list  ) inherit-item)
+                    )
+                (list class-name
+                      (mapcar
+                       (lambda ( parent-name)
+                         (if (s-index-of "\\" parent-name )
+                             parent-name 
+                           (let( (cur-namespace) (check-classname) )
+                             (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
+                             ;;check class in namespace
+                             (setq check-classname (concat cur-namespace "\\" parent-name ) )
+                             (when (assoc-string check-classname class-list t )
+                               (setq parent-name  check-classname))
+                             parent-name 
+                             ))
+                         ) parent-name-list )  )
 
-                                    (if (s-index-of "\\" parent-name )
-                                        inherit-item
-                                      (progn
-                                        (setq cur-namespace (ac-php--get-namespace-from-classname class-name))
-                                        ;;check class in namespace
-                                        (setq check-classname (concat cur-namespace "\\" parent-name ) )
-                                        (when (assoc-string check-classname class-list t )
-                                          (setq parent-name  check-classname))
-                                        (list class-name parent-name )
-                                        ))
-                                    )) inherit-list  ))
+                )) inherit-list  ))
 
     (message " add-class-list count=%d ... " (length add-class-list ) )
     ;; gen class __construct
@@ -1294,16 +1309,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                  (setq access (nth 5 line-data) )
                  (setq return-type (nth 6 line-data))
                  
-                 (when (not (assoc-string class-name class-list t ))
-                   (push (list class-name nil ) class-list))
 
-                 ;; TODO  use `cadr' to save to class-list  ,,maybe has  better way,
-                 (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type)  class-name   access ) (cadr (assoc-string  class-name class-list t ) ) )
+                 ( ac-php--list-push-subitem (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type)  class-name   access )  class-list  class-name )
                  ))
              (t
               (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )))))
 
-         ((or (string= tag-type "c") (string= tag-type "i"))  ;;class or  interface
+         ((or (string= tag-type "c") (string= tag-type "i") (string= tag-type "t")  )  ;;class or  interface  or  trait
 
           ;;("Testb"  "/home/jim/ac-php/phptest/testb.php:5"  nil  "c" ("namespace"."Test") "Testa" )
           (setq scope (nth 4   line-data ))
@@ -1327,7 +1339,17 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           ;; add class-inherits
           (let ((p-class-name (nth 5 line-data ) ) )
             (when  p-class-name 
-              (push  (list  tag-name  p-class-name ) inherit-list))) )
+              (ac-php--list-push-subitem p-class-name inherit-list tag-name )) ))
+
+         ((or (string= tag-type "T")  ) ;;use trait
+
+          ;;("T_Instance1"  "/home/jim/phpctags/t.php:5"  nil  "T" ("class"."A") "public"  "T\\Instance1" )
+          (setq return-type (nth 6 line-data))
+          (setq class-name (cdr (nth  4 line-data  )))
+
+          (ac-php--list-push-subitem return-type inherit-list class-name  ))
+
+
 
          ((or (string= tag-type "p")  (string= tag-type "m") ) ;;class function member
           ;; ("v8"  "/home/jim/ac-php/phptest/testb.php:9"  nil  "p" ("class"."Test\\Testb") "public"  "\\Test\\Testa" )
@@ -1338,10 +1360,6 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (setq access (nth 5  line-data))
           
 
-          ;;add class info 
-          (when (not (assoc-string class-name class-list t ))
-            (push (list class-name nil ) class-list)
-            )
           ;;add member & function 
 
           (if (string= tag-type "p")
@@ -1349,7 +1367,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (setq doc (ac-php-gen-el-func  doc)))
 
           ;;push TAG item into list 
-          (push (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type) class-name   access ) (cadr (assoc-string  class-name class-list  t) ) )) 
+          (ac-php--list-push-subitem
+           (list tag-type tag-name doc file-pos (ac-php--clean-return-type  return-type) class-name   access ) class-list class-name   )) 
 
          )))
 
@@ -1621,19 +1640,31 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     project-root-dir
     ))
 
-(defun ac-php--get-check-class-list ( class-name inherit-list )
+(defun ac-php--get-check-class-list ( class-name inherit-list ) 
+  (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list ))
+    )
+
+(defun ac-php--get-check-class-list-ex ( class-name inherit-list )
   "DOCSTRING"
-  (let ((tmp-class class-name )
-        (check-class-list (list  (ac-php-clean-namespace-name class-name)))
-          )
 
-    (while (and (setq  tmp-class (nth 1 (assoc-string (ac-php-clean-namespace-name tmp-class) inherit-list  t  )))
-                (not (assoc-string   tmp-class check-class-list )))
+  (let ((check-class-list nil))
 
-      (push (ac-php--get-class-name-from-parent-define tmp-class ) check-class-list )
+    (ac-php--debug "inherit-list %S" inherit-list )
+    (setq class-name  (ac-php-clean-namespace-name class-name))
+    (push class-name check-class-list)
+    (dolist (tmp-class
+             (nth 1 (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ))
+             )
+      (setq check-class-list (append  (ac-php--get-check-class-list
+                                       (ac-php--get-class-name-from-parent-define tmp-class )
+                                       inherit-list
+                                       )
+                                      check-class-list )  )
       )
-    (nreverse check-class-list )
+    (ac-php--debug "XXXX check-class-list-ex  %S" check-class-list )
+    check-class-list
     ))
+
 
 (defun ac-php--get-item-info (member )
     "DOCSTRING"
@@ -1758,7 +1789,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
                 (if cur-class
                     (setq cur-class (ac-php--get-class-name-from-parent-define cur-class )) 
-                    (setq cur-class "")
+                  (setq cur-class "")
                 ))
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))

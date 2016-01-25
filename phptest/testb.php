@@ -17,6 +17,7 @@ class Testb  extends Ta {
     public function get_v8(){
         return $this->v2;
     }
+    use Instance;
 
 
 	/** @var  $v5 \Test\Testa  */
@@ -48,7 +49,7 @@ class Testb  extends Ta {
      * @return TestB 
      */
     public function get_v1(){
-        
+
     }
 
     /**
@@ -67,6 +68,8 @@ class Testb  extends Ta {
     public function get_tt(){
 
         $testv = $this->get_v2($this->texx);
+        $this->get_v1();
+
 
         /** @var  $v \Test\Testa  */
         
@@ -84,12 +87,11 @@ class Testb  extends Ta {
 
         $f();
 
+
         $this->get_v2()->set_v1("s");
 
         $a=Test\CON_NAME;
 
-
-        
     }
 }
 /** 

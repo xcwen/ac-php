@@ -1641,21 +1641,23 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     ))
 
 (defun ac-php--get-check-class-list ( class-name inherit-list ) 
-  (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list ))
-    )
+  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list ))) )
+    (ac-php--debug "XXXX check-class list:%S"  ret)
+    ret 
+    ))
 
 (defun ac-php--get-check-class-list-ex ( class-name inherit-list )
   "DOCSTRING"
 
   (let ((check-class-list nil))
 
-    (ac-php--debug "inherit-list %S" inherit-list )
     (setq class-name  (ac-php-clean-namespace-name class-name))
     (push class-name check-class-list)
+    (ac-php--debug "XXXX  Current %S" class-name)
     (dolist (tmp-class
              (nth 1 (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ))
              )
-      (setq check-class-list (append  (ac-php--get-check-class-list
+      (setq check-class-list (append  (ac-php--get-check-class-list-ex
                                        (ac-php--get-class-name-from-parent-define tmp-class )
                                        inherit-list
                                        )

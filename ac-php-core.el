@@ -1622,7 +1622,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 (defun ac-php--get-project-root-dir  ()
   "DOCSTRING"
-  (let (project-root-dir tags-file) 
+  (let (project-root-dir tags-file ) 
     (when (buffer-file-name) 
       (setq project-root-dir (file-name-directory (buffer-file-name)  ))
     )
@@ -1630,12 +1630,18 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (unless project-root-dir
       (setq project-root-dir ( expand-file-name  default-directory) ))
 
-    (while (not (or
-                 (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
-                 (file-exists-p  (concat project-root-dir  ".tags" ))
-                 (string= project-root-dir "/")
-                 ))
-      (setq project-root-dir  ( file-name-directory (directory-file-name  project-root-dir ) ) ))
+    (let (last-dir) 
+        (while (not (or
+                     (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
+                     (file-exists-p  (concat project-root-dir  ".tags" ))
+                     (string= project-root-dir "/")
+                     ))
+          (setq  last-dir project-root-dir  )
+          (setq project-root-dir  ( file-name-directory (directory-file-name  project-root-dir ) ) )
+          (when (string= last-dir project-root-dir  ) 
+            (setq project-root-dir "/" )
+            )))
+
     (if (string= project-root-dir "/") (setq project-root-dir nil )   )
     project-root-dir
     ))

@@ -1786,13 +1786,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (setq temp-class cur-class)
 
           (if (string= item "__parent__" )
-              (progn
-                (setq cur-class (nth 1 (assoc-string cur-class inherit-list  t ))  ) 
+              (let (parent-list)
+                (setq parent-list (nth 1 (assoc-string cur-class inherit-list  t ))  ) 
 
-                (if cur-class
-                    (setq cur-class (ac-php--get-class-name-from-parent-define cur-class )) 
+                (if parent-list 
+                    (setq cur-class (ac-php--get-class-name-from-parent-define (nth 0 parent-list )  )) 
                   (setq cur-class "")
                 ))
+
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))
               (setq cur-class (if  member-info

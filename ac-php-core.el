@@ -1647,12 +1647,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     ))
 
 (defun ac-php--get-check-class-list ( class-name inherit-list ) 
-  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list ))) )
+  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list nil ))) )
     (ac-php--debug "XXXX check-class list:%S"  ret)
     ret 
     ))
 
-(defun ac-php--get-check-class-list-ex ( class-name inherit-list )
+(defun ac-php--get-check-class-list-ex ( class-name inherit-list cur-list )
   "DOCSTRING"
 
   (let ((check-class-list nil))
@@ -1660,18 +1660,23 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq class-name  (ac-php-clean-namespace-name class-name))
     (push class-name check-class-list)
     (ac-php--debug "XXXX  Current %S" class-name)
-    (dolist (tmp-class
-             (nth 1 (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ))
-             )
-      (setq check-class-list (append  (ac-php--get-check-class-list-ex
-                                       (ac-php--get-class-name-from-parent-define tmp-class )
-                                       inherit-list
-                                       )
-                                      check-class-list )  )
-      )
-    (ac-php--debug "XXXX check-class-list-ex  %S" check-class-list )
-    check-class-list
-    ))
+    (unless ( assoc-string class-name cur-list t )
+      
+      (push class-name cur-list )
+      
+      (dolist (tmp-class
+               (nth 1 (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ))
+               )
+        (setq check-class-list (append  (ac-php--get-check-class-list-ex
+                                         (ac-php--get-class-name-from-parent-define tmp-class )
+                                         inherit-list
+                                         cur-list
+                                         )
+                                        check-class-list )  )
+        )
+      (ac-php--debug "XXXX check-class-list-ex  %S" check-class-list )
+      check-class-list
+      )))
 
 
 (defun ac-php--get-item-info (member )

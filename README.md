@@ -283,8 +283,11 @@ $value=ff();
 
 like this
 ```php
+/**
+   class define ..
+   @property  \Test\Testa  $v8
+ */
 class Testa {
-    /** @var  $v8 \Test\Testa  */
 
     /**
      * @var int; 

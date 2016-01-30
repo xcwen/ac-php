@@ -5,17 +5,16 @@ use  Test  as T ;
 use  Test\Testa as Ta ;
 use  Test\Testb; 
 
+/**
+
+   @property  \Test\Testa  $v8
+   @property  \Test\Testa  $v7 - adfa sdf
+   
+ */
 class Testb  extends Ta {
 
-    //define v2 type is Testa in phpdoc
-    
 
-	/** @var  $v8 \Test\Testa  */
-    /**
-       
-     */
     public function get_v8(){
-        return $this->v2;
     }
     use Instance;
 

@@ -236,10 +236,16 @@ define class memeber type :
 public $v1;
 ```
 
-if you won't define `public $v1 ` you can define with comment ,like this =>
+if you won't define `public $v1 ` you can define in class comment ,like this =>
+```php
+/**
+   @property  \Test\Testa  $v1
+ */
+class Testb  extends Ta { 
+...
+}
 ```
-/** @var  $v1 \Test\Testa  */
-```
+
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
 
 

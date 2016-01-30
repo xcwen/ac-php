@@ -6,7 +6,7 @@ namespace Test;
 const CON_NAME="sss";
 define("NAME_CONSTANT", "Hello world.");
 
-class Testa  extends Testb{
+class Testa  {
 
 
     /**

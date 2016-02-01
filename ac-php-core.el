@@ -2015,7 +2015,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                   ))))
 
           (kill-new (concat "\n\t/**  @var  $" cur-word " " class-name "  */\n") ))
-      (kill-new (concat "\n\t/**  @var  $" cur-word "  " cur-word "*/\n") ))))
+      (kill-new (concat "\n * @property " cur-word "  $" cur-word "\n") ))))
 
 (defun ac-php-location-stack-forward ()
   (interactive)

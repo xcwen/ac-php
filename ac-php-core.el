@@ -44,13 +44,6 @@
 
 (defvar ac-php-debug-flag nil)
 
-;; FOR TEST
-;;(setq ac-php-debug-flag t)
-;;(setq ac-php-debug-flag nil)
-;; (setq debug-on-error t )
-
-;; (setq ac-php-comm-tags-data-list nil )
-;; (setq debug-on-error nil )
 
 (defmacro ac-php--debug (  fmt-str &rest args )
   `(if ac-php-debug-flag
@@ -166,7 +159,7 @@ indexing the tags for.")
 
 
 (defmacro ac-php--list-push-subitem (item opt-list key-str)
-  "push a to list[\"xx\"] "
+  "push a to list(\"xx\") "
   ;; TODO  use `cadr' to save to class-list  ,,maybe has  better way,
   `(let () 
      (when (not (assoc-string ,key-str ,opt-list  t ))
@@ -176,7 +169,7 @@ indexing the tags for.")
   )
 
 (defun ac-php-check-not-in-string-or-comment (pos)
-  "ac-php-check-in-string-or-comment"
+  "ac-php-check-not-in-string-or-comment"
   (save-excursion (if  (nth 8 (syntax-ppss pos))  nil  t ))
   ) 
 (defun ac-php-check-not-in-comment (pos)

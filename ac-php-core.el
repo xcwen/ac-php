@@ -1160,7 +1160,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (unless ( f-exists? ac-php-ctags-executable    )
       (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))
 
-    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli " ))
+    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli and restart emacs " ))
     (if (not project-root-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
     (when ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
 

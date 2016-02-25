@@ -13,8 +13,8 @@ use  Test\Testb;
  */
 class Testb  extends Ta {
 
-
     public function get_v8(){
+        
     }
     use Instance;
 

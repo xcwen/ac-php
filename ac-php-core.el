@@ -837,7 +837,9 @@ then this function split it to
                     ;;(not (string= ".."   (file-name-base file-name)  ))
                     (not (string= "."  (substring (file-name-base file-name)  0 1 ))) ;; not start with "."
                     ) 
-        (when also-find-subdir
+        (when (and also-find-subdir
+                   ;;no find in vendor tests
+                   (not (s-matches-p "/vendor/.*/tests/"  file-name ) ))
           (setq sub-results  (ac-php-find-php-files file-name regex also-find-subdir ) )
 
           (if results

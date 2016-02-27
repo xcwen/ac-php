@@ -239,7 +239,8 @@ public $v1;
 if you won't define `public $v1 ` you can define in class comment ,like this =>
 ```php
 /**
-   @property  \Test\Testa  $v1
+  * @property  \Test\Testa  $v1
+  * @method  int add($a,$b) 
  */
 class Testb  extends Ta { 
 ...
@@ -265,6 +266,18 @@ or define use php7 :
 ```php
 public function get_v1() :classtype  {
 
+}
+
+
+```
+ 
+or define in doc:
+```php
+/**
+  * @method  classtype get_v1()
+ */
+class Testb  extends Ta { 
+...
 }
 ```
 

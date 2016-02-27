@@ -949,7 +949,7 @@ then this function split it to
         (setq  file-name (nth  0 file-item )  )
         (setq src-time  (nth 1 file-item ) )
         (setq obj-file-name   (substring file-name  tags-dir-len   ) )
-        (setq obj-file-name (replace-regexp-in-string "[/ ]" "-" obj-file-name ))
+        (setq obj-file-name (replace-regexp-in-string "[/ :]" "-" obj-file-name ))
         (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
         (setq obj-file-name (f-full (concat (ac-php--get-obj-tags-dir save-tags-dir )   obj-file-name )))
 

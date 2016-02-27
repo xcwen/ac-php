@@ -241,6 +241,7 @@ if you won't define `public $v1 ` you can define in class comment ,like this =>
 /**
   * @property  \Test\Testa  $v1
   * @method  int add($a,$b) 
+  * @use  \Test\TestC
  */
 class Testb  extends Ta { 
 ...

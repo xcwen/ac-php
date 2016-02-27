@@ -9,17 +9,21 @@ use  Test\Testb;
 
    @property  \Test\Testa  $v8
    @property  \Test\Testa  $v7 - adfa sdf
+   @method \Test\Testa  get_moth( )
+
+   //for complete like  trait
+   @use  Testa 
+
    
  */
-class Testb  extends Ta {
+class Testb  {
 
     public function get_v8(){
         
+        //$this->v1
     }
     use Instance;
 
-
-	/** @var  $v5 \Test\Testa  */
 
     /**
      * @var   T\Testa 

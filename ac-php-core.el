@@ -388,13 +388,14 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
 
-      (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bint\\b\\|\\bfloat\\b\\|\\bdouble\\b\\|\\bstring\\b\\|\\bcase\\b"    ";"  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bcase\\b"    ";"  line-string))
 
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
       (setq line-string  (replace-regexp-in-string   "!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
 
  
+      (ac-php--debug  " to line-string:%s" line-string )
       ;;split line-string with "." ,but add "." as an element at its position in list
       (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))
       ;;split each element  with "(" ,but add "(" as an element at its position in list

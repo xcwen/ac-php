@@ -462,6 +462,26 @@ filter result is:
 
 `31.php` `33.php` will not gen tags;
 
+for laravel example  
+```json
+{
+  "use-cscope": false,
+  "filter": {
+    "php-file-ext-list": [
+      "php"
+    ],
+    "php-path-list": [
+        "./app",
+        "./database",
+        "./vendor/laravel/framework/src/Illuminate"
+    ],
+    "php-path-list-without-subdir": []
+  }
+}
+```
+
+
+
 ### Disable Cscope Config
 set `use-cscope:  false`  in `.ac-php-conf.json`
 

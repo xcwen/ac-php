@@ -752,63 +752,63 @@ then this function split it to
 
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-php-prefix-str) ) )
-
-    ;;user func + class  
-    (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
-        (progn 
-          (setq cur-word (substring-no-properties cur-word 1 ))
-          (dolist (function-item function-list )
-            (when (s-prefix-p  cur-word (nth 1 function-item )  t )
-              (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
-
-              (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
-              (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
-              (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
-              (push key-word ret-list  )
-              )))
-      (progn 
-        ;;use as 
-        (dolist ( use-item (ac-php--get-all-use-as-name-in-cur-buffer  ) )
-          (when (s-prefix-p  cur-word (nth 1 use-item ) t )
-            (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
-            (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  use-item ) ))
-            (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
-            (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
-            (setq key-word (propertize key-word 'summary   (nth 0  use-item ) ))
-            (push key-word ret-list  )
-            ))
-        ;;cur namespace
-        (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
-          (when cur-namespace
-            (setq cur-full-fix (concat cur-namespace "\\" cur-word  ) )
-            (setq start-word-pos-with-namespace (+  start-word-pos (length cur-namespace  ) 1 ) )
-            (ac-php--debug "=== %s %S" cur-full-fix start-word-pos-with-namespace )
-            
+    (when (>=  cur-word-len 1 ) 
+      ;;user func + class  
+      (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
+          (progn 
+            (setq cur-word (substring-no-properties cur-word 1 ))
             (dolist (function-item function-list )
-              
-              (when (s-prefix-p  cur-full-fix  (nth 1 function-item )  t )
-                (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos-with-namespace  ))
+              (when (s-prefix-p  cur-word (nth 1 function-item )  t )
+                (setq key-word (concat "\\" (substring-no-properties (nth  1  function-item )  )))
+
                 (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
                 (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
-                (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  function-item ) ))
                 (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
                 (push key-word ret-list  )
-                ))))
-        
-
-        
-        ;;common
-        (dolist (function-item function-list )
+                )))
+        (progn 
+          ;;use as 
+          (dolist ( use-item (ac-php--get-all-use-as-name-in-cur-buffer  ) )
+            (when (s-prefix-p  cur-word (nth 1 use-item ) t )
+              (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
+              (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  use-item ) ))
+              (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
+              (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
+              (setq key-word (propertize key-word 'summary   (nth 0  use-item ) ))
+              (push key-word ret-list  )
+              ))
+          ;;cur namespace
+          (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
+            (when cur-namespace
+              (setq cur-full-fix (concat cur-namespace "\\" cur-word  ) )
+              (setq start-word-pos-with-namespace (+  start-word-pos (length cur-namespace  ) 1 ) )
+              (ac-php--debug "=== %s %S" cur-full-fix start-word-pos-with-namespace )
+              
+              (dolist (function-item function-list )
+                
+                (when (s-prefix-p  cur-full-fix  (nth 1 function-item )  t )
+                  (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos-with-namespace  ))
+                  (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  function-item ) ))
+                  (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
+                  (push key-word ret-list  )
+                  ))))
           
-          (when (s-prefix-p  cur-word (nth 1 function-item )  t  )
-            (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
-            (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
-            (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
-            (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  function-item ) ))
-            (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
-            (push key-word ret-list  )
-            ))
-        )) 
+
+          
+          ;;common
+          (dolist (function-item function-list )
+            
+            (when (s-prefix-p  cur-word (nth 1 function-item )  t  )
+              (setq key-word  (substring-no-properties (nth  1  function-item ) start-word-pos  ))
+              (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+              (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+              (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  function-item ) ))
+              (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
+              (push key-word ret-list  )
+              ))
+          ))) 
     ret-list))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files ( project-root-dir regex also-find-subdir )

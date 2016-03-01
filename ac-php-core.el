@@ -1649,28 +1649,38 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     ))
 
 (defun ac-php--get-check-class-list ( class-name inherit-list ) 
-  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name inherit-list nil ))) )
+  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name "" inherit-list nil ))) )
     (ac-php--debug "XXXX check-class list:%S"  ret)
     ret 
     ))
 
-(defun ac-php--get-check-class-list-ex ( class-name inherit-list cur-list )
+(defun ac-php--get-check-class-list-ex ( class-name parent-namespace inherit-list cur-list )
   "DOCSTRING"
 
-  (let ((check-class-list nil))
+  (let ((check-class-list nil ))
 
     (setq class-name  (ac-php-clean-namespace-name class-name))
     (push class-name check-class-list)
     (ac-php--debug "XXXX  Current %S" class-name)
+    (setq inherit-item (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ) )
+    (unless inherit-item
+      (setq inherit-item (assoc-string
+                          (ac-php-clean-namespace-name
+                           (concat  parent-namespace "\\" class-name )
+                           )
+                          inherit-list  t  ) )
+      )
+    
+    
     (unless ( assoc-string class-name cur-list t )
       
       (push class-name cur-list )
       
       (dolist (tmp-class
-               (nth 1 (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ))
-               )
+               (nth 1 inherit-item))
         (setq check-class-list (append  (ac-php--get-check-class-list-ex
                                          (ac-php--get-class-name-from-parent-define tmp-class )
+                                         (ac-php--get-namespace-from-classname class-name )
                                          inherit-list
                                          cur-list
                                          )

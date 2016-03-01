@@ -980,6 +980,12 @@ then this function split it to
              process)
 
         (ac-php--json-save-data  opt-file-name all-opt-list )
+        
+        (ac-php--debug "cmd :%s  %s "
+                        ac-php-ctags-executable
+                        (concat "--files=" opt-file-name )
+
+                       )
         (setq process  (start-process
                         "ac-phptags"
                         "*AC-PHPTAGS*"

@@ -766,17 +766,50 @@ then this function split it to
                 (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
                 (push key-word ret-list  )
                 )))
-        (progn 
+        (let ( start-word )
+          
+          (setq start-word (nth 0 (s-split "\\\\" cur-word  ))) 
           ;;use as 
           (dolist ( use-item (ac-php--get-all-use-as-name-in-cur-buffer  ) )
-            (when (s-prefix-p  cur-word (nth 1 use-item ) t )
-              (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
-              (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  use-item ) ))
-              (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
-              (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
-              (setq key-word (propertize key-word 'summary   (nth 0  use-item ) ))
-              (push key-word ret-list  )
-              ))
+            (ac-php--debug "XXX use-item  %s cur-word=%s" use-item cur-word)
+            (if ( string= start-word  cur-word )  
+                (when (s-prefix-p  cur-word (nth 1 use-item ) t )
+                  (setq key-word  (substring-no-properties (nth  1  use-item ) start-word-pos  ))
+                  (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  use-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item ) ))
+                  (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item ) ))
+                  (setq key-word (propertize key-word 'summary   (nth 0  use-item ) ))
+                  (push key-word ret-list  )
+                  )
+              (let (find-now-word find-now-word-len)
+                
+                (when (string= start-word (nth 1 use-item )  )
+                  
+                  (setq find-now-word (concat (nth 0 use-item)
+                                              ( substring cur-word (length  start-word  )  ) )  )
+                  (setq find-now-word-len (length  find-now-word) )
+
+                  (ac-php--debug"  XXX use namespace ... %s %d "  find-now-word  find-now-word-len)
+
+                  (dolist (function-item function-list )
+                    (when (s-prefix-p  find-now-word (nth 1 function-item )  t  )
+
+                      (ac-php--debug" XXX add to %s   " 
+                                    (substring-no-properties (nth  1  function-item ) find-now-word-len )
+                                    )
+
+                      (setq key-word
+                            (concat cur-word 
+                            (substring-no-properties (nth  1  function-item ) find-now-word-len )))
+                      (setq key-word (propertize key-word 'ac-php-help  (nth 2  function-item ) ))
+                      (setq key-word (propertize key-word 'ac-php-return-type   (nth 4  function-item ) ))
+                      (setq key-word (propertize key-word 'ac-php-tag-type (nth 0  function-item ) ))
+                      (setq key-word (propertize key-word 'summary   (nth 4  function-item ) ))
+                      (push key-word ret-list  )
+                      )))
+
+
+                )))
           ;;cur namespace
           (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
             (when cur-namespace
@@ -809,6 +842,7 @@ then this function split it to
               (push key-word ret-list  )
               ))
           ))) 
+    (ac-php--debug "ret-list:%S" ret-list )
     ret-list))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files ( project-root-dir regex also-find-subdir )
@@ -1657,7 +1691,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--get-check-class-list-ex ( class-name parent-namespace inherit-list cur-list )
   "DOCSTRING"
 
-  (let ((check-class-list nil ))
+  (let ((check-class-list nil ) inherit-item)
 
     (setq class-name  (ac-php-clean-namespace-name class-name))
     (push class-name check-class-list)

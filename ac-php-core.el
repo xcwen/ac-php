@@ -335,15 +335,16 @@ indexing the tags for.")
         (setq  tmp-name (ac-php-get-use-as-name  cur-class-name ) )
 
         (ac-php--debug "  length 1   tmp-name=%s" tmp-name  )
-        ;;check cur-namespace
-        (unless tmp-name
-          (let ((cur-namespace (ac-php-get-cur-namespace-name)))
-            (if cur-namespace
-                (setq tmp-name (concat  cur-namespace "\\" first-key ) )
-              (setq tmp-name first-key )
-              ))) 
 
         )))
+
+    ;;check cur-namespace
+    (unless tmp-name
+      (let ((cur-namespace (ac-php-get-cur-namespace-name)))
+        (if cur-namespace
+            (setq tmp-name (concat  cur-namespace "\\" first-key ) )
+          (setq tmp-name first-key )
+          ))) 
 
     ;; current-namespace
     (ac-php--debug "==to check %s" tmp-name )
@@ -754,6 +755,8 @@ then this function split it to
     (setq start-word-pos (- cur-word-len (length ac-php-prefix-str) ) )
     (when (>=  cur-word-len 1 ) 
       ;;user func + class  
+
+
       (if ( string= (substring-no-properties cur-word 0 1 ) "\\")
           (progn 
             (setq cur-word (substring-no-properties cur-word 1 ))
@@ -812,10 +815,11 @@ then this function split it to
                 )))
           ;;cur namespace
           (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
+            (ac-php--debug "XX check cur-namespace === %s" cur-namespace  )
             (when cur-namespace
               (setq cur-full-fix (concat cur-namespace "\\" cur-word  ) )
               (setq start-word-pos-with-namespace (+  start-word-pos (length cur-namespace  ) 1 ) )
-              (ac-php--debug "=== %s %S" cur-full-fix start-word-pos-with-namespace )
+              (ac-php--debug "check cur-namespace === %s" cur-namespace  )
               
               (dolist (function-item function-list )
                 
@@ -1694,17 +1698,16 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (let ((check-class-list nil ) inherit-item)
 
     (setq class-name  (ac-php-clean-namespace-name class-name))
-    (push class-name check-class-list)
     (ac-php--debug "XXXX  Current %S" class-name)
     (setq inherit-item (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ) )
     (unless inherit-item
+      (setq class-name (concat  parent-namespace "\\" class-name ))
       (setq inherit-item (assoc-string
-                          (ac-php-clean-namespace-name
-                           (concat  parent-namespace "\\" class-name )
-                           )
+                          (ac-php-clean-namespace-name class-name)
                           inherit-list  t  ) )
       )
     
+    (push class-name check-class-list)
     
     (unless ( assoc-string class-name cur-list t )
       
@@ -1713,14 +1716,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (dolist (tmp-class
                (nth 1 inherit-item))
         (setq check-class-list (append  (ac-php--get-check-class-list-ex
-                                         (ac-php--get-class-name-from-parent-define tmp-class )
+                                         tmp-class 
                                          (ac-php--get-namespace-from-classname class-name )
                                          inherit-list
                                          cur-list
                                          )
                                         check-class-list )  )
         )
-      (ac-php--debug "XXXX check-class-list-ex  %S" check-class-list )
       check-class-list
       )))
 
@@ -1808,7 +1810,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (setq  class-name (ac-php-clean-namespace-name  class-name) )
   (let ( (check-class-list ) (ret ) find-flag   )
     (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
-    (ac-php--debug "check-class-list %S" check-class-list)
+    (ac-php--debug "KKKK check-class-list %s = %S" class-name check-class-list)
 
     (let (  class-member-list tmp-data  unique-list member-name  )
       (dolist (opt-class check-class-list)

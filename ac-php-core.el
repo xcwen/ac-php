@@ -471,7 +471,7 @@ then this function split it to
 
 (defun ac-php-get-cur-class-name ()
   "DOCSTRING"
-  ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\|final[ \t]+\\)*class[ \t]+\\([a-zA-Z0-9_]+\\)" 2 ))
+  ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\|final[ \t]+\\)*\\(class\\|trait\\)[ \t]+\\([a-zA-Z0-9_]+\\)" 3 ))
 (defun ac-php-clean-namespace-name (namespace-name)
   (if (and (stringp namespace-name)
            (> (length namespace-name)   1)

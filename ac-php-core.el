@@ -1686,28 +1686,28 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     project-root-dir
     ))
 
-(defun ac-php--get-check-class-list ( class-name inherit-list ) 
-  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name "" inherit-list nil ))) )
+(defun ac-php--get-check-class-list ( class-name inherit-list  class-list) 
+  (let ( (ret (nreverse ( ac-php--get-check-class-list-ex class-name "" inherit-list class-list nil ))) )
     (ac-php--debug "XXXX check-class list:%S"  ret)
     ret 
     ))
 
-(defun ac-php--get-check-class-list-ex ( class-name parent-namespace inherit-list cur-list )
+(defun ac-php--get-check-class-list-ex ( class-name parent-namespace inherit-list class-list cur-list  )
   "DOCSTRING"
 
   (let ((check-class-list nil ) inherit-item)
 
     (setq class-name  (ac-php-clean-namespace-name class-name))
-    (ac-php--debug "XXXX  Current %S" class-name)
-    (setq inherit-item (assoc-string (ac-php-clean-namespace-name class-name) inherit-list  t  ) )
-    (unless inherit-item
-      (setq class-name (concat  parent-namespace "\\" class-name ))
-      (setq inherit-item (assoc-string
-                          (ac-php-clean-namespace-name class-name)
-                          inherit-list  t  ) )
-      )
+
     
-    (push class-name check-class-list)
+    (if (assoc-string class-name  class-list  t )
+        (setq inherit-item (assoc-string class-name inherit-list  t  ) )
+      (progn
+        (setq class-name (ac-php-clean-namespace-name  (concat  parent-namespace "\\" class-name )))
+        (setq inherit-item (assoc-string class-name inherit-list  t  ) )
+        ))
+
+    (push class-name  check-class-list )
     
     (unless ( assoc-string class-name cur-list t )
       
@@ -1719,6 +1719,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                                          tmp-class 
                                          (ac-php--get-namespace-from-classname class-name )
                                          inherit-list
+                                         class-list
                                          cur-list
                                          )
                                         check-class-list )  )
@@ -1741,7 +1742,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-class-member-return-type (class-list inherit-list  class-name member )
   "get class member return type from super classes "
   (let ((check-class-list ) (ret ) find-flag  type-str tmp-ret tag-type )
-    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list  class-list ) )
     
     (setq tmp-ret (ac-php--get-item-info member ) )
     (setq member (nth 0 tmp-ret))
@@ -1769,7 +1770,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-class-member-info (class-list inherit-list  class-name member )
   "DOCSTRING"
   (let ((check-class-list ) (ret ) find-flag  type-str tmp-ret tag-type )
-    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list class-list) )
     
     (setq tmp-ret (ac-php--get-item-info member ) )
     (setq member (nth 0 tmp-ret))
@@ -1809,7 +1810,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   "DOCSTRING"
   (setq  class-name (ac-php-clean-namespace-name  class-name) )
   (let ( (check-class-list ) (ret ) find-flag   )
-    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list ) )
+    (setq check-class-list  (ac-php--get-check-class-list class-name inherit-list class-list) )
     (ac-php--debug "KKKK check-class-list %s = %S" class-name check-class-list)
 
     (let (  class-member-list tmp-data  unique-list member-name  )

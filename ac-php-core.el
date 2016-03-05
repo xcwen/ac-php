@@ -521,14 +521,14 @@ then this function split it to
           
            (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+\\("ac-php-word-re-str "\\)[ \t]*;") line-txt ))
           (if match-ret
-              (add-to-list 'ret-list (list  (nth 1 match-ret) (nth 2 match-ret)   ))
+              (add-to-list 'ret-list (list   (ac-php-clean-namespace-name (nth 1 match-ret)) (nth 2 match-ret)   ))
             (progn
               (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]*;") line-txt ))
               (when match-ret
                 (let ((key-arr (s-split "\\\\" (nth 1 match-ret) ) ))
                   (ac-php--debug "key-arr %S " key-arr)
                   
-                  (add-to-list 'ret-list (list (nth 1 match-ret)  (nth (1- (length key-arr)) key-arr )   ))))))
+                  (add-to-list 'ret-list (list (ac-php-clean-namespace-name (nth 1 match-ret))  (nth (1- (length key-arr)) key-arr )   ))))))
           
           (end-of-line))))
     ret-list ))

@@ -1716,7 +1716,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (dolist (tmp-class
                (nth 1 inherit-item))
         (setq check-class-list (append  (ac-php--get-check-class-list-ex
-                                         tmp-class 
+                                         (ac-php--get-class-name-from-parent-define  tmp-class)
                                          (ac-php--get-namespace-from-classname class-name )
                                          inherit-list
                                          class-list

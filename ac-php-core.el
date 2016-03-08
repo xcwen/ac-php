@@ -621,6 +621,16 @@ then this function split it to
                                       1 t
                                       (save-excursion  (beginning-of-defun)  (beginning-of-line) )))))
 
+          ;;check for @param  \Illuminate\Http\Request  $request
+          (unless frist-class-name
+            (setq frist-class-name  (ac-php-clean-namespace-name
+                                     (ac-php-get-syntax-backward
+                                      (concat "@param[\t ]+"  "\\("
+                                              ac-php-word-re-str "\\)[\t ]+$" frist-key  )
+                                      1 t
+                                      (save-excursion  (beginning-of-defun)  (beginning-of-line) )))))
+
+
           ;;check  function xxx (classtype $val)  
           ;;check   catch ( classtype $val) 
           (unless frist-class-name

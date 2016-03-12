@@ -382,13 +382,18 @@ then this function split it to
 'System' '.' 'getProperty' '(' 'str' '.' 'substring' '(' '3' ')' ')' '.' 'to' "
   (save-excursion
     (let (  (stack-list nil))
+
+      (ac-php--debug  " to 1 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
       (setq line-string  (replace-regexp-in-string   "[.]"   ";"       line-string))
       ;;  do : without ::
+
+      (ac-php--debug  " to 2 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   ";\\1"  line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
 
+      (ac-php--debug  " to 3 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bcase\\b"    ";"  line-string))
 
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
@@ -396,7 +401,7 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
 
  
-      (ac-php--debug  " to line-string:%s" line-string )
+      (ac-php--debug  " to 4 line-string:%s" line-string )
       ;;split line-string with "." ,but add "." as an element at its position in list
       (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))
       ;;split each element  with "(" ,but add "(" as an element at its position in list
@@ -433,7 +438,8 @@ then this function split it to
           (setq tmp-list (append tmp-list (split-string ele "[ \t]+"  t))))
         (setq stack-list tmp-list))
 
-      (setq stack-list stack-list )
+      (ac-php--debug "stack-list 4 :%S" stack-list)
+      stack-list 
 
       ))
   )
@@ -660,7 +666,14 @@ then this function split it to
                   
 
                   (if  (string-match "(" line-txt)
-                      (re-search-backward ".[ \t]*(" ) ;; func
+                      (let ( beginning-of-line-pos )
+                        (ac-php--debug "XXXXXX:%s" line-txt)
+                        (beginning-of-line )
+                        (setq beginning-of-line-pos (point))
+                        (re-search-forward ".[ \t]*(" ) ;; func
+                        (backward-char)
+                        (ac-php--debug "XXXXXX:pos22=%s" (buffer-substring-no-properties beginning-of-line-pos (point)  )  )
+                      )
                     (re-search-backward ".[ \t]*;" ) ;;  p
                       )
                   ;;(backward-char 1)
@@ -2056,7 +2069,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                     (line-end-position )))
     (if  (string-match ( concat  "$" cur-word ) line-txt)
         (let ((class-name "<...>" ) )
-          (when (string-match (concat  cur-word"[\t ]*=.*[(;]" ) line-txt)
+          (when (string-match (concat  cur-word"[\t ]*=[^(]*[(;]" ) line-txt)
             ;;call function
             (let (key-str-list  pos) 
               (save-excursion

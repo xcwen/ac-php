@@ -1,6 +1,6 @@
 ;;; ac-php.el --- auto-completion and company  source for php for GNU Emacs
 
-;; Copyright (C) 2014 - 2015 jim 
+;; Copyright (C) 2014 - 2016 jim 
 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php

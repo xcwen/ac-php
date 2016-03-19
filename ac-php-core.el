@@ -2199,7 +2199,17 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         )) )))
 
 
-
+(defun ac-php-debug-list-info ()
+    "DOCSTRING"
+  (interactive)
+  (let (tags-data  class-list inherit-list )
+    (setq  tags-data  (ac-php-get-tags-data )  )
+    (setq class-list (nth 0 tags-data))
+    (setq inherit-list (nth 2 tags-data))
+    (dolist  (class-item  class-list  )
+       ( ac-php--debug "class:%s"  (nth 0 class-item)  )
+      )
+    ))
 
 
 

@@ -530,9 +530,8 @@ then this function split it to
           
           (end-of-line))))
     ret-list ))
-(defun ac-php-toggle-debug ()
+(defun ac-php-toggle-debug ( )
     "DOCSTRING"
-  (interactive)
   (let ()
     (setq ac-php-debug-flag  (not ac-php-debug-flag) )
     (setq debug-on-error ac-php-debug-flag  )
@@ -2191,16 +2190,27 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         )) )))
 
 
-(defun ac-php-debug-list-info ()
-    "DOCSTRING"
-  (interactive)
+(defun ac-php-debug-list-info (class-name-fix)
+  "DOCSTRING"
+  (interactive "sclass_name fix:") 
   (let (tags-data  class-list inherit-list )
     (setq  tags-data  (ac-php-get-tags-data )  )
     (setq class-list (nth 0 tags-data))
     (setq inherit-list (nth 2 tags-data))
+    (message " ==================== ================= ")
+    (message " ==================== ================= ")
+    (message " ==================== ================= ")
+    (message " ==================== ================= ")
     (dolist  (class-item  class-list  )
-       ( ac-php--debug "class:%s"  (nth 0 class-item)  )
+      (when (s-matches-p class-name-fix (nth 0 class-item)   )
+        ( message "class:%s"  (nth 0 class-item)  )
+
+        (dolist  (member-item  (nth 1 class-item))
+          ( message ">>>>%S" member-item  )
+          ) ) 
       )
+
+    (message " ==================== END ")
     ))
 
 
@@ -2221,6 +2231,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           )
       (message "need  config:  .ac-php-conf.json -> use-cscope:true  ")
     )))
+
 
 ;; mode --- info 
 (defcustom ac-php-mode-line

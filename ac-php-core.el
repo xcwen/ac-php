@@ -383,17 +383,14 @@ then this function split it to
   (save-excursion
     (let (  (stack-list nil))
 
-      (ac-php--debug  " to 1 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
       (setq line-string  (replace-regexp-in-string   "[.]"   ";"       line-string))
       ;;  do : without ::
 
-      (ac-php--debug  " to 2 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   ";\\1"  line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
 
-      (ac-php--debug  " to 3 line-string:%s" line-string )
       (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bcase\\b"    ";"  line-string))
 
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
@@ -401,7 +398,6 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
 
  
-      (ac-php--debug  " to 4 line-string:%s" line-string )
       ;;split line-string with "." ,but add "." as an element at its position in list
       (setq stack-list (ac-php-split-string-with-separator  line-string "[ \t]*\\.[ \t]*"  "." t))
       ;;split each element  with "(" ,but add "(" as an element at its position in list
@@ -410,21 +406,18 @@ then this function split it to
         (dolist (ele stack-list)
           (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[{}]"  ";"  t))))
         (setq stack-list tmp-list))
-      (ac-php--debug "stack-list 2 :%S" stack-list)
 
 
       (let((ele)(tmp-list))
         (dolist (ele stack-list)
           (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[>)]\\|]"  ")"  t))))
         (setq stack-list tmp-list))
-      (ac-php--debug "stack-list 2 :%S" stack-list)
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
           (setq tmp-list (append tmp-list (ac-php-split-string-with-separator ele "[<([]"  "("  t))))
         (setq stack-list tmp-list))
 
-      (ac-php--debug "stack-list 3 :%S" stack-list)
 
       (let ((ele)(tmp-list))
         (dolist (ele stack-list)
@@ -438,7 +431,6 @@ then this function split it to
           (setq tmp-list (append tmp-list (split-string ele "[ \t]+"  t))))
         (setq stack-list tmp-list))
 
-      (ac-php--debug "stack-list 4 :%S" stack-list)
       stack-list 
 
       ))

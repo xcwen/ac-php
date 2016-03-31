@@ -182,9 +182,6 @@
     (setq ss (reverse ss) )
 
 
-      
-
-    (ac-php--debug "SS=%S raw-help=%s"  ss  raw-help )
     (dolist (s ss)
       ;;return type
       (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)

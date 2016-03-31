@@ -184,34 +184,6 @@ run with specific customizations set."
     (ac-php-test--parse-line line-txt ret  )
     ))
 
-(ert-deftest ac-php-test-parse-line-9 ()
-  "text"
-  (let (line-txt  ret )
-    (setq line-txt "$ss = (int)$this->tt ")
-    (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
-    ))
-(ert-deftest ac-php-test-parse-line-9-1 ()
-  "text"
-  (let (line-txt  ret )
-    (setq line-txt "$ss = (double)$this->tt ")
-    (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
-    ))
-(ert-deftest ac-php-test-parse-line-9-2 ()
-  "text"
-  (let (line-txt  ret )
-    (setq line-txt "$ss = (string)$this->tt ")
-    (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
-    ))
-(ert-deftest ac-php-test-parse-line-9-3 ()
-  "text"
-  (let (line-txt  ret )
-    (setq line-txt "$ss = (float)$this->tt ")
-    (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
-    ))
 
 
 

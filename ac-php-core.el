@@ -33,7 +33,7 @@
 
 (require 'ac-php-comm-tags-data)
 
-(require 'php-mode)
+;;(require 'php-mode)
 (require 'popup) 
 (require 'dash) 
 

@@ -1554,7 +1554,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
              ( =  (f-size  config-file-name ) 0 ))
       (ac-php--json-save-data config-file-name 
                               '(
-                                :use-cscope t 
+                                :use-cscope  nil 
                                 :filter
                                 (
                                  :php-file-ext-list

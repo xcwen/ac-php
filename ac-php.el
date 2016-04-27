@@ -130,7 +130,6 @@
 
 (defun ac-php-action ()
   (interactive)
-  ;; (ac-last-quick-help)
   (let (
         (cur-item (cdr ac-last-completion) )
         (help )

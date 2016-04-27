@@ -2199,8 +2199,6 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq inherit-list (nth 2 tags-data))
     (message " ==================== ================= ")
     (message " ==================== ================= ")
-    (message " ==================== ================= ")
-    (message " ==================== ================= ")
     (dolist  (class-item  class-list  )
       (when (s-matches-p class-name-fix (nth 0 class-item)   )
         ( message "class:%s"  (nth 0 class-item)  )

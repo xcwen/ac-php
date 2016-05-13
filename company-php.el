@@ -115,4 +115,4 @@
     ;;(no-cache 't)
     ))
 
-(provide 'ac-php-company)
+(provide 'company-php)

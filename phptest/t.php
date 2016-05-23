@@ -1,5 +1,4 @@
 <?php
-namespace ss\s1;
 trait Instance
 {
     protected static $instance = null;

@@ -3,6 +3,7 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
+;; Package-Requires: ((ac-php-core 1) (company "1")  )
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,13 +18,17 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; thanks auto-complete-clang , ac-php ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
-
 ;;; Commentary: 
-;; Auto Completion source for php. 
+;;  company source for php. 
 ;; Only support  Linux and OSX , not support Windows
 ;; More info and **example** at : https://github.com/xcwen/ac-php 
-;;
+
+;;(add-hook 'php-mode-hook
+;;          '(lambda ()
+;;             (require 'company-php)
+;;             (company-mode t)
+;;             (add-to-list 'company-backends 'company-ac-php-backend )))
+
 
 ;;; Code:
 

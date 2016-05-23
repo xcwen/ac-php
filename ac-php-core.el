@@ -4,6 +4,7 @@
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
 
+;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1")   (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0") )
 
 
 ;; This program is free software; you can redistribute it and/or modify

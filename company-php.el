@@ -1,9 +1,9 @@
+;;; company-php.el --- company  source for php for GNU Emacs
 ;; Copyright (C) 2014 - 2016 jim 
-
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((ac-php-core 1) (company "1")  )
+;; Package-Requires: ( (cl-lib "0.5") (ac-php-core "1") (company "1")  )
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 ;;; Code:
 
 (require 'cl-lib)
-(when (featurep 'company) (require 'company))
+(require 'company)
 (require 'ac-php-core)
 
 
@@ -121,3 +121,5 @@
     ))
 
 (provide 'company-php)
+
+;;; company-php.el ends here

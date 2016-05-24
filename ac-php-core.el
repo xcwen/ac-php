@@ -1,3 +1,5 @@
+;;; ac-php-core.el ---  gen tags for php 
+
 ;; Copyright (C) 2014 - 2016 jim 
 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
@@ -5,7 +7,6 @@
 ;; Keywords: completion, convenience, intellisense
 
 ;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1")   (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0") )
-
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -2264,3 +2265,5 @@ Set this variable to nil to disable the lighter."
          )))
 
 (provide 'ac-php-core)
+
+;;; ac-php-core.el ends here

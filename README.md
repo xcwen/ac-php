@@ -52,9 +52,9 @@ externed:  Redis ,Swoole
 
 ##  Install 
 ### UBUNTU
-* install `php5-cli` command  for phpctags
+* install `php-cli` command  for phpctags
 ```bash 
-localhost:~/$ sudo apt-get install php5-cli 
+localhost:~/$ sudo apt-get install php-cli 
 ```
 
 * install `cscope` command  for `ac-php-cscope-find-egrep-pattern`

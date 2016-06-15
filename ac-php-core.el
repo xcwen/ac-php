@@ -396,7 +396,7 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string   "\\bnew\\b\\|\\breturn\\b\\|\\becho\\b\\|\\bcase\\b"    ";"  line-string))
 
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
-      (setq line-string  (replace-regexp-in-string   "!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
+      (setq line-string  (replace-regexp-in-string   "@\\|!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
 
  

@@ -1450,7 +1450,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (let (  ret )
     
     (setq ret (concat ac-php-tags-path "/tags"
-                      (replace-regexp-in-string "[/ ]" "-"
+                      (replace-regexp-in-string "[/ :]" "-"
                                                 (replace-regexp-in-string  "/$" ""  project-root-dir )
                                                 )  ))
 

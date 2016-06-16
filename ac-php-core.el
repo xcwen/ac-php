@@ -40,11 +40,7 @@
 (require 'dash) 
 
 (defvar ac-php-php-executable (executable-find "php") )
-(defvar ac-php-ctags-executable (concat  (file-name-directory load-file-name)
-                                         (if (string= system-type "windows-nt")  
-                                              "phpctags.bat" 
-                                             "phpctags")
-                                         ))
+(defvar ac-php-ctags-executable (concat  (file-name-directory load-file-name) "phpctags"))
 
 
 (defvar ac-php-cache1-file-count 10)
@@ -1049,6 +1045,7 @@ then this function split it to
         (setq process  (start-process
                         "ac-phptags"
                         "*AC-PHPTAGS*"
+                        ac-php-php-executable
                         ac-php-ctags-executable
                         (concat "--files=" opt-file-name )
                         ))

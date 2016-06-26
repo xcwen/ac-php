@@ -1,4 +1,4 @@
-<?php
+<?php namespace t1;
 require_once("t.php");
 class A {
     use Instance; 
@@ -6,3 +6,4 @@ class A {
         //$this->instance();
     }
 };
+   ( ac-php-get-syntax-backward  (concat "<\\?php[ \t]+namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )

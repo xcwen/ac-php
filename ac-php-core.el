@@ -495,9 +495,10 @@ then this function split it to
 (defun ac-php-get-cur-namespace-name ()
   (interactive)
   "DOCSTRING"
-  ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
-
-  )
+  (or
+   ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
+   ( ac-php-get-syntax-backward  (concat "<\\?php[ \t]+namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
+   ))
 
 
 (defun ac-php-get-use-as-name (item-name )

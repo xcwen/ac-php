@@ -1,4 +1,4 @@
-;;; company-php.el --- company  source for php for GNU Emacs
+;;; company-php-in-ac.el --- company  source for php for GNU Emacs
 ;; Copyright (C) 2014 - 2016 jim 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
@@ -25,7 +25,7 @@
 
 ;;(add-hook 'php-mode-hook
 ;;          '(lambda ()
-;;             (require 'company-php)
+;;             (require 'company-php-in-ac)
 ;;             (company-mode t)
 ;;             (add-to-list 'company-backends 'company-ac-php-backend )))
 
@@ -33,7 +33,9 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'company)
+(if (featurep 'company)
+    (require 'company)
+    )
 (require 'ac-php-core)
 
 
@@ -120,6 +122,6 @@
     ;;(no-cache 't)
     ))
 
-(provide 'company-php)
+(provide 'company-php-in-ac)
 
-;;; company-php.el ends here
+;;; company-php-in-ac.el ends here

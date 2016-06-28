@@ -5,8 +5,8 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; XXPackage-Requi: ((ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0")  )
-;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0") )
+;; Package-Requires: ((ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0")  )
+;; XXPackage-Requires: ((emacs "24") (dash "1") (php-mode "1") (auto-complete "1.4.0") (yasnippet "0.8.0") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0") )
 
 
 

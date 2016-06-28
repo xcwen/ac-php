@@ -1,4 +1,4 @@
-;;; ac-php.el --- auto-completion source for php for GNU Emacs
+;;; ac-php.el --- auto-completion source for php
 
 ;; Copyright (C) 2014 - 2016 jim 
 

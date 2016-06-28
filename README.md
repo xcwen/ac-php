@@ -216,7 +216,7 @@ touch .ac-php-conf.json
 ```elisp
 (add-hook 'php-mode-hook
           '(lambda ()
-             (require 'company-php-in-ac)
+             (require 'company-php)
              (company-mode t)
              (add-to-list 'company-backends 'company-ac-php-backend )))
 ```

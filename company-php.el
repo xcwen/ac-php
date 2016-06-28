@@ -1,4 +1,4 @@
-;;; company-php.el --- company  source for php for GNU Emacs
+;;; company-php.el --- company completion source for php
 ;; Copyright (C) 2014 - 2016 jim 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php

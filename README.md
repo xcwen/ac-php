@@ -213,6 +213,9 @@ touch .ac-php-conf.json
 
 
 ## Usage Company
+
+"M-x" :`package-list-packages`  find  `company-php` install
+
 ```elisp
 (add-hook 'php-mode-hook
           '(lambda ()

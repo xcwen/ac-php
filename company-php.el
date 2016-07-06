@@ -108,11 +108,11 @@
      (company-ac-php-candidate arg ))
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
-    (post-completion (company-ac-php-backend-post-completion))
+    (post-completion (company-ac-php-backend-post-completion arg))
     ;;(no-cache 't)
     ))
 
-(defun company-ac-php-backend-post-completion ()
+(defun company-ac-php-backend-post-completion ( arg )
   (let ((doc))
     (when (ac-php--tag-name-is-function arg)
       (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))

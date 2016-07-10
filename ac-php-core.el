@@ -1362,7 +1362,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                  (push   (list  tag-type  tag-name tag-name  file-pos  ) function-list  )
                  ) 
                )
-             ( (string= scope-type "class" )
+             ( (or (string= scope-type "class" )  (string= scope-type "interface" ) (string= scope-type "trait" )  )
                (progn ;class
                  (setq class-name  (cdr scope) )
                  (setq doc  tag-name )

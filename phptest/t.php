@@ -2,6 +2,7 @@
 trait Instance
 {
     protected static $instance = null;
+    const TEST_001="ssss" ;
 
     // 实例化（单例）
     public static function instance($options = [])

@@ -667,7 +667,7 @@ then this function split it to
                         (beginning-of-line )
                         (setq beginning-of-line-pos (point))
                         (re-search-forward ".[ \t]*(" ) ;; func
-                        (backward-char)
+                        ( re-search-backward ".[ \t]*(" )
                         (ac-php--debug "XXXXXX:pos22=%s" (buffer-substring-no-properties beginning-of-line-pos (point)  )  )
                       )
                     (re-search-backward ".[ \t]*;" ) ;;  p

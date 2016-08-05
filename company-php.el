@@ -3,7 +3,7 @@
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ( (cl-lib "0.5") (ac-php-core "1") (company "1")  )
+;; Package-Requires: ( (cl-lib "0.5") (ac-php-core "1") (company "0.9")  )
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

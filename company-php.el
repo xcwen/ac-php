@@ -20,7 +20,7 @@
 
 ;;; Commentary: 
 ;;  company source for php. 
-;; Only support  Linux and OSX , not support Windows
+;; support  Linux and OSX,  but windows need more test 
 ;; More info and **example** at : https://github.com/xcwen/ac-php 
 
 ;;(add-hook 'php-mode-hook

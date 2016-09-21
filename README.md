@@ -391,7 +391,7 @@ like this
 
 ```json
 {
-  "use-cscope" : true,
+  "use-cscope" : false,
   "filter": {
     "php-file-ext-list": [
       "php"

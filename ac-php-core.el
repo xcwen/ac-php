@@ -29,6 +29,8 @@
 ;; More info and **example** at : https://github.com/xcwen/ac-php 
 ;;
 
+;;; Code:
+
 (require 'json)
 (require 's) ;;https://github.com/magnars/s.el
 (require 'f) ;;https://github.com/rejeep/f.el

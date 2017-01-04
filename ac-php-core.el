@@ -1686,7 +1686,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   "DOCSTRING"
   (let (project-root-dir tags-file ) 
     (when (buffer-file-name) 
-      (setq project-root-dir (file-name-directory (buffer-file-name)  ))
+      (setq project-root-dir (file-truename (file-name-directory (buffer-file-name)  )))
     )
 
     (unless project-root-dir
@@ -1699,7 +1699,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                      (string= project-root-dir "/")
                      ))
           (setq  last-dir project-root-dir  )
-          (setq project-root-dir  ( file-name-directory (directory-file-name  project-root-dir ) ) )
+          (setq project-root-dir  (file-truename( file-name-directory (directory-file-name  project-root-dir ) ) ))
           (when (string= last-dir project-root-dir  ) 
             (setq project-root-dir "/" )
             )))

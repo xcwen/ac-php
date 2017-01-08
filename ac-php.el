@@ -258,8 +258,8 @@
 
 (eval  '(ac-define-source php
           '((candidates . ac-php-candidate-ac )
-            (candidate-face . ac-php-candidate-face)
-            (selection-face . ac-php-selection-face)
+            ;;(candidate-face . ac-php-candidate-face)
+            ;;(selection-face . ac-php-selection-face)
             (prefix . ac-php-prefix)
             (requires . 0)
             (document . ac-php-document)

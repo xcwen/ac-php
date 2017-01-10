@@ -1907,7 +1907,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--get-namespace-from-classname (classname)
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
-(defun ac-php-find-symbol-at-point-pri ( &optional  as-function-flag &optional as-name-flag )
+(defun ac-php-find-symbol-at-point-pri ( &optional  as-function-flag as-name-flag )
   (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data ret)
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)

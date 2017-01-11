@@ -1,6 +1,6 @@
 ;;; ac-php.el --- auto-completion source for php
 
-;; Copyright (C) 2014 - 2016 jim 
+;; Copyright (C) 2014 - 2016 jim
 
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
@@ -24,14 +24,14 @@
 
 ;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
 
-;;; Commentary: 
-;; Auto Completion source for php. 
-;; support  Linux and OSX,  but windows need more test 
-;; More info and **example** at : https://github.com/xcwen/ac-php 
+;;; Commentary:
+;; Auto Completion source for php.
+;; support  Linux and OSX,  but windows need more test
+;; More info and **example** at : https://github.com/xcwen/ac-php
 ;;
-;; ============================================== For add 
+;; ============================================== For add
 ;; add to .emacs:
-;; 
+;;
 ;;(add-hook 'php-mode-hook '(lambda ()
 ;;                            (auto-complete-mode t)
 ;;                            (require 'ac-php)
@@ -66,13 +66,13 @@
 ;;                            (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
 ;;                            ))
 ;;
-;; 
+;;
 
 ;;; Code:
 
 (require 'ac-php-core)
 
-(require 'auto-complete) 
+(require 'auto-complete)
 
 (defface ac-php-candidate-face
   '((t (:background "lightgray" :foreground "navy")))
@@ -90,7 +90,7 @@
     (when (or
            ;; ->
            (and (eq ?> c) (eq ?- (char-before (1- (point)))))
-           ;; :: 
+           ;; ::
            (and (eq ?: c) (eq ?: (char-before (1- (point))))))
 
       (setq  ret (point)))
@@ -111,7 +111,7 @@
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
-        (if ( ac-php--tag-name-is-function item) 
+        (if ( ac-php--tag-name-is-function item)
             (setq doc (concat item  doc ")" ) )
           (setq doc item )
           )
@@ -121,7 +121,7 @@
         (cond
          ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
            (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
-         (return-type 
+         (return-type
           (format "%s  %s " return-type doc   ) )
          (t
           doc))
@@ -187,9 +187,9 @@
              (ac-php--debug "do function")
              (setq fn (match-string 1 s)
                    args (match-string 2 s))
-             (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)  
+             (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)
                                'raw-args args) candidates)
-             ))) 
+             )))
 
     (ac-php--debug "ac-php-action candidates=%S " candidates)
     (cond (candidates
@@ -225,7 +225,7 @@
              (setq s (concat "${" s))
              (setq s (replace-regexp-in-string ")" "})" s))
              (setq s (replace-regexp-in-string "," "},${" s))
-             
+
              (when (string= "${})" s) (setq s ")"))
 
              (condition-case nil

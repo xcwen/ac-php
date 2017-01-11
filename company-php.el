@@ -1,5 +1,5 @@
 ;;; company-php.el --- company completion source for php
-;; Copyright (C) 2014 - 2016 jim 
+;; Copyright (C) 2014 - 2016 jim
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
@@ -18,10 +18,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary: 
-;;  company source for php. 
-;; support  Linux and OSX,  but windows need more test 
-;; More info and **example** at : https://github.com/xcwen/ac-php 
+;;; Commentary:
+;;  company source for php.
+;; support  Linux and OSX,  but windows need more test
+;; More info and **example** at : https://github.com/xcwen/ac-php
 
 ;;(add-hook 'php-mode-hook
 ;;          '(lambda ()
@@ -41,10 +41,10 @@
 
 
 (defun company-ac-php-annotation (item)
-  ( let( doc  ) 
+  ( let( doc  )
     (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-    (if ( ac-php--tag-name-is-function item) 
-        (concat doc ")"   )  
+    (if ( ac-php--tag-name-is-function item)
+        (concat doc ")"   )
       "")))
 
 
@@ -65,7 +65,7 @@
 
     (dolist (  candidate-item (ac-php-candidate) )
       (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
-      (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))  
+      (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))
         (if (ac-php--tag-name-is-function  candidate-item  )
             (dolist (item (split-string raw-help "\n"))
               (let ( args-list (option-start-index 1000000 ) (i 0) find-flag

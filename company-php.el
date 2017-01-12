@@ -59,13 +59,17 @@
 
 
 (defun  company-ac-php-candidate  (arg)
-  (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len )
+  (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len  candidate-list  find-count )
     (setq ac-php-prefix-str (company-ac-php--prefix))
     (setq  ac-php-prefix-str-len  (length ac-php-prefix-str  ) )
+    (setq find-count 0)
+    (setq candidate-list (ac-php-candidate) )
 
-    (dolist (  candidate-item (ac-php-candidate) )
+
+    (dolist (  candidate-item   candidate-list )
       (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
       (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))
+        (setq find-count (1+ find-count) )
         (if (ac-php--tag-name-is-function  candidate-item  )
             (dolist (item (split-string raw-help "\n"))
               (let ( args-list (option-start-index 1000000 ) (i 0) find-flag
@@ -89,12 +93,18 @@
               )
           (push  candidate-item   ac-php-company-list  )
           ))
-
       )
+
+    ;;fix  one function bug
+    (when (and (= find-count 1  ) (> (length ac-php-company-list) 1))
+      (push (propertize ac-php-prefix-str 'ac-php-help  ""  )  ac-php-company-list  )
+      )
+
     ac-php-company-list
     ))
 
 
+;;;###autoload
 (defun company-ac-php-backend (command &optional arg &rest ignored)
   (interactive (list 'interactive))
 
@@ -109,6 +119,7 @@
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
     (post-completion (company-ac-php-backend-post-completion arg))
+    (doc-buffer "test 001"  )
     ;;(no-cache 't)
     ))
 

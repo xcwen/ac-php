@@ -239,6 +239,9 @@ git clone https://github.com/xcwen/spacemacs-config
 
 cp -rf  ~/spacemacs-config/layers/phpplus ~/.spacemacs.d/layers/
 
+#  rm layer  `php` from `dotspacemacs-configuration-layers`
+#  add layer  `phpplus` to `dotspacemacs-configuration-layers`
+
 # restart your emacs
 
 ```

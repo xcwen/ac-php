@@ -2,14 +2,14 @@
 
 emacs auto-complete for php
 
-support  `auto-complete`  and `company-mode`
+support  `auto-complete`  and `company-mode`  and `spacemacs layer`
 
-use [phpctags](https://github.com/xcwen/phpctags) gen tags 
+use [phpctags](https://github.com/xcwen/phpctags) gen tags
 
-and use `ac-php`  work with tags 
+and use `ac-php`  work with tags
 
 
-* support system function 
+* support system function
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/7.png)
 ------
@@ -17,11 +17,11 @@ and use `ac-php`  work with tags
 
 * support system class
 
-core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ... 
+core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ...
 
 externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 
-externed:  Redis ,Swoole 
+externed:  Redis ,Swoole
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
@@ -36,13 +36,14 @@ externed:  Redis ,Swoole
 ![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
 
 
- 
+
 ## Table of Contents
 
 * [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
 * [Usage Company](#usage-company)
+* [Usage spacemacs](#usage-spacemacs)
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [large php project config](#configue-php-file-search-for-large-project)
@@ -50,29 +51,29 @@ externed:  Redis ,Swoole
 * [FQA](#fqa)
 
 
-##  Install 
+##  Install
 ### UBUNTU
 * install `php-cli` command  for phpctags
-```bash 
-localhost:~/$ sudo apt-get install php-cli 
+```bash
+localhost:~/$ sudo apt-get install php-cli
 ```
 
 * install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
-```bash 
+```bash
 localhost:~/$ sudo apt-get install cscope
 ```
 
-### MAC OSX 
+### MAC OSX
 ```bash
  brew  install homebrew/php/php56
 ```
 ```bash
- brew  install cscope 
+ brew  install cscope
 ```
-### check `php`,`cscope`  existed 
+### check `php`,`cscope`  existed
 ```bash
 localhost:~$ php --version
-PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53) 
+PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53)
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
 localhost:~$ cscope --version
@@ -151,12 +152,12 @@ work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)*
 
 ``` bash
 cd /project/to/path #  root dir of project
-touch .ac-php-conf.json 
+touch .ac-php-conf.json
 ```
 
-* DONE 
+* DONE
 
-*  command 
+*  command
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -228,7 +229,21 @@ use  `M-x: company-complete` for complete
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/company-1.png)
 
 
-## Php Doc for complete  
+## Usage Spacemacs
+use  spacemacs layer `phpplus` from https://github.com/xcwen/spacemacs-config
+```bash
+cd ~
+git clone https://github.com/xcwen/spacemacs-config
+
+#copy `phpplus` to yours  config
+
+cp -rf  ~/spacemacs-config/layers/phpplus ~/.spacemacs.d/layers/
+
+# restart your emacs
+
+```
+
+## Php Doc for complete
 define class memeber type :
 
 `public  $v1;`  =>
@@ -243,10 +258,10 @@ if you won't define `public $v1 ` you can define in class comment ,like this =>
 ```php
 /**
   * @property  \Test\Testa  $v1
-  * @method  int add($a,$b) 
+  * @method  int add($a,$b)
   * @use  \Test\TestC
  */
-class Testb  extends Ta { 
+class Testb  extends Ta {
 ...
 }
 ```
@@ -259,7 +274,7 @@ define class function   return type:
 `public  function get_v1()`  =>
 ```php
 /**
- * @return classtype 
+ * @return classtype
  */
 public function get_v1()
 
@@ -274,13 +289,13 @@ public function get_v1() :classtype  {
 
 
 ```
- 
+
 or define in doc:
 ```php
 /**
   * @method  classtype get_v1()
  */
-class Testb  extends Ta { 
+class Testb  extends Ta {
 ...
 }
 ```
@@ -292,7 +307,7 @@ class Testb  extends Ta {
 
 define variable: (**if function or member no define reutrn value  you need define it  **)
 
-`$value=ff();` => 
+`$value=ff();` =>
 ```php
 /** @var $value  Testa */
 $value=ff();
@@ -307,39 +322,39 @@ like this
 class Testa {
 
     /**
-     * @var int; 
+     * @var int;
      */
-	const CON=1;
+    const CON=1;
 
-    
+
     /**
-     * @var Testb; 
+     * @var Testb;
      */
-	public  $v1;
+    public  $v1;
     /**
-     * @var \Test\TestC; 
+     * @var \Test\TestC;
      */
-	public  $v2;
+    public  $v2;
     public function set_v1($v){
 
-        //for complete system function 
+        //for complete system function
         $v=trim($v);
 
         $c=new Testb();
         //can complete
         $c->get_v2();
 
-        //for complete memeber 
+        //for complete memeber
         $this->v1=$v;
 
 
-        //for complete function  return type  
+        //for complete function  return type
         $this-> get_v2()->testC();
 
         //for complete field from comment
         $this->v8->testA();
 
-        //for complete system class 
+        //for complete system class
         $q=new SplQueue ();
         $q->push(11);
 
@@ -350,8 +365,8 @@ class Testa {
     }
 
     /**
-     * 
-     * @return  \Test\TestC; 
+     *
+     * @return  \Test\TestC;
      */
     public function get_v2(){
         $this->v2;
@@ -385,7 +400,7 @@ tags-home-jim-ac-php-phptest/
 
 config file name  is `.ac-php-conf.json`
 
-when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when  it's empty 
+when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when  it's empty
 
 like this
 
@@ -447,9 +462,9 @@ for exmaple:
   }
 }
 ```
- 
+
 filter result is:
- 
+
 ```
 ├── dir1
 │   ├── 1.php
@@ -465,7 +480,7 @@ filter result is:
 
 `31.php` `33.php` will not gen tags;
 
-for laravel example  
+for laravel example
 ```json
 {
   "use-cscope": false,
@@ -489,23 +504,23 @@ for laravel example
 set `use-cscope:  false`  in `.ac-php-conf.json`
 
 
-### Rebuild Tags 
-**if source is changed ,re run this commond for update tags**: `ac-php-remake-tags` 
+### Rebuild Tags
+**if source is changed ,re run this commond for update tags**: `ac-php-remake-tags`
 
 if php file cannot pass from `phpctags`.
 
 you can find any  error from `Messages` buffer  fix it and next
 
-like this 
+like this
 ```
-phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on line 11 - 
+phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on line 11 -
 ```
 you need fix testa.php  error and re run `ac-php-remake-tags`
 
 
 if show:
 ```
-no find  file .ac-php-conf.json dir in path list :/home/jim/phptest/ 
+no find  file .ac-php-conf.json dir in path list :/home/jim/phptest/
 ```
 
 you need *create file ".ac-php-conf.json" in root of project*
@@ -520,15 +535,11 @@ or
 
 
 
-## FQA 
+## FQA
 #  for all any question　
 
-you find a question 
+you find a question
 
 exec : `M-x`: `ac-php-remake-tags-all`
 
 and retest
-
-
-
-

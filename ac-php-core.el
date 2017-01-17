@@ -764,7 +764,7 @@ then this function split it to
     (dolist (function-item function-list )
       (when (ac-php--string=-ignore-care   key-word (nth 1 function-item )  )
         (setq find-item function-item )
-        (return)))
+        (cl-return)))
     find-item
     ))
 
@@ -1191,7 +1191,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
          (t ;;no find  or in cache2
           (setq reset-cache1-tags-flag  t )
           (setq reset-cache2-tags-flag  t )
-          (return)
+          (cl-return)
           )
          )))
 
@@ -1782,8 +1782,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (setq ret (nth 4 member-info) )
 
             (setq find-flag t)
-            (return)))
-        (if find-flag (return) )
+            (cl-return)))
+        (if find-flag (cl-return) )
         ))
     (ac-php--debug "return-type ac-php-get-class-member-info  ret=%S" ret)
     ret))
@@ -1814,8 +1814,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                   )
 
               (setq find-flag t)
-              (return))))
-        (if find-flag (return) )
+              (cl-return))))
+        (if find-flag (cl-return) )
         ))
 
     (when (and
@@ -1863,7 +1863,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (if (string= cur-class "" )
           (if (or (assoc-string item inherit-list  t ) (assoc-string  item class-list t )  )
               (setq cur-class item)
-            (return))
+            (cl-return))
         (progn
           (setq temp-class cur-class)
 
@@ -1897,7 +1897,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
           (when (string= cur-class "")
               (message (concat " class[" temp-class "]'s member[" item "] not define type "))
-            (return))
+            (cl-return))
 
           ))
       )
@@ -1991,7 +1991,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                     (setq ret (list "user_function"  (concat (ac-php--get-project-root-dir)  file-pos   )      (nth 4 function-item) function-item  ) )
 
                     (setq find-flag t)
-                    (return )))
+                    (cl-return )))
                 )
               ))
 

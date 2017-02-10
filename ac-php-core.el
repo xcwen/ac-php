@@ -762,7 +762,7 @@ then this function split it to
 (defun ac-php--get-item-from-funtion-list (  key-word function-list )
   "DOCSTRING"
   (let (find-item )
-    (dolist (function-item function-list )
+    (cl-loop for function-item in function-list do
       (when (ac-php--string=-ignore-care   key-word (nth 1 function-item )  )
         (setq find-item function-item )
         (cl-return)))
@@ -1184,7 +1184,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (setq reset-cache1-tags-flag  t )
           (setq reset-cache2-tags-flag  t )
           )
-      (dolist (file-name update-tag-file-list )
+      (cl-loop for file-name in update-tag-file-list do
         (cond
          ((assoc-string file-name    cache1-file-list   )
           (setq reset-cache1-tags-flag  t )
@@ -1772,10 +1772,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq type-str (nth 1 tmp-ret))
 
     (let (  class-member-list )
-      (dolist (opt-class check-class-list)
+      (cl-loop for opt-class in check-class-list do
         (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t )))
         ;;(ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
-        (dolist (member-info class-member-list)
+        (cl-loop for member-info in class-member-list do
           (when (and  (ac-php--string=-ignore-care (nth 1 member-info ) member    )
                       (string= (nth 0 member-info)  "m")
                       (nth 4 member-info)
@@ -1800,10 +1800,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq type-str (nth 1 tmp-ret))
 
     (let (  class-member-list )
-      (dolist (opt-class check-class-list)
+      (cl-loop for opt-class in check-class-list do
         (setq  class-member-list  (nth 1 (assoc-string opt-class class-list  t )))
         ;;(ac-php--debug "member %s class=%s, %S" member opt-class  class-member-list )
-        (dolist (member-info class-member-list)
+        (cl-loop for member-info in class-member-list do
           (when(ac-php--string=-ignore-care (nth 1 member-info ) member    )
             (setq tag-type (nth 0 member-info)  )
             (ac-php--debug "tag-type=%s type-str=%s member-info  %S " tag-type type-str    member-info )
@@ -1860,7 +1860,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 (defun ac-php-get-class-name-by-key-list( tags-data key-list-str )
   (let (temp-class (cur-class "" ) (class-list (nth 0 tags-data) ) (inherit-list (nth 2 tags-data)) (key-list (split-string key-list-str "\\." ) ) )
-    (dolist (item key-list )
+    (cl-loop for item in key-list do
       (if (string= cur-class "" )
           (if (or (assoc-string item inherit-list  t ) (assoc-string  item class-list t )  )
               (setq cur-class item)
@@ -1979,7 +1979,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                   (setq cur-word (concat (ac-php-get-cur-class-name)  ) )
                   )
 
-                (dolist (function-item function-list )
+                (cl-loop for function-item in function-list do
                   (when (ac-php--string=-ignore-care (nth 1 function-item )  cur-word  )
                     (setq file-pos (nth 3 function-item ) )
 

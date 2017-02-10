@@ -1,9 +1,9 @@
 <?php
-namespace Test; 
+namespace Test;
 require "testa.php";
 use  Test  as T ;
 use  Test\Testa as Ta ;
-use  Test\Testb; 
+use  Test\Testb;
 
 /**
 
@@ -12,9 +12,9 @@ use  Test\Testb;
    @method \Test\Testa  get_moth( )
 
    //for complete like  trait
-   @use  Testa 
+   @use  Testa
 
-   
+
  */
 class Testb  {
 
@@ -28,16 +28,16 @@ class Testb  {
 
 
     /**
-     * @var   T\Testa 
+     * @var   T\Testa
      */
-	public $v2;
+    public $v2;
 
 
 
-    /** 
-	 *
-     * @return   T\Testa 
-	 */
+    /**
+     *
+     * @return   T\Testa
+     */
 
     public function get_v2(){
         return $this->v2;
@@ -51,7 +51,7 @@ class Testb  {
     /**
      * define value same as function
 
-     * @return TestB 
+     * @return TestB
      */
     public function get_v1(){
 
@@ -60,11 +60,11 @@ class Testb  {
     /**
      * define value same as function
 
-     * @var   Testa 
+     * @var   Testa
      */
-	public $get_v2;
+    public $get_v2;
 
-	static public $static_v;
+    static public $static_v;
 
 
 
@@ -77,7 +77,7 @@ class Testb  {
 
 
         /** @var  $v \Test\Testa  */
-        
+
         $this->v8->do_f("s");
         $this->do_f(sdfa,"ss");
         $this->set_v1($v,$v2);
@@ -97,11 +97,12 @@ class Testb  {
 
         $a=Test\CON_NAME;
 
+
     }
 }
-/** 
+/**
  *
- * @return   T\Testa 
+ * @return   T\Testa
  */
 
 function ff() {

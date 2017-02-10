@@ -127,6 +127,8 @@
   (let ((doc))
     (when (ac-php--tag-name-is-function arg)
       (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))
+
+      (setq doc (s-replace "&" "" doc ) )
       (insert (concat doc ")"))
       (when (bound-and-true-p smartparens-mode)
         (delete-char 1))

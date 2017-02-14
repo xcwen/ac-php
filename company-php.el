@@ -100,8 +100,9 @@
       (push (propertize ac-php-prefix-str 'ac-php-help  ""  )  ac-php-company-list  )
       )
 
-    ac-php-company-list
-    ))
+    (nreverse ac-php-company-list )
+
+   ))
 
 
 ;;;###autoload

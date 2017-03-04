@@ -110,17 +110,7 @@ function ff() {
 }
 
 
-function php7_ff(): T\Testb {
-    return 0;
-}
 
-function php7_ff($test): T\Testb {
-    return 0;
-}
-
-function php7_ff($a,$b): T\Testb {
-    return 0;
-}
 
 
 split("dsfa","ad");

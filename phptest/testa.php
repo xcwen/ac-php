@@ -10,13 +10,13 @@ class Testa  {
 
 
     /**
-     * @var   string 
+     * @var   string
      */
     public $v1 ;
-    
+
     public $v3  ;
     /**
-     * @var   string 
+     * @var   string
      */
     const DIR="sss";
     public function set_v1($v,$v2){
@@ -41,11 +41,11 @@ class Testa  {
         $this->do_f("s","ss");
     }
 
-       
-    /** 
-	 *
-     * @return   Testa 
-	 */
+
+    /**
+     *
+     * @return   Testa
+     */
     public function get_v1(){
         return "sfa" ;
 
@@ -58,13 +58,3 @@ class Testa  {
     }
 
 }
-
-
-
-
-
-
-
-
-
-

@@ -111,7 +111,7 @@
 
   (case command
     (interactive (company-begin-backend 'company-ac-php-backend))
-    (prefix (and (eq major-mode 'php-mode)
+    (prefix (and ;;(eq major-mode 'php-mode)
                  (company-ac-php--prefix  )
                  )
             )
@@ -120,7 +120,7 @@
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
     (post-completion (company-ac-php-backend-post-completion arg))
-    (doc-buffer "test 001"  )
+    ;;(doc-buffer "test 001"  )
     ;;(no-cache 't)
     ))
 

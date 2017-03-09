@@ -38,6 +38,18 @@
     )
 (require 'ac-php-core)
 
+(defgroup company-php nil
+  "Completion backend for PHP."
+  :group 'company)
+
+(defcustom company-php-begin-after-member-access t
+  "When non-nil, automatic completion will start whenever the current
+symbol is preceded by \"->\" or \"::\", ignoring
+`company-minimum-prefix-length'.
+
+If `company-begin-commands' is a list, it should include `c-electric-lt-gt'
+and `c-electric-colon', for automatic completion right after \">\" and
+\":\".")
 
 
 (defun company-ac-php-annotation (item)
@@ -52,15 +64,18 @@
   (cl-subsetp (string-to-list prefix)
               (string-to-list candidate)))
 
-(defun company-ac-php--prefix ()
+(defun company-ac-php--prefix-symbol ()
   (buffer-substring (point) (save-excursion (skip-chars-backward "a-z0-9A-Z_\\\\" )
-                                            (point)))
-  )
+                                            (point))))
 
+(defun company-ac-php--prefix ()
+  (if company-php-begin-after-member-access
+      (company-grab-symbol-cons "->\\|::" 2)
+    (company-grab-symbol)))
 
 (defun  company-ac-php-candidate  (arg)
   (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len  candidate-list  find-count )
-    (setq ac-php-prefix-str (company-ac-php--prefix))
+    (setq ac-php-prefix-str (company-ac-php--prefix-symbol))
     (setq  ac-php-prefix-str-len  (length ac-php-prefix-str  ) )
     (setq find-count 0)
     (setq candidate-list (ac-php-candidate) )

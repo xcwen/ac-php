@@ -72,7 +72,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
 (defun company-ac-php--prefix ()
   (if company-php-begin-after-member-access
       (company-grab-symbol-cons "->\\|::" 2)
-    (company-grab-symbol)))
+    (company-ac-php--prefix-symbol )))
 
 (defun  company-ac-php-candidate  (arg)
   (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len  candidate-list  find-count )

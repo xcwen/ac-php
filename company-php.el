@@ -42,7 +42,7 @@
   "Completion backend for PHP."
   :group 'company)
 
-(defcustom company-php-begin-after-member-access t
+(defcustom company-php-begin-after-member-access  nil
   "When non-nil, automatic completion will start whenever the current
 symbol is preceded by \"->\" or \"::\", ignoring
 `company-minimum-prefix-length'.
@@ -68,6 +68,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
   (buffer-substring (point) (save-excursion (skip-chars-backward "a-z0-9A-Z_\\\\" )
                                             (point))))
 
+;; TODO it bad for namespace like  \App\add\ss
 (defun company-ac-php--prefix ()
   (if company-php-begin-after-member-access
       (company-grab-symbol-cons "->\\|::" 2)

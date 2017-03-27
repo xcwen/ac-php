@@ -16,7 +16,7 @@ use  Test\Testb;
 
 
  */
-class Testb  {
+class Testb  extends Testa {
 
     /**
      * @return $this
@@ -93,7 +93,7 @@ class Testb  {
         $f();
 
 
-        $this->get_v2()->set_v1("s");
+        $this->get_v2( )->set_v1("s");
 
         $a=Test\CON_NAME;
 

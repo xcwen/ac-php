@@ -40,6 +40,7 @@
 ;;(require 'php-mode)
 (require 'popup)
 (require 'dash)
+(require 'eldoc)
 
 (defvar ac-php-php-executable (executable-find "php") )
 (defvar ac-php-ctags-executable (concat  (file-name-directory load-file-name) "phpctags"))
@@ -2279,6 +2280,60 @@ Set this variable to nil to disable the lighter."
          ;; Disable ac-php-mode
          ;; Disable semantic
          )))
+
+
+
+(defun  ac-php-core-eldoc--documentation-function(&optional prefix)
+  (interactive "P")
+  ;;检查是类还是 符号
+  (let ((symbol-ret (ac-php-find-symbol-at-point-pri)) type  doc class-name access return-type member-info tag-name function-item file-pos )
+    (when symbol-ret
+      (setq type (car symbol-ret ))
+      (setq member-info (nth 3 symbol-ret))
+      (cond
+       ((string= type "class_member")
+
+        (setq tag-name  (nth 1 member-info ))
+        (if ( string= (nth 0 member-info )  "m" )
+          (setq  doc   (concat
+                        (propertize  tag-name  'face 'font-lock-function-name-face)
+                         "(" (nth 2 member-info) ")" )   )
+          (setq  doc
+                 (propertize  tag-name  'face 'font-lock-variable-name-face)
+                 ))
+
+        (setq  class-name   (nth 5 member-info) )
+        (setq  return-type   (nth 4 member-info) )
+        (setq  access   (nth 6 member-info) )
+        (concat
+         (propertize  access 'face 'font-lock-keyword-face ) "  " (nth 5 member-info)"::" doc   ":" return-type   )
+
+        )
+       ((string= type "user_function")
+        (setq function-item (nth 3 symbol-ret))
+        (setq tag-name  (nth 1 function-item ))
+        (if ( ac-php--tag-name-is-function   tag-name )
+            (setq  doc   (concat
+                          (propertize (substring  tag-name 0 -1 ) 'face 'font-lock-function-name-face)
+                          "(" (nth 2 function-item) ")" )   )
+          (setq  doc
+                 (propertize (nth 2 function-item) 'face 'font-lock-variable-name-face)))
+
+        (setq file-pos (nth 3 function-item ) )
+
+        (setq  return-type (nth 4 function-item ) )
+
+        (concat  doc ":"  return-type   )
+
+        )) )))
+
+;;;###autoload
+(defun ac-php-core-eldoc-setup ()
+  "Set up eldoc function and enable eldoc-mode."
+  (interactive)
+  (setq-local eldoc-documentation-function #'ac-php-core-eldoc--documentation-function)
+  (eldoc-mode +1))
+
 
 (provide 'ac-php-core)
 

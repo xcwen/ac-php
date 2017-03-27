@@ -106,6 +106,8 @@ save it as `~/.emacs`
                (require 'ac-php)
                (setq ac-sources  '(ac-source-php ) )
                (yas-global-mode 1)
+               (add-hook 'php-mode-hook  'ac-php-core-eldoc-setup  ) ;; enable eldoc
+
                (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
                (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
                ))
@@ -222,6 +224,7 @@ touch .ac-php-conf.json
           '(lambda ()
              (require 'company-php)
              (company-mode t)
+             (add-hook 'php-mode-hook  'ac-php-core-eldoc-setup  ) ;; enable eldoc
              (add-to-list 'company-backends 'company-ac-php-backend )))
 ```
 use  `M-x: company-complete` for complete

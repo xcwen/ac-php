@@ -227,6 +227,7 @@ touch .ac-php-conf.json
              (require 'company-php)
              (company-mode t)
              (ac-php-core-eldoc-setup ) ;; enable eldoc
+             (make-local-variable 'company-backends)
              (add-to-list 'company-backends 'company-ac-php-backend )))
 ```
 use  `M-x: company-complete` for complete
@@ -551,3 +552,54 @@ you find a question
 exec : `M-x`: `ac-php-remake-tags-all`
 
 and retest
+
+# for `test code` exmaple
+[ issue exmaple](https://github.com/xcwen/ac-php/issues/51)
+
+```elisp
+;;; Usage: /path/to/emacs -nw -Q -l /path/to/test-ac-php.el
+
+(toggle-debug-on-error)
+
+(global-set-key (kbd "C-h") 'delete-backward-char)
+(global-set-key (kbd "M-h") 'backward-kill-word)
+(global-set-key (kbd "<f1>") 'help-command)
+(define-key isearch-mode-map "\C-h" 'isearch-delete-char)
+
+(setq package-user-dir (format "%s/elpa--test-ac-php" user-emacs-directory))
+(setq package-archives
+      ;;'(("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")))
+       '(("melpa" . "https://melpa.org/packages/")))
+
+(package-initialize)
+
+(defmacro try-install (pkg)
+  `(unless (package-installed-p ,pkg)
+     (package-refresh-contents)
+     (package-install ,pkg)))
+
+(try-install 'ac-php)
+(try-install 'company)
+(try-install 'company-php)
+
+(require 'cl)
+(require 'php-mode)
+
+(add-hook 'php-mode-hook
+          '(lambda ()
+             (require 'company-php)
+             (company-mode t)
+             (ac-php-core-eldoc-setup ) ;; enable eldoc
+             (add-to-list 'company-backends 'company-ac-php-backend)))
+
+(setq auto-mode-alist
+      (append
+       '(("\\.php" . php-mode)) auto-mode-alist))
+
+(add-hook 'after-init-hook 'global-company-mode)
+(run-hooks 'after-init-hook)
+
+;;; test-ac-php.el ends here
+
+```
+

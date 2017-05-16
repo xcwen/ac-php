@@ -19,9 +19,9 @@ and use `ac-php`  work with tags
 
 core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ...
 
-externed: PDO Http mysqli Imagick  SQLite3 Memcache  ...
+extended: PDO Http mysqli Imagick  SQLite3 Memcache  ...
 
-externed:  Redis ,Swoole
+extended:  Redis, Swoole
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
@@ -53,7 +53,7 @@ externed:  Redis ,Swoole
 
 ##  Install
 ### UBUNTU
-* install `php-cli` command  for phpctags
+* install `php-cli` command for phpctags
 ```bash
 localhost:~/$ sudo apt-get install php-cli
 ```
@@ -65,12 +65,12 @@ localhost:~/$ sudo apt-get install cscope
 
 ### MAC OSX
 ```bash
- brew  install homebrew/php/php56
+ brew install homebrew/php/php56
 ```
 ```bash
- brew  install cscope
+ brew install cscope
 ```
-### check `php`,`cscope`  existed
+### check if `php`,`cscope` exists
 ```bash
 localhost:~$ php --version
 PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53)
@@ -109,7 +109,7 @@ save it as `~/.emacs`
                (ac-php-core-eldoc-setup ) ;; enable eldoc
 
                (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back)    ;go back
                ))
 ```
 
@@ -131,9 +131,9 @@ emacs ~/ac-php/phptest/testb.php
 
 "M-x" :`package-list-packages`  find  `ac-php` install
 
-* emacs php-mode function  define
+* emacs php-mode function define
 
-work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)**
+work for auto-complete-mode, **Company-mode config at [here](#usage-company)**
 
 ```elisp
   (add-hook 'php-mode-hook
@@ -145,14 +145,14 @@ work for auto-complete-mode  , **Company-mode config  at [here](#usage-company)*
 
                (ac-php-core-eldoc-setup ) ;; enable eldoc
                (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
+               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back)    ;go back
                ))
 ```
 
 
 
 
-* create file ".ac-php-conf.json"  in root of project
+* create file ".ac-php-conf.json" in root of project
 
 ``` bash
 cd /project/to/path #  root dir of project
@@ -181,12 +181,12 @@ touch .ac-php-conf.json
 <tbody>
 <tr>
 <td class="org-left"> ac-php-remake-tags</td>
-<td class="org-left"> if source is changed ,re run this commond for update tags </td>
+<td class="org-left"> if source is changed, re run this command to update tags </td>
 </tr>
 
 <tr>
 <td class="org-left"> ac-php-remake-tags-all</td>
-<td class="org-left"> **if you find a error, run it an retest**</td>
+<td class="org-left"> **if you find an error, run it and retest**</td>
 </tr>
 
 <tr>
@@ -226,9 +226,9 @@ touch .ac-php-conf.json
           '(lambda ()
              (require 'company-php)
              (company-mode t)
-             (ac-php-core-eldoc-setup ) ;; enable eldoc
+             (ac-php-core-eldoc-setup) ;; enable eldoc
              (make-local-variable 'company-backends)
-             (add-to-list 'company-backends 'company-ac-php-backend )))
+             (add-to-list 'company-backends 'company-ac-php-backend)))
 ```
 use  `M-x: company-complete` for complete
 
@@ -253,7 +253,7 @@ cp -rf  ~/spacemacs-config/layers/phpplus ~/.spacemacs.d/layers/
 ```
 
 ## Php Doc for complete
-define class memeber type :
+define class memeber type:
 
 `public  $v1;`  =>
 ``` php
@@ -263,7 +263,7 @@ define class memeber type :
 public $v1;
 ```
 
-if you won't define `public $v1 ` you can define in class comment ,like this =>
+if you won't define `public $v1` you can define it in a class comment, like this =>
 ```php
 /**
   * @property  \Test\Testa  $v1
@@ -314,7 +314,7 @@ class Testb  extends Ta {
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
 
 
-define variable: (**if function or member no define reutrn value  you need define it  **)
+define variable: (**if function or member has no defined return value then you need to define it**)
 
 `$value=ff();` =>
 ```php
@@ -353,7 +353,7 @@ class Testa {
         //can complete
         $c->get_v2();
 
-        //for complete memeber
+        //for complete member
         $this->v1=$v;
 
 
@@ -409,7 +409,7 @@ tags-home-jim-ac-php-phptest/
 
 config file name  is `.ac-php-conf.json`
 
-when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when  it's empty
+when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when it's empty
 
 like this
 
@@ -429,13 +429,13 @@ like this
 ```
 
 
-`php-file-ext-list` : file extern name list;
+`php-file-ext-list`: file extern name list;
 
-`php-path-list`:  find php files *recursion*  ;
+`php-path-list`:  find php files *recursion*;
 
-`php-path-list-without-subdir`:  find php files  *no recursion* no find php from subdir  ;
+`php-path-list-without-subdir`:  find php files  *no recursion* no find php from subdir;
 
-for exmaple:
+for example:
 
 ```
 ├── dir1
@@ -510,26 +510,26 @@ for laravel example
 
 
 ### Disable Cscope Config
-set `use-cscope:  false`  in `.ac-php-conf.json`
+set `use-cscope:  false` in `.ac-php-conf.json`
 
 
 ### Rebuild Tags
-**if source is changed ,re run this commond for update tags**: `ac-php-remake-tags`
+**if source is changed, re run this command to update tags**: `ac-php-remake-tags`
 
 if php file cannot pass from `phpctags`.
 
-you can find any  error from `Messages` buffer  fix it and next
+you can find all errors in the `Messages` buffer. Fix it and get to the next error
 
-like this
+like this:
 ```
 phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on line 11 -
 ```
-you need fix testa.php  error and re run `ac-php-remake-tags`
+you need to fix an error in testa.php and re run `ac-php-remake-tags`
 
 
 if show:
 ```
-no find  file .ac-php-conf.json dir in path list :/home/jim/phptest/
+no find file .ac-php-conf.json dir in path list :/home/jim/phptest/
 ```
 
 you need *create file ".ac-php-conf.json" in root of project*
@@ -544,17 +544,17 @@ or
 
 
 
-## FQA
-#  for all any question　
+## FAQ
+#  To approach a problem　
 
-you find a question
+If you want to tackle down a problem, you should
 
-exec : `M-x`: `ac-php-remake-tags-all`
+exec: `M-x`: `ac-php-remake-tags-all`
 
 and retest
 
-# for `test code` exmaple
-[ issue exmaple](https://github.com/xcwen/ac-php/issues/51)
+# for `test code` example
+[ issue example](https://github.com/xcwen/ac-php/issues/51)
 
 ```elisp
 ;;; Usage: /path/to/emacs -nw -Q -l /path/to/test-ac-php.el

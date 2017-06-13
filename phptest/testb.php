@@ -32,6 +32,11 @@ class Testb  extends Testa {
      */
     public $v2;
 
+    /**
+     * @var string $name        Should contain a description
+     * @var string $description Should contain a description
+     */
+    protected $name, $description;
 
 
     /**
@@ -76,7 +81,8 @@ class Testb  extends Testa {
         $this->get_v1();
 
 
-        /** @var  $v \Test\Testa  */
+        /** @var   \Test\Testa  $v */
+
 
         $this->v8->do_f("s");
         $this->do_f(sdfa,"ss");
@@ -97,7 +103,7 @@ class Testb  extends Testa {
 
         $a=Test\CON_NAME;
 
-
+        //$this->name
     }
 }
 /**

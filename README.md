@@ -318,7 +318,7 @@ define variable: (**if function or member has no defined return value then you n
 
 `$value=ff();` =>
 ```php
-/** @var $value  Testa */
+/** @var  Testa $value */
 $value=ff();
 ```
 

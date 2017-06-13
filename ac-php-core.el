@@ -624,8 +624,8 @@ then this function split it to
           (unless frist-class-name
             (setq frist-class-name  (ac-php-clean-namespace-name
                                      (ac-php-get-syntax-backward
-                                      (concat "@var[\t ]+"  "$" frist-key "[\t ]+\\("
-                                              ac-php-word-re-str "\\)" )
+                                      (concat "@var[\t ]+\\("
+                                              ac-php-word-re-str "\\)[\t ]+$" frist-key )
                                       1 t
                                       (save-excursion  (beginning-of-defun)  (beginning-of-line) )))))
 
@@ -2097,7 +2097,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
                   ))))
 
-          (kill-new (concat "\n\t/**  @var  $" cur-word " " class-name "  */\n") ))
+          (kill-new (concat "\n\t/**  @var  " class-name "  $" cur-word "  */\n") ))
       (kill-new (concat "\n * @property " cur-word "  $" cur-word "\n") ))))
 
 (defun ac-php-location-stack-forward ()

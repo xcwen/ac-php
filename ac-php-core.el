@@ -1688,9 +1688,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 (defun ac-php--get-project-root-dir  ()
   "DOCSTRING"
-  (let (project-root-dir tags-file )
-    (when (buffer-file-name)
-      (setq project-root-dir (file-truename (file-name-directory (buffer-file-name)  )))
+  (let (project-root-dir tags-file  (file-name buffer-file-name)  )
+    (when file-name
+      (setq project-root-dir (file-name-directory  file-name  ))
+
     )
 
     (unless project-root-dir
@@ -1703,7 +1704,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                      (string= project-root-dir "/")
                      ))
           (setq  last-dir project-root-dir  )
-          (setq project-root-dir  (file-truename( file-name-directory (directory-file-name  project-root-dir ) ) ))
+          (setq project-root-dir  (file-name-directory (directory-file-name  project-root-dir ) ))
           (when (string= last-dir project-root-dir  )
             (setq project-root-dir "/" )
             )))

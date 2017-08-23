@@ -130,6 +130,5 @@ echo Ta::DIR."\n";
 (new Ta())->set_v1   ($v);
 trim("ss","s");
 
-
 $s=new Testb($v1,$v2);
 (new Ta())->set_v1("s");

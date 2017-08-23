@@ -1,4 +1,5 @@
-<?php namespace t1;
+<?php
+namespace t1;
 require_once("t.php");
 class A {
     use Instance; 
@@ -7,3 +8,10 @@ class A {
         $this->instance($options );
     }
 };
+// PHP 7+ code
+$util->setLogger(new class {
+        public function log($msg)
+        {
+            echo $msg;
+        }
+    });

@@ -80,6 +80,9 @@ directories.
 This path get extended with the directory tree of the project that you are
 indexing the tags for.")
 
+(defvar ac-php-project-root-dir-use-truename t
+  "  project-root-dir use truename  no link  ")
+
 (defvar ac-php-max-bookmark-count 500 )
 (defun ac-php-location-stack-push ()
   (let ((bm (ac-php-current-location)))
@@ -1696,6 +1699,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     (unless project-root-dir
       (setq project-root-dir ( expand-file-name  default-directory) ))
+
+    (when ac-php-project-root-dir-use-truename
+      (setq project-root-dir (file-truename project-root-dir  ) )
+      )
 
     (let (last-dir)
         (while (not (or

@@ -5702,3 +5702,22 @@ class Yaf_Exception_LoadFailed_Module extends Yaf_Exception{}
 class Yaf_Exception_LoadFailed_Controller extends Yaf_Exception{}
 class Yaf_Exception_LoadFailed_Action extends Yaf_Exception{}
 class Yaf_Exception_LoadFailed_View extends Yaf_Exception{}
+
+class Generator implements Iterator {
+	/** @return void */
+    public function current ( ){}
+	/** @return void */
+    public function key ( ){}
+	/** @return void */
+    public function next ( ){}
+	/** @return void */
+    public function rewind ( ){}
+    /** @return mixed */
+    public function send ( $value ){}
+	/** @return void */
+    public function throw( \Exception $exception ){}
+	/** @return boolean*/
+    public function valid ( ){}
+	/** @return void*/
+    public function __wakeup ( ){}
+}

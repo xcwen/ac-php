@@ -1462,7 +1462,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (let (  ret tag-dir  old-default-directory )
     (setq conf-list  (ac-php--get-config project-root-dir) )
     (setq tag-dir (cdr (assoc-string "tag-dir" conf-list )) )
-    (message "project-root-dir:%s,  tag-dir:%s" project-root-dir tag-dir )
+    ;;(message "project-root-dir:%s,  tag-dir:%s" project-root-dir tag-dir )
     (if tag-dir
         (progn
           (setq old-default-directory  default-directory )

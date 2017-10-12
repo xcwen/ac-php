@@ -1309,7 +1309,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (class-list  )
         (function-list )
         (inherit-list  )
-        (file-start-pos (if can-use-external-dir  project-dir-len 0 ) )
+        (file-start-pos (if can-use-external-dir  0 project-dir-len  ) )
         (count 0 )  )
 
     (setq  base-tags-data (if (string=  cache-type  "cache1"  )

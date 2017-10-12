@@ -2,7 +2,7 @@
   "use-cscope": null,
   "tag-dir": null,
   "filter": {
-    "can-use-external-dir": null,
+    "can-use-external-dir": true,
     "php-file-ext-list": [
       "php"
     ],

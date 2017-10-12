@@ -4,6 +4,7 @@ require_once("t.php");
 class A {
     use Instance; 
     public function test () {
+        $this->test();
         //$this->instance();
         $this->instance($options );
     }
@@ -15,3 +16,5 @@ $util->setLogger(new class {
             echo $msg;
         }
     });
+
+

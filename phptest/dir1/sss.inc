@@ -6,10 +6,10 @@ class Testf {
 
 
     /**
-     * @var   string 
+     * @var   string
      */
     public $v5;
-    
+    //
     const  DIR="sss";
     public function set_v5($v){
         $v=trim($v);

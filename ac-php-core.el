@@ -74,7 +74,7 @@
 (defvar ac-php-location-stack nil)
 
 (defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
-  "PATH for ctags to be saved, default value is \"~/.ac-php\" as base for
+  "PATH for tags to be saved, default value is \"~/.ac-php\" as base for
 directories.
 
 This path get extended with the directory tree of the project that you are
@@ -1000,13 +1000,16 @@ then this function split it to
 (defvar ac-php-rebuild-tmp-error-msg nil )
 (defun ac-php--rebuild-file-list ( project-root-dir   save-tags-dir  do-all-flag )
     "DOCSTRING"
-  (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg)
+    (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg
+                        can-use-external-dir
+                        )
 
     (setq tags-dir-len (length project-root-dir))
 
     (message " REBUILD: load file  modify time  start")
     (let ((tmp  (ac-php--get-php-files-from-config project-root-dir  )   ))
       (setq  file-list (nth 0 tmp) )
+      (setq can-use-external-dir (nth 1 tmp) )
       )
     (setq obj-tags-list (ac-php--get-obj-tags-file-list  save-tags-dir ) )
 
@@ -1017,7 +1020,9 @@ then this function split it to
 
         (setq  file-name (nth  0 file-item )  )
         (setq src-time  (nth 1 file-item ) )
-        (setq obj-file-name   (substring file-name  tags-dir-len   ) )
+        (if  can-use-external-dir
+            (setq obj-file-name  (substring   file-name  1) )
+          (setq obj-file-name   (substring file-name  tags-dir-len   ) ))
         (setq obj-file-name (replace-regexp-in-string "[/ :]" "-" obj-file-name ))
         (setq obj-file-name (replace-regexp-in-string "\\.[a-zA-Z0-9_]+$" ".el" obj-file-name ))
         (setq obj-file-name (f-full (concat (ac-php--get-obj-tags-dir save-tags-dir )   obj-file-name )))
@@ -1153,6 +1158,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
          new-cache1-file-list new-cache2-file-list
          reset-cache1-tags-flag
          reset-cache2-tags-flag
+         conf-list
+         filter-info
+         can-use-external-dir
          )
 
     (ac-php--debug "all-file-list end  : count(%d ) " (length all-file-list) )
@@ -1165,6 +1173,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq cache-file-info (json-read-file  cache-file-name)  )
 
     (setq cache1-file-list  (cdr (assoc-string "cache1-files"  cache-file-info)) )
+
+    (setq conf-list  (ac-php--get-config project-root-dir) )
+    (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
+    (setq can-use-external-dir (cdr (assoc-string "can-use-external-dir" filter-info )) )
 
     (setq tags-dir-len (length project-root-dir))
 
@@ -1207,12 +1219,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (when reset-cache2-tags-flag
 
         (message " REBUILD:  cache2-file-list ... ")
-        (setq add-class-list (ac-php--gen-data-from-el-tags  new-cache2-file-list  "cache2" tags-dir-len  add-class-list  ))
+        (setq add-class-list (ac-php--gen-data-from-el-tags  new-cache2-file-list  "cache2" tags-dir-len  add-class-list  can-use-external-dir  ))
         )
 
       (when reset-cache1-tags-flag
         (message " REBUILD:  cache1-file-list ... ")
-        (ac-php--gen-data-from-el-tags  new-cache1-file-list "cache1"  tags-dir-len add-class-list )
+        (ac-php--gen-data-from-el-tags  new-cache1-file-list "cache1"  tags-dir-len add-class-list can-use-external-dir  )
 
         ;;reset cscope
         (ac-php--remake-cscope project-root-dir all-file-list   )
@@ -1260,7 +1272,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       )
     ))
 
-(defun ac-php--gen-data-from-el-tags  ( file-list cache-type tags-dir-len add-class-list )
+(defun ac-php--gen-data-from-el-tags  ( file-list cache-type tags-dir-len add-class-list can-use-external-dir  )
   "DOCSTRING"
   (let ( tags-list  tmp-file-name)
     (message "[%s]BUILD marge files (count=%d ) start..." cache-type (length file-list) )
@@ -1283,7 +1295,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (message "[%s]BUILD marge files end  and then start deal ..." cache-type)
 
     (let (tmp-ret )
-      (setq tmp-ret (ac-php-gen-data  tags-list tags-dir-len  cache-type add-class-list ) )
+      (setq tmp-ret (ac-php-gen-data  tags-list tags-dir-len  cache-type add-class-list  can-use-external-dir ) )
 
       (ac-php-save-data  (ac-php-get-tags-file (string= cache-type  "cache2") )
                          (list (nth 0 tmp-ret) (nth 1 tmp-ret)  (nth 2 tmp-ret)  ) )
@@ -1291,13 +1303,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     ))
 
 
-(defun ac-php-gen-data ( tags-list project-dir-len  cache-type add-class-list)
+(defun ac-php-gen-data ( tags-list project-dir-len  cache-type add-class-list can-use-external-dir )
   "gen-el-data"
   (let ( base-tags-data
         (class-list  )
         (function-list )
         (inherit-list  )
-        (file-start-pos project-dir-len ) (count 0 )  )
+        (file-start-pos (if can-use-external-dir  project-dir-len 0 ) )
+        (count 0 )  )
 
     (setq  base-tags-data (if (string=  cache-type  "cache1"  )
                               (ac-php-get-tags-data t)
@@ -1353,7 +1366,6 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           ;;             (string= "namespace" (car scope) )
           ;;             )
           ;;   (setq  tag-name   (concat (cdr scope ) "\\" tag-name) ))
-
 
 
           (push   (list  tag-type  tag-name  tag-name  file-pos   (ac-php--clean-return-type return-type) ) function-list  ))
@@ -1497,11 +1509,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (format "php-path-list->%s" (f-relative path-str project-root-dir ))))
 
 (defun ac-php-get-php-files-from-filter(  project-root-dir filter-info  )
-  (let (  conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name   ext-list ext-re-str )
+  (let (  conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name   ext-list ext-re-str can-use-external-dir )
     (when  filter-info
       (progn
         ;;get ext list
         (setq ext-list   (cdr (assoc-string "php-file-ext-list" filter-info)) )
+        (setq can-use-external-dir (cdr (assoc-string "can-use-external-dir" filter-info )) )
+
         (unless ext-list (setq ext-list '["php" "inc"]))
         (setq ext-re-str
               (s-concat  "^[^#]+\\.\\("
@@ -1529,25 +1543,27 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (let (tmp-union-list check-error-flag)
           (dolist ( filter-item-name filter-path-list )
             (setq check-error-flag nil)
-            (when  (not
-                    (or (f-same?   project-root-dir filter-item-name )
-                        (s-starts-with?   project-root-dir filter-item-name ) )
-                    )
-              (progn
-                (setq check-error-flag t)
-                (message "CONFIG FILTER WARRING : [%s] [%s] most in project-root-dir [%s] "
-                         filter-item-name (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
-                         project-root-dir )))
+            (unless  can-use-external-dir
+              (when  (not
+                      (or (f-same?   project-root-dir filter-item-name )
+                          (s-starts-with?   project-root-dir filter-item-name ) )
+                      )
+                (progn
+                  (setq check-error-flag t)
+                  (message "CONFIG FILTER WARRING : [%s] [%s] must in project-root-dir [%s], you can set  can-use-external-dir : true in .ac-php-conf.json , for  Include external library  "
+                           filter-item-name (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
+                           project-root-dir )))
 
-            (unless check-error-flag
-              (dolist (tmp-item tmp-union-list)
-                (when (s-starts-with?  tmp-item filter-item-name )
-                  (progn
-                    (setq check-error-flag t)
-                    (message "CONFIG FILTER WARRING : [%s] in [%s] "
-                             (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
-                             (ac-php--get-config-path-noti-str project-root-dir tmp-item ))
-                    ))))
+              (unless check-error-flag
+                (dolist (tmp-item tmp-union-list)
+                  (when (s-starts-with?  tmp-item filter-item-name )
+                    (progn
+                      (setq check-error-flag t)
+                      (message "CONFIG FILTER WARRING : [%s] in [%s]  you can set  can-use-external-dir : true in .ac-php-conf.json , for  Include external library "
+                               (ac-php--get-config-path-noti-str project-root-dir filter-item-name )
+                               (ac-php--get-config-path-noti-str project-root-dir tmp-item ))
+                      ))))
+              )
 
             (unless check-error-flag
               (push filter-item-name tmp-union-list )))
@@ -1582,9 +1598,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (ac-php--json-save-data config-file-name
                               '(
                                 :use-cscope  nil
-                                ;;:tag-dir  "./ac-php-tags"
+                                :tag-dir nil 
                                 :filter
                                 (
+                                 :can-use-external-dir nil
                                  :php-file-ext-list
                                  ("php")
                                  :php-path-list (".")
@@ -1604,15 +1621,16 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     )
 )
 (defun ac-php--get-php-files-from-config (project-root-dir  )
-  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str)
+  (let ( conf-list   filter-path-list filter-length filter-index  filter-item  ret-list  also-find-subdir config-file-name  filter-info  ext-list ext-re-str can-use-external-dir)
 
 
     (setq conf-list  (ac-php--get-config project-root-dir) )
 
     (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
+    (setq can-use-external-dir (cdr (assoc-string "can-use-external-dir" filter-info )) )
     (setq ret-list (ac-php-get-php-files-from-filter project-root-dir filter-info  ) )
     (ac-php--debug " ac-php--get-php-files-from-config: %d"  (length  ret-list) )
-    (list ret-list    )
+    (list ret-list   can-use-external-dir  )
     ))
 
 
@@ -1932,7 +1950,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (ac-php-clean-namespace-name (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) ))
 
 (defun ac-php-find-symbol-at-point-pri ( &optional  as-function-flag as-name-flag )
-  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data ret)
+  (let ( key-str-list  line-txt cur-word val-name class-name output-vec    jump-pos  cmd complete-cmd  find-flag tags-data ret conf-list filter-info can-use-external-dir
+                       (project-root-dir ( ac-php--get-project-root-dir )) )
+
+    (setq conf-list  (ac-php--get-config project-root-dir) )
+    (setq filter-info  (cdr (assoc-string "filter" conf-list )) )
+    (setq can-use-external-dir (cdr (assoc-string "can-use-external-dir" filter-info )) )
+
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
@@ -1971,7 +1995,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                       (progn
                         (setq member-info (ac-php-get-class-member-info (nth 0 tags-data)  (nth 2 tags-data)  class-name cur-word ) )
                         (if member-info
-                            (setq ret (list "class_member"  (concat (ac-php--get-project-root-dir)  (nth 3 member-info)  )      (nth 4 member-info) member-info )  )
+                            (setq ret (list "class_member"  (concat (if can-use-external-dir "" (ac-php--get-project-root-dir) ) (nth 3 member-info)  )      (nth 4 member-info) member-info )  )
                           (progn
                             (message "no find %s.%s " class-name cur-word  )
                             )
@@ -2013,7 +2037,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                         (setf file-pos  (format "system:function.%s"     (nth 1 function-item ) ) )
                           )
                       )
-                    (setq ret (list "user_function"  (concat (ac-php--get-project-root-dir)  file-pos   )      (nth 4 function-item) function-item  ) )
+                    (setq ret (list "user_function"   (concat (if can-use-external-dir "" (ac-php--get-project-root-dir) )   file-pos   )      (nth 4 function-item) function-item  ) )
 
                     (setq find-flag t)
                     (cl-return )))

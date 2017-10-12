@@ -1,12 +1,14 @@
 {
   "use-cscope": null,
-  "tag-dir": "./ac-php-tags",
+  "tag-dir": null,
   "filter": {
+    "can-use-external-dir": null,
     "php-file-ext-list": [
       "php"
     ],
     "php-path-list": [
-      "."
+        ".",
+        "~/tt/app/Enums"
     ],
     "php-path-list-without-subdir": []
   }

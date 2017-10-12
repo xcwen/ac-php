@@ -1582,7 +1582,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (ac-php--json-save-data config-file-name
                               '(
                                 :use-cscope  nil
-                                :tag-dir  "./ac-php-tags"
+                                ;;:tag-dir  "./ac-php-tags"
                                 :filter
                                 (
                                  :php-file-ext-list

@@ -1459,12 +1459,24 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       )))
 
 (defun ac-php--get-tags-save-dir(project-root-dir  )
-  (let (  ret )
+  (let (  ret tag-dir  old-default-directory )
+    (setq conf-list  (ac-php--get-config project-root-dir) )
+    (setq tag-dir (cdr (assoc-string "tag-dir" conf-list )) )
+    (message "project-root-dir:%s,  tag-dir:%s" project-root-dir tag-dir )
+    (if tag-dir
+        (progn
+          (setq old-default-directory  default-directory )
+          (setq default-directory project-root-dir)
+          (setq  ret  (file-truename tag-dir ) )
+          (setq  default-directory old-default-directory )
 
-    (setq ret (concat ac-php-tags-path "/tags"
-                      (replace-regexp-in-string "[/ :]" "-"
-                                                (replace-regexp-in-string  "/$" ""  project-root-dir )
-                                                )  ))
+          )
+      (setq ret (concat ac-php-tags-path "/tags"
+                        (replace-regexp-in-string "[/ :]" "-"
+                                                  (replace-regexp-in-string  "/$" ""  project-root-dir )
+                                                  )  ))
+      )
+
 
     (unless (f-exists?  ret  )
       (mkdir ret t))
@@ -1570,6 +1582,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (ac-php--json-save-data config-file-name
                               '(
                                 :use-cscope  nil
+                                :tag-dir  "./ac-php-tags"
                                 :filter
                                 (
                                  :php-file-ext-list

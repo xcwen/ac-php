@@ -70,6 +70,7 @@ class Testb  extends Testa {
     public $get_v2;
 
     static public $static_v;
+    static public $static_v2;
 
 
 
@@ -80,9 +81,7 @@ class Testb  extends Testa {
         $testv = $this->get_v2($this->texx);
         $this->get_v1();
 
-
         /** @var   \Test\Testa  $v */
-
 
         $this->v8->do_f("s");
         $this->do_f(sdfa,"ss");

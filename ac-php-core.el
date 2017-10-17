@@ -330,8 +330,11 @@ indexing the tags for.")
       (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer  frist-key:%s" first-key )
 
 
-      (setq split-arr (s-split-up-to "\\\\"  (ac-php-clean-namespace-name first-key ) 2 ))
+      (setq split-arr (s-split-up-to "\\\\"  (ac-php-clean-namespace-name first-key ) 1 ))
+
+      (ac-php--debug "  split-arr len:%d " (length split-arr)  )
       (cond
+
        ((= 2 (length split-arr))
 
         (setq cur-namespace (nth 0 split-arr) )
@@ -647,7 +650,7 @@ then this function split it to
           (unless frist-class-name
             (setq frist-class-name  (ac-php-clean-namespace-name
                                      (ac-php-get-syntax-backward
-                                      (concat "\\(" ac-php-word-re-str "\\)" "[\t ]+" "$" frist-key  "[ \t]*[),]" )
+                                      (concat "\\(" ac-php-word-re-str "\\)" "[\t ]+\\(&\\)?$" frist-key  "[ \t]*[),]" )
                                       1 nil
                                       (save-excursion  (beginning-of-defun) (beginning-of-line)  )))))
 

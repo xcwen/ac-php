@@ -1929,14 +1929,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                                     (setq tmp-class (nth 4 member-info) )
                                     (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
                                     (when (stringp tmp-class )
-                                      (if (s-index-of "\\" tmp-class )
-                                          tmp-class
+                                      ;;(if (s-index-of "\\" tmp-class )
+                                      ;;    tmp-class
                                         (progn
                                           (setq member-local-class-name (nth 5 member-info) )
                                           (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
                                           (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
                                           (if (assoc-string check-classname class-list t )
-                                              check-classname tmp-class )))) )
+                                              check-classname tmp-class )))) 
                                 ""))
 
               ))

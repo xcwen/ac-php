@@ -7,8 +7,7 @@
       "php"
     ],
     "php-path-list": [
-        ".",
-        "~/tt/app/Enums"
+        "."
     ],
     "php-path-list-without-subdir": []
   }

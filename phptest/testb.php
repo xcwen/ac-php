@@ -117,7 +117,6 @@ function ff() {
 
 
 
-
 split("dsfa","ad");
 /**
    @var Ta
@@ -130,4 +129,5 @@ echo Ta::DIR."\n";
 trim("ss","s");
 
 $s=new Testb($v1,$v2);
+
 (new Ta())->set_v1("s");

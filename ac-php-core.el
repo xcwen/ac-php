@@ -1925,11 +1925,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-list inherit-list cur-class  item ))
               (setq cur-class (if  member-info
-                                  (let (tmp-class cur-namespace check-classname member-local-class-name)
+                                  (let (tmp-class cur-namespace check-classname member-local-class-name backslash-pos)
                                     (setq tmp-class (nth 4 member-info) )
                                     (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
                                     (when (stringp tmp-class )
-                                      (if  (= 0 (s-index-of "\\" tmp-class ) )
+                                      (setq  backslash-pos (s-index-of "\\" tmp-class ) )
+                                      (if  ( and (numberp backslash-pos ) (= 0  backslash-pos)  )
                                           tmp-class
                                         (progn
                                           (setq member-local-class-name (nth 5 member-info) )

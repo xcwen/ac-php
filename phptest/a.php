@@ -3,10 +3,14 @@ namespace t1;
 require_once("t.php");
 class A {
     use Instance; 
-    public function test () {
+    public $ss;
+    public function test_bb1 ($sss,$sk=null ) {
+
+    }
+
+    public function test (  ) {
         $this->test();
-        //$this->instance();
-        $this->instance($options );
+        \trim("s");
     }
 };
 // PHP 7+ code

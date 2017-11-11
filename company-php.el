@@ -76,6 +76,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
 
 (defun  company-ac-php-candidate  (arg)
   (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len  candidate-list  find-count )
+    (ac-php--debug "company-ac-php-candidate " )
     (setq ac-php-prefix-str (company-ac-php--prefix-symbol))
     (setq  ac-php-prefix-str-len  (length ac-php-prefix-str  ) )
     (setq find-count 0)
@@ -84,6 +85,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
 
     (dolist (  candidate-item   candidate-list )
       (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
+      (unless raw-help (setq raw-help "" ))
       (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))
         (setq find-count (1+ find-count) )
         (if (ac-php--tag-name-is-function  candidate-item  )

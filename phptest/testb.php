@@ -12,17 +12,22 @@ use  Test\Testb;
    @method \Test\Testa  get_moth( )
 
    //for complete like  trait
-   @use  Testa
 
 
  */
 class Testb  extends Testa {
+
+    public function __construct(   ){
+        $this->do_f("ss");
+    }
 
     /**
      * @return $this
      */
     public function get_v8(){
         //$this->v1
+        //$this->get_moth( )
+
     }
     use Instance;
 
@@ -128,6 +133,8 @@ echo Ta::DIR."\n";
 (new Ta())->set_v1   ($v);
 trim("ss","s");
 
-$s=new Testb($v1,$v2);
+$s=new \Test\Testb($v1,$v2);
+$s->get_v1();
+
 
 (new Ta())->set_v1("s");

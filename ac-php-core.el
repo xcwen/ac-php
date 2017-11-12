@@ -1296,6 +1296,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
 
       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
+        (message "ac-php reload from json-data start")
 
         (setq  file-data (json-read-file  file ) )
         (assq-delete-all  file   ac-php-tag-last-data-list )
@@ -1330,6 +1331,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                      (aref file-data 3 ) ;; file-list
                      project-root-dir
                      ) ) ac-php-tag-last-data-list  )
+        (message "ac-php reload from json-data end")
         ))
 
     (nth  2 (assoc-string file  ac-php-tag-last-data-list   ))))

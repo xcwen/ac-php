@@ -50,7 +50,9 @@ class Testb  extends Testa {
      */
 
     public function get_v2(){
-        return $this->v2;
+
+        return $this->v1;
+
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
         parent::set_v1("s");

@@ -1001,6 +1001,14 @@ then this function split it to
 
       (let* (process)
 
+        (ac-php--debug "EXEC  %s %s %s %s %s"
+        ac-php-ctags-executable
+        (concat "--config-file="  (f-join project-root-dir "./.ac-php-conf.json" )  )
+        (concat "--tags_dir=" ac-php-tags-path    )
+        (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
+        (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
+        )
+
 
         (setq process  (start-process
                         "ac-phptags"

@@ -48,8 +48,6 @@
 (defvar ac-php-common-json-file (concat   ac-php-root-directory "ac-php-comm-tags-data.json"))
 
 
-(defvar ac-php-cache1-file-count 10)
-
 (defvar ac-php-debug-flag nil)
 
 
@@ -705,6 +703,10 @@ then this function split it to
                   ;;(backward-char 1)
                   (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
                   (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
+                  (unless symbol-ret
+                    (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t))
+                    )
+
                   (when symbol-ret
                     (setq symbol-type  (car symbol-ret) )
                     (ac-php--debug "XXLLL %s" symbol-type )
@@ -1299,6 +1301,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (message "ac-php reload from json-data start")
 
         (setq  file-data (json-read-file  file ) )
+        (message "ac-php reload from json-data  deal data  ")
         (assq-delete-all  file   ac-php-tag-last-data-list )
         ;;; file-data  => class-map, function-map, inherit-list-map, file-list,
         ;;; to ->  hash_table

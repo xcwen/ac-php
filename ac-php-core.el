@@ -1742,8 +1742,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
               (ac-php--debug " tmp-arr %S"  tmp-arr )
               (cond
                ((s-matches-p "sys" (nth 0 tmp-arr) )
-                (progn ;;system function
-                  (php-search-documentation (nth 0 (ac-php--get-item-info (nth 1 tmp-arr) )))
+                (let( (sys-item-name (aref  (nth 3 symbol-ret ) 1 )) ) ;;system function
+                  ;; \trim( => trim
+                  (setq sys-item-name (substring-no-properties
+                                       sys-item-name 1
+                                       (if (string=  "(" ( substring  sys-item-name -1 )) -1 nil  )
+                                                               ) )
+
+                  (php-search-documentation sys-item-name )
                   ))
                (t
                 (let ( (file-list (ac-php-g--file-list tags-data  ) )  )

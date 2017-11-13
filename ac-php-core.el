@@ -1297,6 +1297,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
       (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
 
+
       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
         (message "ac-php reload from json-data start")
 
@@ -1416,6 +1417,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (setq check-class-name  (concat   "\\" class-name ))
         (ac-php--debug " 222 check-class-name=%s"  check-class-name )
         (unless (gethash check-class-name  class-map )
+          (ac-php--debug " 222 00 check-class-name= nil"  )
           (setq check-class-name nil)
           )
         )

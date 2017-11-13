@@ -17,14 +17,11 @@ use  Test\Testb;
  */
 class Testb  extends Testa {
 
-    public function __construct(   ){
-        $this->do_f("ss");
-    }
 
     /**
      * @return $this
      */
-    public function get_v8(){
+    public function get_v8( $a=[] ){
         //$this->v1
         //$this->get_moth( )
 
@@ -52,7 +49,6 @@ class Testb  extends Testa {
     public function get_v2(){
 
         return $this->v1;
-
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
         parent::set_v1("s");
@@ -137,6 +133,5 @@ trim("ss","s");
 
 $s=new \Test\Testb($v1,$v2);
 $s->get_v1();
-
 
 (new Ta())->set_v1("s");

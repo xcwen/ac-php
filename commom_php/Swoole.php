@@ -1643,7 +1643,7 @@ define('HTTP_GLOBAL_COOKIE', 8);
  * 内置Web服务器
  * Class swoole_http_server
  */
-class swoole_http_server extends swoole_server
+class swoole_http_server extends \swoole_server
 {
     /**
      * 启用数据合并，HTTP请求数据到PHP的GET/POST/COOKIE全局数组
@@ -1654,7 +1654,7 @@ class swoole_http_server extends swoole_server
 }
 define('WEBSOCKET_OPCODE_TEXT', 1);
 
-class swoole_websocket_server extends swoole_http_server
+class swoole_websocket_server extends \woole_http_server
 {
     /**
      * 向某个WebSocket客户端连接推送数据

@@ -1328,7 +1328,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
            ) (aref file-data 2 ) )
 
 
-        (push (list file file-last-time 
+        (push (list file file-last-time
                     (list
                      class-map
                      function-map
@@ -1350,7 +1350,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-tags-data ()
   (let ( tags-file  project-root-dir (tags-arr   (ac-php-get-tags-file )))
     (if tags-arr
-        (progn 
+        (progn
           (setq tags-file   (nth 1 tags-arr)   )
           (setq project-root-dir (nth 0 tags-arr) )
           )
@@ -1560,7 +1560,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                    (class-map (ac-php-g--class-map tags-data ) )
                    (inherit-map (ac-php-g--inherit-map tags-data ))
                    (key-list (split-string key-list-str "\\." ) ) )
-    (ac-php--debug "XXKK:%S " key-list )
+    (ac-php--debug "====XXKK:%S " key-list )
     (cl-loop for item in key-list do
       (if (string= cur-class "" )
           (if (or (gethash  item inherit-map   ) (gethash  item class-map  )  )
@@ -1583,19 +1583,29 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-map inherit-map cur-class  item ))
               (setq cur-class (if  member-info
-                                  (let (tmp-class cur-namespace check-classname member-local-class-name backslash-pos)
+                                  (let (tmp-class cur-namespace check-classname member-local-class-name )
                                     (setq tmp-class (aref member-info 4 ) )
                                     (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
                                     (when (stringp tmp-class )
-                                      (setq  backslash-pos (s-index-of "\\" tmp-class ) )
-                                      (if  ( and (numberp backslash-pos ) (= 0  backslash-pos)  )
+                                      (if   (ac-php--check-global-name tmp-class )
                                           tmp-class
-                                        (progn
-                                          (setq member-local-class-name (aref member-info 5) )
-                                          (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
-                                          (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
+                                        (progn;; tmp-class like   test\ss
+                                          ;; check as \test\ss
+                                          (setq check-classname (concat "\\" tmp-class  ) )
+                                          (ac-php--debug "check-classname %s " check-classname )
                                           (if (gethash check-classname class-map  )
-                                              check-classname tmp-class )))))
+                                              check-classname
+                                            (progn
+                                              ;; check as  cur-namespace\test\ss
+                                              (setq member-local-class-name (aref member-info 5) )
+                                              (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
+                                              (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
+                                              (ac-php--debug " 2 check-classname %s " check-classname )
+                                              (if (gethash check-classname class-map  )
+                                                  check-classname tmp-class )
+
+                                              ))
+                                          ))))
                                 ""))
 
               ))
@@ -1895,7 +1905,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   ;;检查是类还是 符号
   (let (
         (tags-data  (ac-php-get-tags-data ) )
-        symbol-ret 
+        symbol-ret
         type  doc class-name access return-type member-info tag-name function-item file-pos )
     (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
     (when symbol-ret
@@ -1912,7 +1922,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (setq  class-name    (aref member-info 5) )
         (setq  return-type   (aref member-info 4) )
         (setq  access   (aref member-info 6) )
-        (popup-tip (concat  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   return-type   ))
+        (popup-tip (concat  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   class-name   ))
 
         )
        ((string= type "user_function")

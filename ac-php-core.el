@@ -1598,15 +1598,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                                               (ac-php--debug " 2 check-classname %s " check-classname )
                                               (if (gethash check-classname class-map  )
                                                   check-classname
-                                                (progn
-                                                ;; check as global, like: \test\ss
-                                                (setq check-classname (concat "\\" tmp-class  ) )
-                                                (ac-php--debug "check-classname %s " check-classname )
-                                                (if (gethash check-classname class-map  )
-                                                    check-classname
                                                   tmp-class
                                                 )
-                                              ))
                                               ))
                                       ))
                                 ""))

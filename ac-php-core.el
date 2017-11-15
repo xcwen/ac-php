@@ -1588,24 +1588,27 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                                     (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
                                     (when (stringp tmp-class )
                                       (if   (ac-php--check-global-name tmp-class )
+                                          ;;  like  \test\ss
                                           tmp-class
                                         (progn;; tmp-class like   test\ss
-                                          ;; check as \test\ss
-                                          (setq check-classname (concat "\\" tmp-class  ) )
-                                          (ac-php--debug "check-classname %s " check-classname )
-                                          (if (gethash check-classname class-map  )
-                                              check-classname
-                                            (progn
-                                              ;; check as  cur-namespace\test\ss
+                                              ;; check as  \cur-namespace\test\ss
                                               (setq member-local-class-name (aref member-info 5) )
                                               (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
                                               (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
                                               (ac-php--debug " 2 check-classname %s " check-classname )
                                               (if (gethash check-classname class-map  )
-                                                  check-classname tmp-class )
-
+                                                  check-classname
+                                                (progn
+                                                ;; check as global, like: \test\ss
+                                                (setq check-classname (concat "\\" tmp-class  ) )
+                                                (ac-php--debug "check-classname %s " check-classname )
+                                                (if (gethash check-classname class-map  )
+                                                    check-classname
+                                                  tmp-class
+                                                )
                                               ))
-                                          ))))
+                                              ))
+                                      ))
                                 ""))
 
               ))

@@ -1079,24 +1079,26 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 
   (dolist  (string (split-string strings "\n" ) )
-  (cond
-   ((string-match "PHPParser:" string)
+
+    (ac-php--debug " AC-PHP: %s" string )
+    (cond
+     ( (string-match "PHPParser:" string)
 
 
-    (setq ac-php-rebuild-tmp-error-msg  (concat ac-php-rebuild-tmp-error-msg  "\n" string ) )
+       (setq ac-php-rebuild-tmp-error-msg  (concat ac-php-rebuild-tmp-error-msg  "\n" string ) )
 
-    )
+       )
 
-   ((string-match "\\([0-9]+\\)%" string)
-    (let ((progress (string-to-number (match-string 1 string))))
+     ((string-match "\\([0-9]+\\)%" string)
+      (let ((progress (string-to-number (match-string 1 string))))
 
 
-      (unless(= ac-php-phptags-index-progress progress )
-        (setq ac-php-phptags-index-progress progress)
-        (force-mode-line-update))
+        (unless(= ac-php-phptags-index-progress progress )
+          (setq ac-php-phptags-index-progress progress)
+          (force-mode-line-update))
+        )
       )
-    )
-   )))
+     )))
 
 
 

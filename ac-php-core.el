@@ -45,7 +45,7 @@
 
 (defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name)))
 (defvar ac-php-ctags-executable (concat   ac-php-root-directory "phpctags"))
-(defvar ac-php-common-json-file (concat   ac-php-root-directory "ac-php-comm-tags-data.json"))
+(defvar ac-php-common-json-file (concat   ac-php-root-directory "ac-php-comm-tags-data.el"))
 
 
 (defvar ac-php-debug-flag nil)
@@ -1179,7 +1179,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-tags-file ()
   (let ((project-root-dir (ac-php--get-project-root-dir)) )
     (if project-root-dir
-        (list  project-root-dir (concat  (ac-php--get-tags-save-dir project-root-dir)  "/tags.json"  ) )
+        (list  project-root-dir (concat  (ac-php--get-tags-save-dir project-root-dir)  "tags.el"  ) )
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( project-root-dir path-str)
@@ -1304,7 +1304,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
         (message "ac-php reload from json-data start")
 
-        (setq  file-data (json-read-file  file ) )
+        ;;(setq  file-data (json-read-file  file ) )
+        (load  file )
+        (setq file-data g-ac-php-tmp-tags )
         (message "ac-php reload from json-data  deal data  ")
         (assq-delete-all  file   ac-php-tag-last-data-list )
         ;;; file-data  => class-map, function-map, inherit-list-map, file-list,

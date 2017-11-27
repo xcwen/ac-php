@@ -1760,10 +1760,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
                ((s-matches-p "sys" (nth 0 tmp-arr) )
                 (let( (sys-item-name (aref  (nth 3 symbol-ret ) 1 )) ) ;;system function
                   ;; \trim( => trim
-                  (setq sys-item-name (substring-no-properties
-                                       sys-item-name 1
-                                       (if (string=  "(" ( substring  sys-item-name -1 )) -1 nil  )
-                                                               ) )
+                  (if (string= type "user_function")
+                      (setq sys-item-name (substring-no-properties
+                                           sys-item-name 1
+                                           (if (string=  "(" ( substring  sys-item-name -1 )) -1 nil  )
+                                           )         )
+                    (setq sys-item-name  (nth 2 symbol-ret ) ) ;; class name
+                    )
 
                   (php-search-documentation sys-item-name )
                   ))

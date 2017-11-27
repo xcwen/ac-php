@@ -7983,6 +7983,13 @@
   ["f" "\\Yaf_Exception_LoadFailed_Controller(" ""  "sys"  "\\Yaf_Exception_LoadFailed_Controller"  ]
   ["f" "\\Yaf_Exception_LoadFailed_Action(" ""  "sys"  "\\Yaf_Exception_LoadFailed_Action"  ]
   ["f" "\\Yaf_Exception_LoadFailed_View(" ""  "sys"  "\\Yaf_Exception_LoadFailed_View"  ]
+  ["f" "\\empty(" "mixed $var"  "sys"  "bool"  ]
+  ["f" "\\isset(" "mixed $var ,mixed $__args__=NULL"  "sys"  "bool"  ]
+  ["f" "\\unset(" "mixed $var ,mixed $__args__=NULL"  "sys"  "void"  ]
+  ["f" "\\require(" "string $file_name "  "sys"  "mixed"  ]
+  ["f" "\\require_once(" "string $file_name "  "sys"  "mixed"  ]
+  ["f" "\\include(" "string $file_name "  "sys"  "mixed"  ]
+  ["f" "\\include_once(" "string $file_name "  "sys"  "mixed"  ]
 ]
 (
   ("\\RedisException". [ "Exception" ])

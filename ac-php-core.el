@@ -570,7 +570,7 @@ then this function split it to
     "DOCSTRING"
   (interactive)
   (let (v)
-    (message " src dir  %s"  ac-php-sour )
+    (ac-php--get-cur-function-vars)
     ))
 
 
@@ -923,11 +923,39 @@ then this function split it to
                  )
                )  function-map)
             )
+          ;;; cur function vars
+          (maphash
+           (lambda (k _v )
+             (when( and ( s-prefix-p  cur-word  k ) (not  (string=   k cur-word   )) )
+               (setq key-word   k   )
+               (setq key-word (propertize key-word 'ac-php-help  "" ))
+               (setq key-word (propertize key-word 'ac-php-return-type   "" ))
+               (setq key-word (propertize key-word 'ac-php-tag-type "" ))
+               (setq key-word (propertize key-word 'summary   "" ))
+               (push key-word ret-list  )
+               ))
+           (ac-php--get-cur-function-vars)
+           )
 
           )))
     (ac-php--debug "ret-list:%S" ret-list )
     ret-list))
-
+(defun  ac-php--get-cur-function-vars( )
+  (let ( txt start-pos end-pos  var-list  ret-map  var-name )
+    (save-excursion
+      (beginning-of-defun )
+      (setq  start-pos (point)   )
+      (end-of-defun )
+      (setq  end-pos (point)   )
+      (setq txt (buffer-substring-no-properties start-pos end-pos ))
+      (setq var-list (s-match-strings-all "$[0-9_a-z]*" txt) )
+      (setq ret-map (make-hash-table :test  'case-fold ))
+      (dolist  (item  var-list )
+        (setq var-name  (substring  (nth 0 item ) 1 ))
+        (puthash var-name  nil   ret-map  )
+        )
+      ret-map
+      )))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files ( project-root-dir regex also-find-subdir )
   "get all php file list"

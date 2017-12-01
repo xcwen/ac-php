@@ -1615,23 +1615,20 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (let ( member-info)
               (setq member-info (ac-php-get-class-member-info class-map inherit-map cur-class  item ))
               (setq cur-class (if  member-info
-                                  (let (tmp-class cur-namespace check-classname member-local-class-name )
+                                  (let (tmp-class cur-namespace relative-classname member-local-class-name )
                                     (setq tmp-class (aref member-info 4 ) )
                                     (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info )
                                     (when (stringp tmp-class )
                                       (if   (ac-php--check-global-name tmp-class )
-                                          ;;  like  \test\ss
+                                          ;;  global name, like  \test\ss
                                           tmp-class
                                         (progn;; tmp-class like   test\ss
-                                              ;; check as  \cur-namespace\test\ss
+                                              ;; relative name, MUST be resolved relatively as  \cur-namespace\test\ss
                                               (setq member-local-class-name (aref member-info 5) )
                                               (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name ))
-                                              (setq check-classname (concat cur-namespace "\\" tmp-class  ) )
-                                              (ac-php--debug " 2 check-classname %s " check-classname )
-                                              (if (gethash check-classname class-map  )
-                                                  check-classname
-                                                  tmp-class
-                                                )
+                                              (setq relative-classname (concat cur-namespace "\\" tmp-class  ) )
+                                              (ac-php--debug " 2 relative-classname %s " relative-classname )
+                                              relative-classname
                                               ))
                                       ))
                                 ""))

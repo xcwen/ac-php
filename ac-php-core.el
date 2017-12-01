@@ -926,6 +926,7 @@ then this function split it to
           ;;; cur function vars
           (maphash
            (lambda (k _v )
+             (ac-php--debug " check %s %s  " cur-word  k )
              (when( and ( s-prefix-p  cur-word  k ) (not  (string=   k cur-word   )) )
                (setq key-word   k   )
                (setq key-word (propertize key-word 'ac-php-help  "" ))
@@ -951,7 +952,7 @@ then this function split it to
       (setq var-list (s-match-strings-all "$[0-9_a-z]*" txt) )
       (setq ret-map (make-hash-table :test  'case-fold ))
       (dolist  (item  var-list )
-        (setq var-name  (substring  (nth 0 item ) 1 ))
+        (setq var-name   (nth 0 item )  )
         (puthash var-name  nil   ret-map  )
         )
       ret-map
@@ -1924,9 +1925,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-get-cur-word-without-clean ( )
   (let (start-pos cur-word)
   (save-excursion
-    (skip-chars-backward "a-z0-9A-Z_\\\\")
+    (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
     (setq start-pos (point))
-    (skip-chars-forward "a-z0-9A-Z_\\\\")
+    (skip-chars-forward "\\$a-z0-9A-Z_\\\\")
     )
       (buffer-substring-no-properties start-pos (point))
     ))

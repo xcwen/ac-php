@@ -96,7 +96,7 @@
       (setq  ret (point)))
     (unless ret
       (save-excursion
-        (skip-chars-backward "a-z0-9A-Z_\\\\")
+        (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
         (setq ret (point))
         )
       )

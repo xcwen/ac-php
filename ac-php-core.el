@@ -248,7 +248,10 @@ indexing the tags for.")
         (progn
           (setq ret  (ac-php--get-clean-node (ac-php--get-key-list-from-paser-data frist-key )) )
         )
-      (setq ret  (list frist-key) )
+      (if  (and  (> len-paser-data 1)  (not (nth 1 paser-data  )) )
+          (setq ret  (list (concat frist-key "(" )) )
+        (setq ret  (list frist-key) )
+        )
       )
 
 
@@ -348,20 +351,16 @@ indexing the tags for.")
             (ac-php--debug "XXXX %s " tmp-name)
 
             ))
-          (ac-php--debug " 333 %s " tmp-name)
           (unless ( ac-php--check-global-name  tmp-name )
+            (let ( (tmp-name-as-global  (concat "\\" tmp-name ))
+                   (cur-namepace-tmp-name  (concat  (ac-php-get-cur-namespace-name)   tmp-name   )
+                   ))
+              (ac-php--debug " check as cur namespace %s " tmp-name)
+              (if (ac-php--get-item-from-funtion-map  cur-namepace-tmp-name  function-map )
+                  (setq tmp-name cur-namepace-tmp-name    )
+                (setq tmp-name tmp-name-as-global ))
+                ))
 
-            (let ( (tmp-name-as-global  (concat "\\" tmp-name )  ))
-              (if (ac-php--get-item-from-funtion-map  tmp-name-as-global  function-map )
-                  (setq tmp-name tmp-name-as-global )
-                (progn
-                  (setq tmp-name-as-global  (concat "\\" tmp-name  "(")  )
-                  (if (ac-php--get-item-from-funtion-map  tmp-name-as-global  function-map )
-                      (setq tmp-name tmp-name-as-global )
-                    (setq  tmp-name (concat  (ac-php-get-cur-namespace-name)   tmp-name   ))
-                  )
-                )
-              )))
           (ac-php--debug " 22222 %s " tmp-name)
 
           )
@@ -390,7 +389,6 @@ indexing the tags for.")
             (setq ret-name  (aref tmp-ret 1 ) )
             )
         ))
-
     (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer ret-name %s" ret-name)
     ret-name
     ))

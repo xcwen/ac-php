@@ -771,7 +771,7 @@ then this function split it to
       (setq  output-list (ac-php-get-class-member-list  class-map inherit-map  class-name ) )
       (ac-php--debug " 22 class-name:%s output-list= %S" class-name output-list )
       (mapc (lambda (x)
-                (setq key-word   (concat (aref  x  1)  (if(string=  (aref x  0)  "m" ) "(" ) ))
+                (setq key-word   (aref  x  1)   )
                 (setq check-item  (concat  (aref  x 0 ) "_" key-word     ))
                 (if (assoc-string  check-item item-list t )
                     (progn
@@ -1502,7 +1502,6 @@ Non-nil SILENT will supress extra status info in the minibuffer."
   (let (type-str )
     (if (and (> (length member ) 1)  (string=  "(" ( substring  member  -1 )) )
         (progn
-          (setq member (substring member 0 -1 ) )
           (setq type-str "m"))
       (setq type-str "p"))
     (list member type-str )
@@ -1544,7 +1543,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq tmp-ret (ac-php--get-item-info member ) )
     (setq member (nth 0 tmp-ret))
     (setq type-str (nth 1 tmp-ret))
-    (ac-php--debug " LLLLLLLLLLLLLLL " )
+    (ac-php--debug " LLLLLLLLLLLLLLL:%S " tmp-ret )
 
     (let (  class-member-list )
       (cl-loop for opt-class in check-class-list do
@@ -1957,7 +1956,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
         (setq tag-name  (aref member-info  1))
         (if ( string= (aref member-info 0 )  "m" )
-            (setq  doc   (concat  tag-name  "(" (aref member-info 2) ")" )   )
+            (setq  doc   (concat  tag-name   (aref member-info 2) ")" )   )
           (setq  doc    tag-name ))
 
         (setq  class-name    (aref member-info 5) )
@@ -2051,7 +2050,7 @@ Set this variable to nil to disable the lighter."
         (if ( string= (aref member-info 0 )  "m" )
           (setq  doc   (concat
                         (propertize  tag-name  'face 'font-lock-function-name-face)
-                         "(" (aref  member-info 2) ")" )   )
+                          (aref  member-info 2) ")" )   )
           (setq  doc
                  (propertize  tag-name  'face 'font-lock-variable-name-face)
                  ))

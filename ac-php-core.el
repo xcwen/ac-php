@@ -1334,6 +1334,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (message "ac-php reload from json-data start")
 
         ;;(setq  file-data (json-read-file  file ) )
+        
         (load  file )
         (setq file-data g-ac-php-tmp-tags )
         (message "ac-php reload from json-data  deal data  ")
@@ -1390,7 +1391,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (setq tags-file   ac-php-common-json-file   )
       )
     (ac-php--debug  "LOAD TAGS:%s"  tags-file )
-    (ac-php-load-data  tags-file  project-root-dir  )
+    (if  (file-exists-p tags-file )
+      (ac-php-load-data  tags-file  project-root-dir  )
+    (ac-php-remake-tags )
+      )
     ))
 
 
@@ -1414,7 +1418,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (let (last-dir)
         (while (not (or
                      (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
-                     (file-exists-p  (concat project-root-dir  ".tags" ))
+                     (file-exists-p  (concat project-root-dir  "vendor" )) ;; is a composer dir
                      (string= project-root-dir "/")
                      ))
           (setq  last-dir project-root-dir  )

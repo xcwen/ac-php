@@ -1,13 +1,12 @@
 {
   "use-cscope": null,
-  "tag-dir":  "./ac-php-tags",
+  "tag-dir": null,
   "filter": {
-    "can-use-external-dir": true,
     "php-file-ext-list": [
       "php"
     ],
     "php-path-list": [
-        "."
+      "."
     ],
     "php-path-list-without-subdir": []
   }

@@ -1339,7 +1339,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
         (message "ac-php reload from json-data start")
 
         ;;(setq  file-data (json-read-file  file ) )
-        
+
         (load  file )
         (setq file-data g-ac-php-tmp-tags )
         (message "ac-php reload from json-data  deal data  ")
@@ -1423,7 +1423,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (let (last-dir)
         (while (not (or
                      (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
-                     (file-exists-p  (concat project-root-dir  "vendor" )) ;; is a composer dir
+                     (file-exists-p  (concat project-root-dir  "vendor/autoload.php" )) ;; is a composer dir
                      (string= project-root-dir "/")
                      ))
           (setq  last-dir project-root-dir  )
@@ -2077,6 +2077,33 @@ Set this variable to nil to disable the lighter."
         (concat  doc ":"  return-type   )
 
         )) )))
+
+(defun ac-php-show-cur-project-info ()
+  "show current project ac-php info "
+  (interactive)
+  (let ( (tags-arr (ac-php-get-tags-file )) tags-file  project-root-dir  file-attr  file-last-time   )
+    (if tags-arr
+        (progn
+          (setq tags-file   (nth 1 tags-arr)   )
+          (setq project-root-dir (nth 0 tags-arr) )
+          )
+      (setq tags-file   ac-php-common-json-file   )
+      )
+    (when  tags-file
+      (setq file-attr   (file-attributes   tags-file ) )
+      (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr)  ) )
+      )
+    (message (concat "root dir          : %s\n"
+                     "config file       : %s.ac-php-conf.json \n"
+                     "tags file         : %s \n"
+                     "tags last gen time: %s  ")
+             project-root-dir
+             project-root-dir
+             tags-file  file-last-time )
+
+    )
+  )
+
 
 ;;;###autoload
 (defun ac-php-core-eldoc-setup ()

@@ -588,13 +588,24 @@ then this function split it to
         old-line-txt  key-line-txt  key-list   tmp-key-list first-class-name  frist-key  ret-str frist-key-str
         reset-array-to-class-function-flag )
 
-    (ac-php--debug "test 11.." )
     ;; default use cur point
     (unless  pos (setq pos (point) ))
 
     (setq line-txt (s-trim (buffer-substring-no-properties
                     (line-beginning-position)
                      pos  )))
+    ;;; join   $this->xxx()
+    ;;;             ->yyy();
+    (save-excursion
+      (while  (= (aref line-txt 0 ) ?- )
+        (previous-line)
+        (setq line-txt (concat
+                        (s-trim (buffer-substring-no-properties (line-beginning-position) (line-end-position)) )
+                        line-txt ) )
+        )
+      )
+
+    (ac-php--debug "line-txt:%s " line-txt )
 
     (setq old-line-txt line-txt)
     ;;  array($xxx, "abc" ) => $xxx->abc
@@ -1660,14 +1671,12 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
 (defun ac-php-find-symbol-at-point-pri ( tags-data &optional  as-function-flag as-name-flag )
   (let ( key-str-list
-         line-txt cur-word val-name class-name output-vec
+         cur-word val-name class-name output-vec
          jump-pos  cmd complete-cmd  find-flag ret
          (project-root-dir ( ac-php-g--project-root-dir tags-data ))
          )
 
-    (setq line-txt (buffer-substring-no-properties
-                    (line-beginning-position)
-                    (line-end-position )))
+
     (if as-name-flag
         (setq cur-word  (ac-php--get-cur-word ))
       (if as-function-flag

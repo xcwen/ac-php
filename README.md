@@ -37,6 +37,9 @@ extended:  Redis, Swoole
 
 
 
+![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/chain-call.png)
+
+
 ## Table of Contents
 
 * [Install](#install)

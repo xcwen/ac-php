@@ -90,8 +90,6 @@ class Testb  extends Testa {
         $this->do_f(sdfa,"ss");
         $this->set_v1($v,$v2);
 
-        $this->set_v1($v,$v2);
-        $this->do_f();
 
         if ($testv->set_v1("s") && $testv->set_v1() ){
 

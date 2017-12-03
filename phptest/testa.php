@@ -19,7 +19,7 @@ class Testa  {
      * @var   string
      */
     const DIR="sss";
-    public function set_v1($v,$v2= -1){
+    public function &set_v1($v,$v2= -1){
 
         $this->do_f($v1,$v2,$v3 );
         $v=trim($v);

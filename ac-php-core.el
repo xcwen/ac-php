@@ -573,14 +573,24 @@ then this function split it to
     "DOCSTRING"
   (interactive)
   (let (v)
-    (ac-php--get-cur-function-vars)
+    (message "==%s"
+             (ac-php--check-is-comment  (point) )
+             ) ;ss
     ))
 
 
 
 
 
-
+(defun ac-php--check-is-comment (pos )
+  (let ( ( face (get-text-property pos 'face) ) )
+    (and   face 
+         (or
+          (equal face font-lock-comment-delimiter-face)
+          (equal face font-lock-comment-face)
+          ))
+    )
+  )
 
 (defun ac-php-get-class-at-point( tags-data  &optional pos  )
 
@@ -597,15 +607,23 @@ then this function split it to
     ;;; join   $this->xxx()
     ;;;             ->yyy();
     (save-excursion
-      (while  (= (aref line-txt 0 ) ?- )
+      (while  (and (> (length line-txt   ) 0 ) (= (aref line-txt 0 ) ?- ) )
         (previous-line)
-        (setq line-txt (concat
-                        (s-trim (buffer-substring-no-properties (line-beginning-position) (line-end-position)) )
-                        line-txt ) )
+        (let ( (no-comment-code "") (text-check-pos (line-beginning-position)) (line-end-pos (line-end-position )) )
+          (while (< text-check-pos line-end-pos )
+            (unless (ac-php--check-is-comment text-check-pos  )
+              (setq  no-comment-code (concat  no-comment-code (buffer-substring-no-properties text-check-pos  (1+ text-check-pos)  ) ))
+              )
+            (setq text-check-pos  (1+ text-check-pos) )
+            )
+          (setq line-txt (concat
+                          (s-trim  no-comment-code  )
+                          line-txt ) )
+          )
         )
       )
 
-    (ac-php--debug "line-txt:%s " line-txt )
+    (ac-php--debug "11 line-txt:%s " line-txt )
 
     (setq old-line-txt line-txt)
     ;;  array($xxx, "abc" ) => $xxx->abc

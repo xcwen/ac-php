@@ -1232,8 +1232,11 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (setq  default-directory old-default-directory )
 
           )
+   (when (memq system-type '(windows-nt ms-dos))
+	    (setq project-root-dir (concat "/"
+				(replace-regexp-in-string  (regexp-quote ":") ""  project-root-dir ))))
       (setq ret (concat ac-php-tags-path "/tags"
-                        (replace-regexp-in-string "[/ :]" "-"
+                        (replace-regexp-in-string (regexp-quote "/") "-"
                                                   (replace-regexp-in-string  "/$" ""  project-root-dir )
                                                   )  ))
       )

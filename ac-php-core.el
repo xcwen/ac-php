@@ -62,6 +62,9 @@
 
 (defvar ac-php-prefix-str "")
 
+(defvar ac-php-auto-update-intval 300
+  "auto remake tag intval ( seconds) " )
+
 (defvar ac-php-phptags-index-progress  0 )
 
 ;;data
@@ -584,7 +587,7 @@ then this function split it to
 
 (defun ac-php--check-is-comment (pos )
   (let ( ( face (get-text-property pos 'face) ) )
-    (and   face 
+    (and   face
          (or
           (equal face font-lock-comment-delimiter-face)
           (equal face font-lock-comment-face)
@@ -1241,11 +1244,29 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (f-full ret )
     ))
 
+(defun ac-php--get-timestamp (  time-arr )
+  (+  (*(nth 0  time-arr )  65536)  (nth 1  time-arr) )
+  )
 
 (defun ac-php-get-tags-file ()
-  (let ((project-root-dir (ac-php--get-project-root-dir)) )
+  (let ((project-root-dir (ac-php--get-project-root-dir)) tags-file file-attr  file-last-time now  )
     (if project-root-dir
-        (list  project-root-dir (concat  (ac-php--get-tags-save-dir project-root-dir)  "tags.el"  ) )
+        (progn
+          (setq tags-file (concat  (ac-php--get-tags-save-dir project-root-dir)  "tags.el"  ) )
+          (setq file-attr   (file-attributes  tags-file ) )
+
+          (when file-attr
+            (setq file-last-time  (ac-php--get-timestamp  (nth 5 file-attr) ))
+            (setq now  (ac-php--get-timestamp (current-time)  ))
+            ;;; check time , and delete tags file if  time out 
+            (if  (> (- now  file-last-time )  ac-php-auto-update-intval  )
+                (f-delete tags-file )
+                )
+            )
+          (current-time)
+
+          (list  project-root-dir tags-file )
+          )
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( project-root-dir path-str)

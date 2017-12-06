@@ -62,7 +62,7 @@
 
 (defvar ac-php-prefix-str "")
 
-(defvar ac-php-auto-update-intval 300
+(defvar ac-php-auto-update-intval 3600 
   "auto remake tag intval ( seconds) " )
 
 (defvar ac-php-phptags-index-progress  0 )

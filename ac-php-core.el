@@ -62,7 +62,7 @@
 
 (defvar ac-php-prefix-str "")
 
-(defvar ac-php-auto-update-intval 3600 
+(defvar ac-php-auto-update-intval 3600
   "auto remake tag intval ( seconds) " )
 
 (defvar ac-php-phptags-index-progress  0 )
@@ -1233,8 +1233,8 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
           )
    (when (memq system-type '(windows-nt ms-dos))
-	    (setq project-root-dir (concat "/"
-				(replace-regexp-in-string  (regexp-quote ":") ""  project-root-dir ))))
+      (setq project-root-dir (concat "/"
+        (replace-regexp-in-string  (regexp-quote ":") ""  project-root-dir ))))
       (setq ret (concat ac-php-tags-path "/tags"
                         (replace-regexp-in-string (regexp-quote "/") "-"
                                                   (replace-regexp-in-string  "/$" ""  project-root-dir )
@@ -1261,12 +1261,11 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (when file-attr
             (setq file-last-time  (ac-php--get-timestamp  (nth 5 file-attr) ))
             (setq now  (ac-php--get-timestamp (current-time)  ))
-            ;;; check time , and delete tags file if  time out 
+            ;;; check time , and delete tags file if  time out
             (if  (> (- now  file-last-time )  ac-php-auto-update-intval  )
-                (f-delete tags-file )
+                ( ac-php--remake-tags  project-root-dir  nil )
                 )
             )
-          (current-time)
 
           (list  project-root-dir tags-file )
           )

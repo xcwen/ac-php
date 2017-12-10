@@ -42,7 +42,7 @@
   "Completion backend for PHP."
   :group 'company)
 
-(defcustom company-php-begin-after-member-access  nil
+(defcustom company-php-begin-after-member-access  t
   "When non-nil, automatic completion will start whenever the current
 symbol is preceded by \"->\" or \"::\", ignoring
 `company-minimum-prefix-length'.

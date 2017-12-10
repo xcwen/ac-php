@@ -30,9 +30,10 @@ class Testa  {
 
     public function __construct(   ){
         $this->do_f("ss");
+        $this->do_f($v1);
     }
 
-    public function do_f( $v1 ,$v2=0  , $v3 =0 ){
+    public function do_f( $v1 ,$v2=0x1001, $v3 =0777 ){
         return "sfa" ;
         //$this->set_v1(1);
         $this->do_f($v1,$v2 );

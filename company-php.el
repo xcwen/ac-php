@@ -2,6 +2,7 @@
 ;; Copyright (C) 2014 - 2016 jim
 ;; Author: xcwenn@qq.com [https://github.com/xcwen]
 ;; URL: https://github.com/xcwen/ac-php
+;; Package-Version: 20171209.2243
 ;; Keywords: completion, convenience, intellisense
 ;; Package-Requires: ( (cl-lib "0.5") (ac-php-core "1") (company "0.9")  )
 
@@ -32,11 +33,10 @@
 
 ;;; Code:
 
-(require 'cl-lib)
-(if (featurep 'company)
-    (require 'company)
-    )
 (require 'ac-php-core)
+(require 'cl-lib)
+(require 'company)
+(require 'company-template)
 
 (defgroup company-php nil
   "Completion backend for PHP."
@@ -51,107 +51,97 @@ If `company-begin-commands' is a list, it should include `c-electric-lt-gt'
 and `c-electric-colon', for automatic completion right after \">\" and
 \":\".")
 
-
 (defun company-ac-php-annotation (item)
-  ( let( doc  )
-    (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-    (if ( ac-php--tag-name-is-function item)
-        (concat doc ")"   )
-      "")))
-
+  (let ((doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))
+	(if (ac-php--tag-name-is-function item)
+		(concat doc ")")
+	  "")))
 
 (defun company-ac-php-fuzzy-match (prefix candidate)
-  (cl-subsetp (string-to-list prefix)
-              (string-to-list candidate)))
+  (cl-subsetp (string-to-list prefix) (string-to-list candidate)))
 
 (defun company-ac-php--prefix-symbol ()
-  (buffer-substring (point) (save-excursion (skip-chars-backward "\\$a-z0-9A-Z_\\\\" )
-                                            (point))))
+  (buffer-substring
+   (point)
+   (save-excursion
+	 (skip-chars-backward "\\$a-z0-9A-Z_\\\\") (point))))
 
-;; TODO it bad for namespace like  \App\add\ss
+;; TODO it bad for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
   (if company-php-begin-after-member-access
-      (company-grab-symbol-cons "->\\|::" 2)
-    (company-ac-php--prefix-symbol )))
+	  (company-grab-symbol-cons "->\\|::" 2)
+	(company-ac-php--prefix-symbol)))
 
-(defun  company-ac-php-candidate  (arg)
-  (let ( raw-help  ac-php-company-list   ac-php-prefix-str-len  candidate-list  find-count )
-    (setq ac-php-prefix-str (company-ac-php--prefix-symbol))
-    (ac-php--debug "company-ac-php-candidate :%s " ac-php-prefix-str   )
-    (setq  ac-php-prefix-str-len  (length ac-php-prefix-str  ) )
-    (setq find-count 0)
-    (setq candidate-list (ac-php-candidate) )
+(defun company-ac-php-candidate (arg)
+  (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))
+		 (ac-php-prefix-str-len (length ac-php-prefix-str))
+		 (find-count 0)
+		 raw-help
+		 candidate-list
+		 ac-php-company-list)
 
+	(ac-php--debug "company-ac-php-candidate :%s " ac-php-prefix-str)
+	(setq candidate-list (ac-php-candidate))
 
-    (dolist (  candidate-item   candidate-list )
-      (setq raw-help (get-text-property 0 'ac-php-help candidate-item ))
-      (unless raw-help (setq raw-help "" ))
-      (when  (ac-php--string=-ignore-care  ac-php-prefix-str (s-left  ac-php-prefix-str-len candidate-item ))
-        (setq find-count (1+ find-count) )
-        (if (ac-php--tag-name-is-function  candidate-item  )
-            (dolist (item (split-string raw-help "\n"))
-              (let ( args-list (option-start-index 1000000 ) (i 0) find-flag
-                               (item-pre-str "" ) )
-                (setq args-list (s-split  ","   item)  )
-                (dolist (arg args-list   )
-                  (when (and  (not find-flag) (s-matches-p "=" arg ) )
-                    (setq find-flag t)
-                    (setq option-start-index i )
-                    )
-                  (setf (nth i args-list) ( replace-regexp-in-string "=.*" "" arg ))
-                  (setq i (1+ i ) ))
+	(dolist (candidate-item candidate-list)
+	  (setq raw-help (or (get-text-property 0 'ac-php-help candidate-item) ""))
 
-                (setq i 0)
-                (dolist (arg args-list   )
-                  (when (>= i  option-start-index )
-                    (push (propertize  candidate-item  'ac-php-help  (concat item-pre-str   )  )  ac-php-company-list  ))
-                  (setq  item-pre-str (concat item-pre-str (if (= i 0) "" "," )  arg  ) )
-                  (setq i (1+ i )))
-                (push  (propertize  candidate-item   'ac-php-help  (concat item-pre-str  ) ) ac-php-company-list ))
-              )
-          (push  candidate-item   ac-php-company-list  )
-          ))
-      )
+	  (when (ac-php--string=-ignore-care ac-php-prefix-str (s-left ac-php-prefix-str-len candidate-item))
+		(setq find-count (1+ find-count))
 
-    ;;fix  one function bug
-    (when (and (= find-count 1  ) (> (length ac-php-company-list) 1))
-      (push (propertize ac-php-prefix-str 'ac-php-help  ""  )  ac-php-company-list  )
-      )
+		(if (ac-php--tag-name-is-function candidate-item)
+			(dolist (item (split-string raw-help "\n"))
+			  (let ((option-start-index 1000000)
+					(i 0)
+					(item-pre-str "")
+					(args-list (s-split "," item))
+					find-flag)
 
-    (nreverse ac-php-company-list )
+				(dolist (arg args-list)
+				  (when (and (not find-flag) (s-matches-p "=" arg))
+					(setq find-flag t)
+					(setq option-start-index i))
+				  (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
+				  (setq i (1+ i)))
 
-   ))
+				(setq i 0)
 
+				(dolist (arg args-list)
+				  (when (>= i option-start-index)
+					(push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list))
+				  (setq item-pre-str (concat item-pre-str (if (= i 0) "" ",") arg))
+				  (setq i (1+ i)))
+
+				(push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list)))
+
+		  (push candidate-item ac-php-company-list))))
+
+	;;fix one function bug
+	(when (and (= find-count 1) (> (length ac-php-company-list) 1))
+	  (push (propertize ac-php-prefix-str 'ac-php-help "") ac-php-company-list))
+
+	(nreverse ac-php-company-list)))
 
 ;;;###autoload
 (defun company-ac-php-backend (command &optional arg &rest ignored)
   (interactive (list 'interactive))
+  (cl-case command
+	(interactive (company-begin-backend 'company-ac-php-backend))
+	(prefix (company-ac-php--prefix))
+	(candidates (company-ac-php-candidate arg))
+	(annotation (company-ac-php-annotation arg))
+	(duplicates t)
+	(post-completion (company-ac-php-backend-post-completion arg))
+	))
 
-  (case command
-    (interactive (company-begin-backend 'company-ac-php-backend))
-    (prefix (and ;;(eq major-mode 'php-mode)
-                 (company-ac-php--prefix  )
-                 )
-            )
-    (candidates
-     (company-ac-php-candidate arg ))
-    (annotation (company-ac-php-annotation arg))
-    (duplicates t)
-    (post-completion (company-ac-php-backend-post-completion arg))
-    ;;(doc-buffer "test 001"  )
-    ;;(no-cache 't)
-    ))
-
-(defun company-ac-php-backend-post-completion ( arg )
+(defun company-ac-php-backend-post-completion (arg)
   (let ((doc))
-    (when (ac-php--tag-name-is-function arg)
-      (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help arg)))
-
-      (setq doc (s-replace "&" "" doc ) )
-      (insert (concat doc ")"))
-      (when (bound-and-true-p smartparens-mode)
-        (delete-char 1))
-      (company-template-c-like-templatify (concat arg doc ")")))))
+	(when (ac-php--tag-name-is-function arg)
+	  (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
+	  (insert (concat doc ")"))
+	  (when (bound-and-true-p smartparens-mode)
+		(delete-char 1))
+	  (company-template-c-like-templatify (concat arg doc ")")))))
 
 (provide 'company-php)
 

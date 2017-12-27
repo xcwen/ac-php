@@ -66,11 +66,26 @@ and `c-electric-colon', for automatic completion right after \">\" and
    (save-excursion
 	 (skip-chars-backward "\\$a-z0-9A-Z_\\\\") (point))))
 
+(defun company-ac-php-company-grab-symbol-cons (idle-begin-after-re &optional max-len)
+  "Return a string SYMBOL or a cons (SYMBOL . t).
+SYMBOL is as returned by `company-grab-symbol'.  If the text before point
+matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
+  (let ((symbol  (company-ac-php--prefix-symbol)))
+    (when symbol
+      (save-excursion
+        (forward-char (- (length symbol)))
+        (if (looking-back idle-begin-after-re (if max-len
+                                                  (- (point) max-len)
+                                                (line-beginning-position)))
+            (cons symbol t)
+          symbol)))))
+
 ;; TODO it bad for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
   (if company-php-begin-after-member-access
-	  (company-grab-symbol-cons "->\\|::" 2)
+	  (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
 	(company-ac-php--prefix-symbol)))
+
 
 (defun company-ac-php-candidate (arg)
   (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))

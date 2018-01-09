@@ -50,7 +50,6 @@ extended:  Redis, Swoole
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [large php project config](#configue-php-file-search-for-large-project)
-* [disable cscope config](#disable-cscope-config)
 * [FQA](#fqa)
 
 
@@ -61,27 +60,18 @@ extended:  Redis, Swoole
 localhost:~/$ sudo apt-get install php-cli
 ```
 
-* install `cscope` command  for `ac-php-cscope-find-egrep-pattern`
-```bash
-localhost:~/$ sudo apt-get install cscope
-```
 
 ### MAC OSX
 ```bash
  brew install homebrew/php/php56
 ```
-```bash
- brew install cscope
-```
-### check if `php`,`cscope` exists
+
+### check if `php`  exists
 ```bash
 localhost:~$ php --version
 PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53)
 Copyright (c) 1997-2014 The PHP Group
 Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
-localhost:~$ cscope --version
-cscope: version 15.8a
-```
 
 
 ##  Test
@@ -205,13 +195,6 @@ touch .ac-php-conf.json
 <tr>
 <td class="org-left"> ac-php-show-tip </td>
 <td class="org-left"> show define at point </td>
-</tr>
-
-<tr>
-<td class="org-left"> ac-php-cscope-find-egrep-pattern </td>
-<td class="org-left"> find current-word in project
- <br/>
-</td>
 </tr>
 
 </tbody>
@@ -418,7 +401,6 @@ like this
 
 ```json
 {
-  "use-cscope" : false,
   "filter": {
     "php-file-ext-list": [
       "php"
@@ -495,7 +477,6 @@ filter result is:
 for laravel example
 ```json
 {
-  "use-cscope": false,
   "filter": {
     "php-file-ext-list": [
       "php"
@@ -511,9 +492,6 @@ for laravel example
 ```
 
 
-
-### Disable Cscope Config
-set `use-cscope:  false` in `.ac-php-conf.json`
 
 
 ### Rebuild Tags

@@ -525,7 +525,7 @@ or
 
 
 
-## FAQ
+## FQA
 #  To approach a problem　
 
 If you want to tackle down a problem, you should

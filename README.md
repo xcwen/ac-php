@@ -51,7 +51,7 @@ extended:  Redis, Swoole
 * [tags](#tags)
 * [large php project config](#configue-php-file-search-for-large-project)
 * [disable cscope config](#disable-cscope-config)
-* [FQA](#fqa)
+* [FAQ](#faq)
 
 
 ##  Install

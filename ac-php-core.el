@@ -75,6 +75,7 @@
 
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)
+(defvar ac-php-gen-tags-flag  nil )
 
 (defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
   "PATH for tags to be saved, default value is \"~/.ac-php\" as base for
@@ -1262,7 +1263,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (setq file-last-time  (ac-php--get-timestamp  (nth 5 file-attr) ))
             (setq now  (ac-php--get-timestamp (current-time)  ))
             ;;; check time , and delete tags file if  time out
-            (if  (> (- now  file-last-time )  ac-php-auto-update-intval  )
+            (if  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
+                       (not ac-php-gen-tags-flag  )
+                       )
                 ( ac-php--remake-tags  project-root-dir  nil )
                 )
             )
@@ -2074,8 +2077,10 @@ Set this variable to nil to disable the lighter."
   :group 'ac-php
   (cond (ac-php-mode
          ;; Enable ac-php-mode
+         (setq ac-php-gen-tags-flag 1 )
          )
         (t
+         (setq ac-php-gen-tags-flag 0 )
          ;; Disable ac-php-mode
          ;; Disable semantic
          )))

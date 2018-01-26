@@ -491,7 +491,23 @@ for laravel example
 }
 ```
 
+You can also add the standard php library with [phpstorm stubs](https://github.com/JetBrains/phpstorm-stubs).
 
+Assuming you cloned this repo into <code>/usr/local/src/phpstorm-stubs</code> you base configuration will be:
+
+```json
+{
+  "filter": {
+    "php-file-ext-list": [
+      "php"
+    ],
+    "php-path-list": [
+        "/usr/local/src/phpstorm-stubs"
+    ],
+    "php-path-list-without-subdir": []
+  }
+}
+```
 
 
 ### Rebuild Tags

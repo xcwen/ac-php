@@ -197,6 +197,11 @@ touch .ac-php-conf.json
 <td class="org-left"> show define at point </td>
 </tr>
 
+<tr>
+<td class="org-left"> helm-ac-php-apropos </td>
+<td class="org-left"> search through all the definitions of a project with <a href="https://github.com/emacs-helm/helm">helm</a> </td>
+</tr>
+
 </tbody>
 </table>
 

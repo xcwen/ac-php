@@ -372,7 +372,7 @@ indexing the tags for.")
 
 
     (when tmp-name
-      (setq tmp-name  (if (ac-php--check-global-name tmp-name)  tmp-name (concat "\\" tmp-name )  ))
+      (setq tmp-name  (ac-php--as-global-name tmp-name) )
       (setq tmp-ret  (ac-php--get-item-from-funtion-map    tmp-name  function-map ))
       (ac-php--debug "11 tmp-ret %S" tmp-ret)
       (if tmp-ret
@@ -553,14 +553,14 @@ then this function split it to
 
            (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+\\("ac-php-word-re-str "\\)[ \t]*;") line-txt ))
           (if match-ret
-              (add-to-list 'ret-list (list    (nth 1 match-ret) (nth 2 match-ret)   ))
+              (add-to-list 'ret-list (list    (ac-php--as-global-name (nth 1 match-ret)) (nth 2 match-ret)   ))
             (progn
               (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]*;") line-txt ))
               (when match-ret
                 (let ((key-arr (s-split "\\\\" (nth 1 match-ret) ) ))
                   (ac-php--debug "key-arr %S " key-arr)
 
-                  (add-to-list 'ret-list (list  (nth 1 match-ret)  (nth (1- (length key-arr)) key-arr )   ))))))
+                  (add-to-list 'ret-list (list  (ac-php--as-global-name  (nth 1 match-ret))  (nth (1- (length key-arr)) key-arr )   ))))))
 
           (end-of-line))))
     ret-list ))
@@ -782,9 +782,7 @@ then this function split it to
             ;;(when  (not (string= "." field-value))
             (setq ret-str  (concat  ret-str  field-value )))
           ;;)
-          (if  ( ac-php--check-global-name  ret-str )
-              ret-str
-            (concat "\\" ret-str ))
+          (setq ret-str ( ac-php--as-global-name  ret-str ))
           )
       (if (>(length   key-list ) 1) "null" nil) )))
 
@@ -1504,6 +1502,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun  ac-php--check-global-name( name)
   (s-prefix-p  "\\"  name )
   )
+
+
+(defun  ac-php--as-global-name( name)
+  (if (ac-php--check-global-name name)
+      name
+    (concat   "\\" name )
+  ))
 
 (defun ac-php--get-check-class-list-ex ( class-name parent-namespace inherit-map class-map cur-list  )
   "DOCSTRING"

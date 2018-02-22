@@ -1273,6 +1273,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (if  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
                        (not ac-php-gen-tags-flag  )
                        )
+                (setq ac-php-gen-tags-flag  t )
                 ( ac-php--remake-tags  project-root-dir  nil )
                 )
             )
@@ -2091,10 +2092,10 @@ Set this variable to nil to disable the lighter."
   :group 'ac-php
   (cond (ac-php-mode
          ;; Enable ac-php-mode
-         (setq ac-php-gen-tags-flag 1 )
+         (setq ac-php-gen-tags-flag t )
          )
         (t
-         (setq ac-php-gen-tags-flag 0 )
+         (setq ac-php-gen-tags-flag nil )
          ;; Disable ac-php-mode
          ;; Disable semantic
          )))

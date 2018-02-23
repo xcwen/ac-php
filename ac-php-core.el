@@ -1270,10 +1270,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (setq file-last-time  (ac-php--get-timestamp  (nth 5 file-attr) ))
             (setq now  (ac-php--get-timestamp (current-time)  ))
             ;;; check time , and delete tags file if  time out
-            (if  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
+            (when  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
                        (not ac-php-gen-tags-flag  )
                        )
-                (setq ac-php-gen-tags-flag  t )
                 ( ac-php--remake-tags  project-root-dir  nil )
                 )
             )

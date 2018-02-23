@@ -1273,8 +1273,9 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (when  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
                        (not ac-php-gen-tags-flag  )
                        )
-                ( ac-php--remake-tags  project-root-dir  nil )
-                )
+              (setq ac-php-gen-tags-flag  t )
+              ( ac-php--remake-tags  project-root-dir  nil )
+              )
             )
 
           (list  project-root-dir tags-file )

@@ -56,12 +56,7 @@ class Testb  extends Testa {
         $q=new SplQueue ();
     }
 
-    /**
-     * define value same as function
-
-     * @return TestB
-     */
-    public function get_v1(){
+    public function get_v1() :self {
 
     }
 
@@ -82,7 +77,6 @@ class Testb  extends Testa {
     public function get_tt(){
 
         $testv = $this->get_v2($this->texx);
-        $this->get_v1();
 
         /** @var   \Test\Testa  $v */
 

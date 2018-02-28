@@ -45,11 +45,11 @@ class Testa  {
 
     /**
      *
-     * @return   Testa
+     * @return   Testa|null
      */
     public function get_v1(){
         return "sfa" ;
-
+        //$this->get_v1()->
         //$this->set_v1(1);
     }
     //声明函数返回值类型的写法和参数类型

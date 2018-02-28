@@ -77,6 +77,7 @@ class Testb  extends Testa {
     public function get_tt(){
 
         $testv = $this->get_v2($this->texx);
+        $this->get_v1() ;
 
         /** @var   \Test\Testa  $v */
 

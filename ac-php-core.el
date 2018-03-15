@@ -1178,9 +1178,21 @@ Non-nil SILENT will supress extra status info in the minibuffer."
      )))
 
 
+(defun ac-php--remake-tags (project-root-dir do-all-flag )
+  (let ()
+    (if (not ac-php-gen-tags-flag  )
+        (progn 
+          (setq ac-php-gen-tags-flag  t )
+          ( ac-php--remake-tags-ex  project-root-dir  do-all-flag )
+          )
+      (progn
+        (message "remake: doing ... " )
+        nil
+        )
+      )))
 
 ;;for auto check file
-(defun ac-php--remake-tags (project-root-dir do-all-flag )
+(defun ac-php--remake-tags-ex (project-root-dir do-all-flag )
   "DOCSTRING cache1-files: last edit files:  cache2-files: others"
   (let (  save-tags-dir all-file-list  last-phpctags-errmsg update-tag-file-list  )
 
@@ -1271,9 +1283,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
             (setq now  (ac-php--get-timestamp (current-time)  ))
             ;;; check time , and delete tags file if  time out
             (when  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
-                       (not ac-php-gen-tags-flag  )
                        )
-              (setq ac-php-gen-tags-flag  t )
               ( ac-php--remake-tags  project-root-dir  nil )
               )
             )

@@ -2091,7 +2091,7 @@ Set this variable to nil to disable the lighter."
 
 (defun ac-php-mode-line-project-status ()
   "Report status of current project index."
-  (format ":%02d%%%%%%%%" ac-php-phptags-index-progress   )
+  (format ":%02d%%%%" ac-php-phptags-index-progress   )
     )
 
 

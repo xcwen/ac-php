@@ -227,21 +227,10 @@ use  `M-x: company-complete` for complete
 
 
 ## Usage Spacemacs
-use  spacemacs layer `phpplus` from https://github.com/xcwen/spacemacs-config
-```bash
-cd ~
-git clone https://github.com/xcwen/spacemacs-config
+   company-php join to Spacemacs
 
-#copy `phpplus` to yours  config
+   https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 
-cp -rf  ~/spacemacs-config/layers/phpplus ~/.spacemacs.d/layers/
-
-#  rm layer  `php` from `dotspacemacs-configuration-layers`
-#  add layer  `phpplus` to `dotspacemacs-configuration-layers`
-
-# restart your emacs
-
-```
 
 ## Php Doc for complete
 define class memeber type:

@@ -137,6 +137,40 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 	(nreverse ac-php-company-list)))
 
+
+
+(defun company-ac-php-document (item)
+  (if (stringp item)
+      (let (doc  tag-type return-type access from-class)
+        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
+        (setq tag-type (get-text-property 0 'ac-php-tag-type item))
+        (setq return-type (get-text-property 0 'ac-php-return-type item))
+        (setq access (get-text-property 0 'ac-php-access item))
+        (setq from-class (get-text-property 0 'ac-php-from item))
+        (if ( ac-php--tag-name-is-function item)
+            (setq doc (concat item  doc ")" ) )
+          (setq doc item )
+          )
+
+
+
+        (cond
+         ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
+           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
+         (return-type
+          (format "%s  %s " return-type doc   ) )
+         (t
+          doc))
+        ))
+  )
+
+
+(defun company-ac-php--doc-buffer (candidate)
+  (let ((doc (company-ac-php-document candidate)))
+    (message "llllllllll" )
+    (when (s-present? doc)
+      (company-doc-buffer doc))))
+
 ;;;###autoload
 (defun company-ac-php-backend (command &optional arg &rest ignored)
   (interactive (list 'interactive))
@@ -146,6 +180,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 	(candidates (company-ac-php-candidate arg))
 	(annotation (company-ac-php-annotation arg))
 	(duplicates t)
+  (doc-buffer (company-ac-php--doc-buffer arg))
 	(post-completion (company-ac-php-backend-post-completion arg))
 	))
 
@@ -153,7 +188,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
   (let ((doc))
 	(when (ac-php--tag-name-is-function arg)
 	  (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
-	  (insert (concat doc ")"))
+	  (insert (concat  doc ")"))
 	  (when (bound-and-true-p smartparens-mode)
 		(delete-char 1))
 	  (company-template-c-like-templatify (concat arg doc ")")))))

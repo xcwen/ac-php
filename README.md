@@ -1,22 +1,22 @@
 # ac-php   [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)     [![MELPA Stable](http://stable.melpa.org/packages/ac-php-badge.svg)](http://stable.melpa.org/#/ac-php)
 # ac-php-core   [![MELPA](http://melpa.org/packages/ac-php-core-badge.svg)](http://melpa.org/#/ac-php-core)     
 
-emacs auto-complete for php
+emacs auto-completion for php
 
-support  `auto-complete`  and `company-mode`  and `spacemacs layer`
+supports  `auto-complete`  and `company-mode`  and `spacemacs layer`
 
-use [phpctags](https://github.com/xcwen/phpctags) gen tags
+use [phpctags](https://github.com/xcwen/phpctags) to generate tags
 
-and use `ac-php`  work with tags
+and use `ac-php`  to work with these tags
 
 
-* support system function
+* supports system functions
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/7.png)
 ------
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/8.png)
 
-* support system class
+* supports system classes
 
 core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ...
 
@@ -26,7 +26,7 @@ extended:  Redis, Swoole
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
 
-* support user self class system
+* supports user's own classes
 
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
@@ -46,17 +46,17 @@ extended:  Redis, Swoole
 * [Install](#install)
 * [Test](#test)
 * [Usage](#usage)
-* [Usage Company](#usage-company)
-* [Usage spacemacs](#usage-spacemacs)
+* [Usage with Company](#usage-company)
+* [Usage with spacemacs](#usage-spacemacs)
 * [php extern for complete](#php-doc-for-complete)
 * [tags](#tags)
 * [large php project config](#configue-php-file-search-for-large-project)
-* [FQA](#fqa)
+* [FAQ](#faq)
 
 
 ##  Install
 ### UBUNTU
-* install `php-cli` command for phpctags
+* install `php-cli` package for phpctags
 ```bash
 localhost:~/$ sudo apt-get install php-cli
 ```
@@ -123,11 +123,11 @@ emacs ~/ac-php/phptest/testb.php
         '(("melpa" . "https://melpa.org/packages/")) )
 ```
 
-"M-x" :`package-list-packages`  find  `ac-php` install
+"M-x": `package-list-packages` find `ac-php` there and install it
 
 * emacs php-mode function define
 
-work for auto-complete-mode, **Company-mode config at [here](#usage-company)**
+works for auto-complete-mode, **company-mode config is available [here](#usage-company)**
 
 ```elisp
   (add-hook 'php-mode-hook
@@ -146,7 +146,7 @@ work for auto-complete-mode, **Company-mode config at [here](#usage-company)**
 
 
 
-* create file ".ac-php-conf.json" in root of project
+* create file ".ac-php-conf.json" in root of your project
 
 ``` bash
 cd /project/to/path #  root dir of project
@@ -155,7 +155,7 @@ touch .ac-php-conf.json
 
 * DONE
 
-*  command
+*  commands
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
@@ -175,7 +175,7 @@ touch .ac-php-conf.json
 <tbody>
 <tr>
 <td class="org-left"> ac-php-remake-tags</td>
-<td class="org-left"> if source is changed, re run this command to update tags </td>
+<td class="org-left"> if source has been changed, run this command to update tags </td>
 </tr>
 
 <tr>
@@ -185,7 +185,7 @@ touch .ac-php-conf.json
 
 <tr>
 <td class="org-left"> ac-php-find-symbol-at-point</td>
-<td class="org-left"> goto define </td>
+<td class="org-left"> go to definition </td>
 </tr>
 
 <tr>
@@ -195,7 +195,7 @@ touch .ac-php-conf.json
 
 <tr>
 <td class="org-left"> ac-php-show-tip </td>
-<td class="org-left"> show define at point </td>
+<td class="org-left"> show definition at point </td>
 </tr>
 
 <tr>
@@ -209,9 +209,9 @@ touch .ac-php-conf.json
 
 
 
-## Usage Company
+## Usage with Company
 
-"M-x" :`package-list-packages`  find  `company-php` install
+"M-x": `package-list-packages`  find  `company-php` install
 
 ```elisp
 (add-hook 'php-mode-hook
@@ -222,19 +222,18 @@ touch .ac-php-conf.json
              (make-local-variable 'company-backends)
              (add-to-list 'company-backends 'company-ac-php-backend)))
 ```
-use  `M-x: company-complete` for complete
+use  `M-x: company-complete` to complete
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/company-1.png)
 
 
-## Usage Spacemacs
-   company-php join to Spacemacs
+## Usage with Spacemacs
 
    https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 
 
-## Php Doc for complete
-define class memeber type:
+## Php Doc completion
+define class member type:
 
 `public  $v1;`  =>
 ``` php
@@ -259,9 +258,8 @@ class Testb  extends Ta {
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
 
 
-define class function   return type:
+define function's return type using a doc comment:
 
-`public  function get_v1()`  =>
 ```php
 /**
  * @return classtype
@@ -270,17 +268,6 @@ public function get_v1()
 
 ```
 
-or define use php7 :
-
-```php
-public function get_v1() :classtype  {
-
-}
-
-
-```
-
-or define in doc:
 ```php
 /**
   * @method  classtype get_v1()
@@ -290,6 +277,14 @@ class Testb  extends Ta {
 }
 ```
 
+or define it using php7 typehints:
+
+```php
+public function get_v1(): classtype  {
+
+}
+
+```
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
 
 ![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
@@ -367,7 +362,7 @@ class Testa {
 
 
 ## Tags
-tags file location dir is in  `~/.ac-php/project_dir`   for example:  `~/.ac-php/tags-home-jim-ac-php-phptest/`
+tags file location dir is in  `~/.ac-php/project_dir`, for example:  `~/.ac-php/tags-home-jim-ac-php-phptest/`
 
 ```bash
 localhost:~/.ac-php$ tree tags-home-jim-ac-php-phptest/
@@ -386,13 +381,13 @@ tags-home-jim-ac-php-phptest/
 
 
 
-### Configue PHP file Search for Large Project
+### Configure PHP file searching for a large project
 
-config file name  is `.ac-php-conf.json`
+configuration file name  is `.ac-php-conf.json`
 
-when run `ac-php-remake-tags`  will `.ac-php-conf.json` set default json config when it's empty
+when you run `ac-php-remake-tags`  and your `.ac-php-conf.json` is empty, default json will be generated
 
-like this
+which looks like this
 
 ```json
 {
@@ -411,9 +406,9 @@ like this
 
 `php-file-ext-list`: file extern name list;
 
-`php-path-list`:  find php files *recursion*;
+`php-path-list`:  paths to search for php files *recursively*;
 
-`php-path-list-without-subdir`:  find php files  *no recursion* no find php from subdir;
+`php-path-list-without-subdir`:  paths to search for php files *excluding subdirs*;
 
 for example:
 
@@ -467,9 +462,9 @@ filter result is:
     │   └── 32.php
 ```
 
-`31.php` `33.php` will not gen tags;
+`31.php` `33.php` will be ignored during tag generation;
 
-for laravel example
+laravel example:
 ```json
 {
   "filter": {
@@ -508,9 +503,8 @@ Assuming you cloned this repo into <code>/usr/local/src/phpstorm-stubs</code> yo
 ### Rebuild Tags
 **if source is changed, re run this command to update tags**: `ac-php-remake-tags`
 
-if php file cannot pass from `phpctags`.
-
-you can find all errors in the `Messages` buffer. Fix it and get to the next error
+If something goes wrong with one of your files, you can find all errors in the `Messages` buffer.  
+Fix it and get to the next error.
 
 like this:
 ```
@@ -519,12 +513,12 @@ phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on l
 you need to fix an error in testa.php and re run `ac-php-remake-tags`
 
 
-if show:
+if it shows:
 ```
 no find file .ac-php-conf.json dir in path list :/home/jim/phptest/
 ```
 
-you need *create file ".ac-php-conf.json" in root of project*
+then you need to *create file ".ac-php-conf.json" in root of project*
 
 like this:
 
@@ -536,7 +530,7 @@ or
 
 
 
-## FQA
+## FAQ
 #  To approach a problem　
 
 If you want to tackle down a problem, you should

@@ -1203,25 +1203,13 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli and restart emacs " ))
     (if (not project-root-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
-    (when ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
-
-      ;;get last-save-info
-      (setq save-tags-dir (ac-php--get-tags-save-dir project-root-dir) )
-
-
-      (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)
-
-      ;; (let ((tmp-ret (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)))
-      ;;   (setq  last-phpctags-errmsg  (nth 0 tmp-ret) )
-      ;;   (setq  all-file-list (nth 1 tmp-ret) )
-      ;;   (setq  update-tag-file-list (nth 2 tmp-ret) )
-      ;;   )
-
-      ;; (if (not last-phpctags-errmsg );;SUCC
-      ;;     (ac-php--build-final-tags-from-each-el-tags  project-root-dir save-tags-dir all-file-list update-tag-file-list do-all-flag )
-      ;;   (progn ;;error
-      ;;     (message last-phpctags-errmsg)
-      ;;     nil))
+    (if ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
+        (progn
+          ;;get last-save-info
+          (setq save-tags-dir (ac-php--get-tags-save-dir project-root-dir) )
+          (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)
+          )
+      ( setq ac-php-gen-tags-flag nil )
       )
     ))
 

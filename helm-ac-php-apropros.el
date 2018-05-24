@@ -26,6 +26,7 @@
 
 (require 'pcase)
 (require 'ac-php)
+(require 'helm)
 
 (defun helm-ac-php--init ()
   (with-current-buffer (helm-candidate-buffer 'global)

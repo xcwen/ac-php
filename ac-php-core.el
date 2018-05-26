@@ -686,15 +686,6 @@ then this function split it to
                                       1 t
                                       (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
 
-          ;;check for @param  \Illuminate\Http\Request  $request
-          (unless first-class-name
-            (setq first-class-name
-                                     (ac-php-get-syntax-backward
-                                      (concat "@param[\t ]+"  "\\("
-                                              ac-php-word-re-str "\\)[\t ]+$" frist-key  )
-                                      1 t
-                                      (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
-
 
           ;;check  function xxx (classtype $val)
           ;;check   catch ( classtype $val)
@@ -704,6 +695,17 @@ then this function split it to
                                       (concat "\\(" ac-php-word-re-str "\\)" "[\t ]+\\(&\\)?$" frist-key  "[ \t]*[),]" )
                                       1 nil
                                       (save-excursion  (beginning-of-defun) (beginning-of-line)  ))))
+
+
+          ;;check for @param  \Illuminate\Http\Request  $request
+          (unless first-class-name
+            (setq first-class-name
+                  (ac-php-get-syntax-backward
+                   (concat "@param[\t ]+"  "\\("
+                           ac-php-word-re-str "\\)[\t ]+$" frist-key  )
+                   1 t
+                   (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
+
 
 
 
@@ -1181,7 +1183,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--remake-tags (project-root-dir do-all-flag )
   (let ()
     (if (not ac-php-gen-tags-flag  )
-        (progn 
+        (progn
           (setq ac-php-gen-tags-flag  t )
           ( ac-php--remake-tags-ex  project-root-dir  do-all-flag )
           )
@@ -1194,9 +1196,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 ;;for auto check file
 (defun ac-php--remake-tags-ex (project-root-dir do-all-flag )
   "DOCSTRING cache1-files: last edit files:  cache2-files: others"
-  (let (  save-tags-dir all-file-list  last-phpctags-errmsg update-tag-file-list  )
+  (let (  save-tags-dir all-file-list  last-phpctags-errmsg update-tag-file-list
+                        (file-name (buffer-file-name) ) )
 
-    (message "do remake %s"  project-root-dir )
+    ;; if location at  vendor dir
+    (when  (and  file-name (s-match "/vendor/" file-name ))
+      (setq do-all-flag t))
+
+    (message "do remake %s do-all-flag :%s "  project-root-dir do-all-flag  )
 
     (unless ( f-exists? ac-php-ctags-executable    )
       (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))

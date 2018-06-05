@@ -1817,9 +1817,14 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php--goto-local-var-def ( local-var )
   "goto local-var like vim - gd"
   (let ( )
+    (ac-php--debug " local-var %s " local-var )
     (ac-php-location-stack-push)
     (beginning-of-defun)
+    
     (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
+    (while  (not (ac-php-check-not-in-string-or-comment (point )) )
+      (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
+      )
     ;;(ac-php-location-stack-push)
     ))
 
@@ -1842,10 +1847,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (unless symbol-ret
       (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t))
       )
-    (ac-php--debug "33goto  %s"  symbol-ret )
+    (ac-php--debug "33goto  %s %s"  symbol-ret local-var-flag )
 
 
-    (when symbol-ret
+    (if symbol-ret
       (progn
         (ac-php--debug "goto  %s"  symbol-ret )
         (setq type (car symbol-ret ))

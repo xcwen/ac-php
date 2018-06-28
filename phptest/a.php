@@ -13,6 +13,15 @@ class A {
         \trim("s");
     }
 };
+
+interface C{
+    function C();
+}
+interface B extends C{
+    function B();
+}
+
+
 // PHP 7+ code
 $util->setLogger(new class {
         public function log($msg)

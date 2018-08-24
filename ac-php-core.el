@@ -1188,7 +1188,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           ( ac-php--remake-tags-ex  project-root-dir  do-all-flag )
           )
       (progn
-        (message "remake: doing ... " )
+        (message "remake: doing ...  [maybe you need restart emacs for remake tags]" )
         nil
         )
       )))

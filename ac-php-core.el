@@ -207,6 +207,7 @@ indexing the tags for.")
 (defun ac-php--get-clean-node( paser-data &optional check-len )
     "clean  before ';'  "
     (let ((i 0 )  ret-data  item )
+      (ac-php--debug "clean-node start:%S"  paser-data)
       (unless check-len
         (setq check-len (length paser-data) ) )
     (while (< i check-len )
@@ -409,9 +410,9 @@ then this function split it to
 
       (setq line-string  (replace-regexp-in-string   "\".*?\"" "String" line-string))
       (setq line-string  (replace-regexp-in-string   "[.]"   ";"       line-string))
-      ;;  do : without ::
+      (ac-php--debug "line-string: %s " line-string  )
 
-      (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   ";\\1"  line-string))
+      (setq line-string  (replace-regexp-in-string   "\\([^:]\\):\\([^:]\\)"   "\\1;\\2"  line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*->[ \t]*" "."       line-string))
       (setq line-string  (replace-regexp-in-string   "[ \t]*::[ \t]*" "::."       line-string))
 
@@ -420,6 +421,7 @@ then this function split it to
       (setq line-string  (replace-regexp-in-string   "\\$" ""  line-string))
       (setq line-string  (replace-regexp-in-string   "@\\|!?=>?\\|<=?\\|>=?\\|=" ";"  line-string))
       (setq line-string  (replace-regexp-in-string    "[&|!,?^+/*\-]"  ";"  line-string))
+      (ac-php--debug "line-string 22233: %s " line-string  )
 
 
       ;;split line-string with "." ,but add "." as an element at its position in list

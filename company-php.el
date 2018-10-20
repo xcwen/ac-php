@@ -176,7 +176,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
   (interactive (list 'interactive))
   (cl-case command
 	(interactive (company-begin-backend 'company-ac-php-backend))
-	(prefix (company-ac-php--prefix))
+	(prefix (when (derived-mode-p 'php-mode) (company-ac-php--prefix)))
 	(candidates (company-ac-php-candidate arg))
 	(annotation (company-ac-php-annotation arg))
 	(duplicates t)

@@ -2119,48 +2119,52 @@ Set this variable to nil to disable the lighter."
   ;;检查是类还是 符号
   (let ( (tags-data  (ac-php-get-tags-data )  )
          symbol-ret   type  doc class-name access return-type member-info tag-name function-item file-pos member-info-len )
+    (when tags-data
 
-    (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data ))
-    (when symbol-ret
-      (setq type (car symbol-ret ))
-      (setq member-info (nth 3 symbol-ret))
-      (cond
-       ((string= type "class_member")
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data ))
+      (when symbol-ret
+        (setq type (car symbol-ret ))
+        (setq member-info (nth 3 symbol-ret))
+        (cond
+         ((string= type "class_member")
 
-        (setq member-info-len (length member-info ) )
-        (setq tag-name  (aref  member-info 1))
-        (if ( string= (aref member-info 0 )  "m" )
-          (setq  doc   (concat
-                        (propertize  tag-name  'face 'font-lock-function-name-face)
-                          (aref  member-info 2) ")" )   )
-          (setq  doc
-                 (propertize  tag-name  'face 'font-lock-variable-name-face)
-                 ))
+          (setq member-info-len (length member-info ) )
+          (setq tag-name  (aref  member-info 1))
+          (if ( string= (aref member-info 0 )  "m" )
+              (setq  doc   (concat
+                            (propertize  tag-name  'face 'font-lock-function-name-face)
+                            (aref  member-info 2) ")" )   )
+            (setq  doc
+                   (propertize  tag-name  'face 'font-lock-variable-name-face)
+                   ))
 
-        (setq  class-name    (ac-php--get-array-string member-info  member-info-len 5) )
-        (setq  return-type   (aref member-info 4) )
-        (setq  access   (ac-php--get-array-string member-info  member-info-len 6)  )
-        (concat
-         (propertize  access 'face 'font-lock-keyword-face ) "  " class-name "::" doc   ":" return-type   )
+          (setq  class-name    (ac-php--get-array-string member-info  member-info-len 5) )
+          (setq  return-type   (aref member-info 4) )
+          (setq  access   (ac-php--get-array-string member-info  member-info-len 6)  )
+          (concat
+           (propertize  access 'face 'font-lock-keyword-face ) "  " class-name "::" doc   ":" return-type   )
 
-        )
-       ((string= type "user_function")
-        (setq function-item (nth 3 symbol-ret))
-        (setq tag-name  (aref  function-item 1 ))
-        (if ( ac-php--tag-name-is-function   tag-name )
-            (setq  doc   (concat
-                          (propertize (substring  tag-name 0 -1 ) 'face 'font-lock-function-name-face)
-                          "(" (aref function-item 2) ")" )   )
-          (setq  doc
-                 (propertize (aref function-item 2) 'face 'font-lock-variable-name-face)))
+          )
+         ((string= type "user_function")
+          (setq function-item (nth 3 symbol-ret))
+          (setq tag-name  (aref  function-item 1 ))
+          (if ( ac-php--tag-name-is-function   tag-name )
+              (setq  doc   (concat
+                            (propertize (substring  tag-name 0 -1 ) 'face 'font-lock-function-name-face)
+                            "(" (aref function-item 2) ")" )   )
+            (setq  doc
+                   (propertize (aref function-item 2) 'face 'font-lock-variable-name-face)))
 
-        (setq file-pos (aref function-item 3) )
+          (setq file-pos (aref function-item 3) )
 
-        (setq  return-type (aref function-item 4) )
+          (setq  return-type (aref function-item 4) )
 
-        (concat  doc ":"  return-type   )
+          (concat  doc ":"  return-type   )
 
-        )) )))
+          )) )
+
+      )
+    ))
 
 (defun ac-php-show-cur-project-info ()
   "show current project ac-php info "

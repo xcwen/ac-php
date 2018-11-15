@@ -1301,6 +1301,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (setq config-file-name (f-join project-root-dir ".ac-php-conf.json"  ) )
     (when(and
           (not (s-starts-with-p  "/ssh:" config-file-name ))
+          (not (s-starts-with-p  "/server:" config-file-name ))
           (or (not (f-exists?  config-file-name ) )
               ( =  (f-size  config-file-name ) 0 )))
       (ac-php--json-save-data config-file-name

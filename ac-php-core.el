@@ -76,6 +76,17 @@
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)
 (defvar ac-php-gen-tags-flag  nil )
+(defvar ac-php--php-key-list
+  '(
+    "public"
+    "class"
+    "namespace"
+    "protected"
+    "private"
+    "function"
+    "while"
+    "extends"
+    ))
 
 (defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
   "PATH for tags to be saved, default value is \"~/.ac-php\" as base for
@@ -83,6 +94,7 @@ directories.
 
 This path get extended with the directory tree of the project that you are
 indexing the tags for.")
+
 
 (defvar ac-php-project-root-dir-use-truename t
   "  project-root-dir use truename  no link  ")
@@ -917,6 +929,17 @@ then this function split it to
 
                   )
                 )))
+
+          ;;; key word
+          (dolist  (k ac-php--php-key-list)
+             (when( and ( s-prefix-p  cur-word  k ) (not  (string=   k cur-word   )) )
+               (setq key-word   k   )
+               (setq key-word (propertize key-word 'ac-php-help  "" ))
+               (setq key-word (propertize key-word 'ac-php-return-type   "" ))
+               (setq key-word (propertize key-word 'ac-php-tag-type "" ))
+               (setq key-word (propertize key-word 'summary   "" ))
+               (push key-word ret-list  )
+               ))
 
           ;;cur namespace
           (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace   )
@@ -1825,7 +1848,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (ac-php--debug " local-var %s " local-var )
     (ac-php-location-stack-push)
     (beginning-of-defun)
-    
+
     (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
     (while  (not (ac-php-check-not-in-string-or-comment (point )) )
       (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b

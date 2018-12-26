@@ -1005,10 +1005,9 @@ then this function split it to
 (defun  ac-php--get-cur-function-vars( )
   (let ( txt start-pos end-pos  var-list  ret-map  var-name first-char )
     (save-excursion
+      (setq  end-pos (- (point) 1)   )
       (beginning-of-defun )
       (setq  start-pos (point)   )
-      (end-of-defun )
-      (setq  end-pos (point)   )
       (setq txt (buffer-substring-no-properties start-pos end-pos ))
       (setq var-list (s-match-strings-all "[$\"'][0-9_a-z]*" txt) )
       (setq ret-map (make-hash-table :test  'case-fold ))

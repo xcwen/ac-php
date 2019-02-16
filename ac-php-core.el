@@ -86,6 +86,8 @@
     "function"
     "while"
     "extends"
+    "return"
+    "static"
     ))
 
 (defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")

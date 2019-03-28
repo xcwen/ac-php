@@ -24,10 +24,9 @@
 ;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
 
 ;;; Commentary:
-;; Auto Completion source for php.
-;; Only support  Linux and OSX , not support Windows
-;; More info and **example** at : https://github.com/xcwen/ac-php
 ;;
+;; Auto Completion source for php.  Known to work on Linux and macOS systems.
+;; For more info and examples see URL `https://github.com/xcwen/ac-php'
 
 ;;; Code:
 
@@ -35,26 +34,43 @@
 (require 's) ;;https://github.com/magnars/s.el
 (require 'f) ;;https://github.com/rejeep/f.el
 
-
-;;(require 'php-mode)
 (require 'popup)
 (require 'dash)
 (require 'eldoc)
 
-(defvar ac-php-php-executable (executable-find "php") )
+;;; Customization
+
+;;;###autoload
+(defgroup ac-php nil
+  "ac-php preferences related to the completion for PHP."
+  :tag "AC PHP"
+  :prefix "ac-php-"
+  :group 'php
+  :group 'completion
+  :link '(url-link :tag "GitHub Page" "https://github.com/xcwen/ac-php")
+  :link '(emacs-commentary-link :tag "Commentary" "ac-php"))
+
+(defcustom ac-php-php-executable (executable-find "php")
+  "Set the PHP executable path."
+  :group 'ac-php
+  :type 'string)
+
+(defcustom ac-php-debug-flag nil
+  "Non-nil means enable verbose mode on processing auto complete."
+  :group 'ac-php
+  :type 'boolean)
 
 (defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name)))
 (defvar ac-php-ctags-executable (concat   ac-php-root-directory "phpctags"))
 (defvar ac-php-common-json-file (concat   ac-php-root-directory "ac-php-comm-tags-data.el"))
 
-
-(defvar ac-php-debug-flag nil)
-
-
-(defmacro ac-php--debug (  fmt-str &rest args )
+(defmacro ac-php--debug (format-string &rest args)
+  "Display a debug message at the bottom of the screen.
+The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
+is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
+refer to `message' function."
   `(if ac-php-debug-flag
-       (message (concat "[AC-PHP-DEBUG]:" ,fmt-str ) ,@args )
-       ))
+       (message (concat "[AC-PHP-DEBUG]: " ,format-string) ,@args)))
 
 (defvar ac-php-use-cscope-flag nil)
 

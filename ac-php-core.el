@@ -26,14 +26,17 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
+
 ;; Auto Completion source for PHP.  Known to work on Linux and macOS systems.
-;; For more info and examples see URL `https://github.com/xcwen/ac-php'
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
 ;; Thanks to:
 ;; - auto-complete-clang
 ;; - auto-java-complete (ac-php-remove-unnecessary-items-4-complete-method)
 ;; - rtags (ac-php-location-stack-index)
+;;
+;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
+;; (see URL `https://github.com/xcwen/ac-php/issues')
 
 ;;; Code:
 
@@ -50,10 +53,9 @@
 ;;;###autoload
 (defgroup ac-php nil
   "Auto Completion source for PHP."
-  :tag "Auto Complete"
+  :tag "AC PHP"
   :prefix "ac-php-"
-  :group 'php
-  :group 'completion
+  :group 'auto-complete
   :link '(url-link :tag "GitHub Page" "https://github.com/xcwen/ac-php")
   :link '(emacs-commentary-link :tag "Commentary" "ac-php"))
 

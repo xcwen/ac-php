@@ -1,13 +1,16 @@
 ;;; ac-php.el --- auto-completion source for php
 
-;; Copyright (C) 2014 - 2016 jim
+;; Copyright (C) 2014-2019 jim
 
-;; Author: xcwenn@qq.com [https://github.com/xcwen]
+;; Author: jim <xcwenn@qq.com>
+;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0")  )
+;; Package-Requires: ((ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
 
+;; This file is not part of GNU Emacs.
 
+;;; License
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,51 +25,37 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
-
 ;;; Commentary:
-;; Auto Completion source for php.
-;; support  Linux and OSX,  but windows need more test
-;; More info and **example** at : https://github.com/xcwen/ac-php
+
+;; Auto Completion source for PHP.  Known to work on Linux and macOS systems.
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
-;; ============================================== For add
-;; add to .emacs:
+;; Thanks to:
+;; - auto-complete-clang
+;; - auto-java-complete (ac-php-remove-unnecessary-items-4-complete-method)
+;; - rtags (ac-php-location-stack-index)
 ;;
-;;(add-hook 'php-mode-hook '(lambda ()
-;;                            (auto-complete-mode t)
-;;                            (require 'ac-php)
-;;                            (setq ac-sources  '(ac-source-php ) )
-;;                            (yas-global-mode 1)
+;; Usage:  Put this package in your Emacs Lisp path (eg. site-lisp) and add to
+;; your .emacs file:
 ;;
-;;                            (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-;;                            (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-;;                            ))
+;;   (add-hook 'php-mode-hook
+;;             '(lambda ()
+;;                (auto-complete-mode t)
+;;                (require 'ac-php)
+;;                (setq ac-sources '(ac-source-php))
+;;                (yas-global-mode 1)
 ;;
+;;                (define-key php-mode-map (kbd "C-]")
+;;                  'ac-php-find-symbol-at-point)
+;;                (define-key php-mode-map (kbd "C-t")
+;;                  'ac-php-location-stack-back)))
 ;;
-;; ============================================== For test
-;; save it as .emacs  then restart emacs  and open php file to test
+;; Many options available under Help:Customize
+;; Options specific to ac-php are in
+;;   Convenience/Completion/Auto Complete/AC PHP
 ;;
-;;(setq package-archives
-;;      '(("melpa" . "https://melpa.org/packages/")) )
-;;
-;;(package-initialize)
-;;(unless (package-installed-p 'ac-php )
-;;  (package-refresh-contents)
-;;  (package-install 'ac-php )
-;;  )
-;;(require 'cl)
-;;(require 'php-mode)
-;;(add-hook 'php-mode-hook '(lambda ()
-;;                            (auto-complete-mode t)
-;;                            (require 'ac-php)
-;;                            (setq ac-sources  '(ac-source-php ) )
-;;                            (yas-global-mode 1)
-;;
-;;                            (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-;;                            (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back   ) ;go back
-;;                            ))
-;;
-;;
+;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
+;; (see URL `https://github.com/xcwen/ac-php/issues')
 
 ;;; Code:
 
@@ -77,12 +66,12 @@
 (defface ac-php-candidate-face
   '((t (:background "lightgray" :foreground "navy")))
   "Face for php candidate"
-  :group 'auto-complete)
+  :group 'ac-php)
 
 (defface ac-php-selection-face
   '((t (:background "navy" :foreground "white")))
   "Face for the php selected candidate."
-  :group 'auto-complete)
+  :group 'ac-php)
 
 
 (defun ac-php-prefix ()
@@ -253,7 +242,6 @@
   (setq  ac-php-prefix-str  ac-prefix )
   (ac-php-candidate )
     )
-
 
 
 (eval  '(ac-define-source php

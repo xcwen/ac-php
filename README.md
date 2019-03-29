@@ -1,371 +1,267 @@
-# ac-php   [![MELPA](http://melpa.org/packages/ac-php-badge.svg)](http://melpa.org/#/ac-php)     [![MELPA Stable](http://stable.melpa.org/packages/ac-php-badge.svg)](http://stable.melpa.org/#/ac-php)
-# ac-php-core   [![MELPA](http://melpa.org/packages/ac-php-core-badge.svg)](http://melpa.org/#/ac-php-core)     
+# ac-php
 
-emacs auto-completion for php
+A GNU Emacs auto completion source for the PHP.
 
-supports  `auto-complete`  and `company-mode`  and `spacemacs layer`
+---
 
-use [phpctags](https://github.com/xcwen/phpctags) to generate tags
+This repository contains:
 
-and use `ac-php`  to work with these tags
-
-
-* supports system functions
-
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/7.png)
-------
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/8.png)
-
-* supports system classes
-
-core: SPL SplFileInfo DOMDocument  SimpleXMLElement   ...
-
-extended: PDO Http mysqli Imagick  SQLite3 Memcache  ...
-
-extended:  Redis, Swoole
-
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/6.png)
-
-* supports user's own classes
-
-
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/4.png)
-
-
-* example:
-
-![example.gif](https://raw.githubusercontent.com/xcwen/ac-php/master/images/ac-php.gif)
-
-
-
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/chain-call.png)
-
+- **ac-php-core**, the core library of the ac-php
+  [![MELPA][:badge-ac-php-core:]][:project-ac-php-core:]
+  [![MELPA Stable][:badge-ac-php-core-s:]][:project-ac-php-core-s:]
+- **ac-php**, a frontend for the `auto-complete`
+  [![MELPA][:badge-ac-php:]][:project-ac-php:]
+  [![MELPA Stable][:badge-ac-php-s:]][:project-ac-php-s:]
+- **company-php**, a frontend for the `company-mode`
+  [![MELPA][:badge-company-php:]][:project-company-php:]
+  [![MELPA Stable][:badge-company-php-s:]][:project-company-php-s:]
+- **helm-ac-php-apropros**, an apropos functionnality using the ac-php index and `helm` as interface
 
 ## Table of Contents
 
-* [Install](#install)
-* [Test](#test)
+* [Features](#features)
+* [Install](#installation)
+  * [Using MELPA](#using-melpa)
 * [Usage](#usage)
-* [Usage with Company](#usage-company)
-* [Usage with spacemacs](#usage-spacemacs)
-* [php extern for complete](#php-doc-for-complete)
-* [tags](#tags)
-* [large php project config](#configue-php-file-search-for-large-project)
+  * [Commands](#commands)
+  * [auto-complete](#auto-complete)
+  * [company-mode](#company-mode)
+  * [Spacemacs](#spacemacs)
+  * [PHPDoc annotations](#phpdoc-annotations)
+  * [Working with tags](#working-with-tags)
+  * [Using configuration file](#using-configuration-file)
+  * [Rebuilding tags](#rebuilding-tags)
 * [FAQ](#faq)
+* [License](#license)
 
+## Features
 
-##  Install
-### UBUNTU
-* install `php-cli` package for phpctags
-```bash
-localhost:~/$ sudo apt-get install php-cli
+- Currently ships with [Spacemacs][:gh-spacemacs:]
+- Supports of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:] and [`helm`][:gh-helm:]
+- Auto Completion for built-in extensions
+  - Pdo
+  - SPL
+  - mysqli
+  - SQLite3
+  - ...
+- Auto Completion for PECL extesnions
+  - Redis
+  - Imagick
+  - Swoole
+  - Memcache
+  - ...
+- Auto Completion for built-in classes
+  - SplFileInfo
+  - DOMDocument
+  - SimpleXMLElement
+  - ...
+- Auto Completion for user defined classes
+- Auto Completion for built-in functions
+- Supports of PHPDoc annotations
+
+## Installation
+
+Prerequisite packages are:
+
+- php-cli
+- php-mode
+
+### Using MELPA
+
+The best way of installing ac-php, at least for GNU Emacs 24, is to use the packaging system. Add MELPA or MELPA Stable to the list of repositories to access this mode. For those who want only formal, tagged releases use MELPA Stable:
+
+``` elisp
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+(package-initialize)
+```
+For those who want rolling releases as they happen use MELPA :
+
+``` elisp
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
 ```
 
+and then use `M-x package-refresh-contents` and `M-x package-list-packages` to get to
+the package listing and install `ac-php` from there. MELPA tracks this Git repository
+and updates relatively soon after each commit or formal release.  For more detail on
+setting up see [MELPA Getting Started][:melpa-gs:].
 
-### MAC OSX
-```bash
- brew install homebrew/php/php56
-```
+You can install `ac-php` manually by adding following to your init file :
 
-### check if `php`  exists
-```bash
-localhost:~$ php --version
-PHP 5.5.20 (cli) (built: Feb 25 2015 23:30:53)
-Copyright (c) 1997-2014 The PHP Group
-Zend Engine v2.5.0, Copyright (c) 1998-2014 Zend Technologies
-
-
-##  Test
-
-
-```bash
-#backup old .emacs
-cp ~/.emacs ~/.emacs.bak
-```
-
-save it as `~/.emacs`
-```elisp
-  (setq package-archives
-        '(("melpa" . "https://melpa.org/packages/")) )
-  (package-initialize)
-  (unless (package-installed-p 'ac-php )
+``` elisp
+(unless (package-installed-p 'ac-php)
     (package-refresh-contents)
-    (package-install 'ac-php )
-    )
-  (require 'cl)
-  (require 'php-mode)
-  (add-hook 'php-mode-hook
-            '(lambda ()
-               (auto-complete-mode t)
-               (require 'ac-php)
-               (setq ac-sources  '(ac-source-php ) )
-               (yas-global-mode 1)
-               (ac-php-core-eldoc-setup ) ;; enable eldoc
-
-               (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back)    ;go back
-               ))
+    (package-install 'ac-php))
 ```
 
-```bash
-cd ~/
-git clone https://github.com/xcwen/ac-php/
-#test php files in ~/ac-php/phptest
-#open file for test
-emacs ~/ac-php/phptest/testb.php
-```
+## Usage
 
-# Usage
+### Commands
 
-* install `ac-php` from melpa
-```elisp
-  (setq package-archives
-        '(("melpa" . "https://melpa.org/packages/")) )
-```
+| Command                       | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| `ac-php-remake-tags`          | Run this command to update tags if source has been changed |
+| `ac-php-remake-tags-all`      | Run this command if you find an error                      |
+| `ac-php-find-symbol-at-point` | Jump to definition                                         |
+| `ac-php-location-stack-back`  | Return back                                                |
+| `ac-php-show-tip`             | Show definition at point                                   |
+| `helm-ac-php-apropos`         | Search through all the definitions of a project with helm  |
 
-"M-x": `package-list-packages` find `ac-php` there and install it
+### auto-complete
 
-* emacs php-mode function define
+1. Add hook as follows :
 
-works for auto-complete-mode, **company-mode config is available [here](#usage-company)**
+``` elisp
+(require 'php-mode)
 
-```elisp
-  (add-hook 'php-mode-hook
-            '(lambda ()
-               (auto-complete-mode t)
-               (require 'ac-php)
-               (setq ac-sources  '(ac-source-php ) )
-               (yas-global-mode 1)
-
-               (ac-php-core-eldoc-setup ) ;; enable eldoc
-               (define-key php-mode-map  (kbd "C-]") 'ac-php-find-symbol-at-point)   ;goto define
-               (define-key php-mode-map  (kbd "C-t") 'ac-php-location-stack-back)    ;go back
-               ))
-```
-
-
-
-
-* create file ".ac-php-conf.json" in root of your project
-
-``` bash
-cd /project/to/path #  root dir of project
-touch .ac-php-conf.json
-```
-
-* DONE
-
-*  commands
-
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="org-left" />
-
-<col  class="org-left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="org-left">cmd</th>
-<th scope="col" class="org-left">info</th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td class="org-left"> ac-php-remake-tags</td>
-<td class="org-left"> if source has been changed, run this command to update tags </td>
-</tr>
-
-<tr>
-<td class="org-left"> ac-php-remake-tags-all</td>
-<td class="org-left"> **if you find an error, run it and retest**</td>
-</tr>
-
-<tr>
-<td class="org-left"> ac-php-find-symbol-at-point</td>
-<td class="org-left"> go to definition </td>
-</tr>
-
-<tr>
-<td class="org-left"> ac-php-location-stack-back</td>
-<td class="org-left"> go back </td>
-</tr>
-
-<tr>
-<td class="org-left"> ac-php-show-tip </td>
-<td class="org-left"> show definition at point </td>
-</tr>
-
-<tr>
-<td class="org-left"> helm-ac-php-apropos </td>
-<td class="org-left"> search through all the definitions of a project with <a href="https://github.com/emacs-helm/helm">helm</a> </td>
-</tr>
-
-</tbody>
-</table>
-
-
-
-
-## Usage with Company
-
-"M-x": `package-list-packages`  find  `company-php` install
-
-```elisp
 (add-hook 'php-mode-hook
           '(lambda ()
+             ;; Enable auto-complete-mode
+             (auto-complete-mode t)
+
+             (require 'ac-php)
+             (setq ac-sources '(ac-source-php))
+
+             ;; As an example (optional)
+             (yas-global-mode 1)
+
+             ;; To enable eldoc support (optional)
+             (ac-php-core-eldoc-setup )
+
+             ;; Jump to definition (optional)
+             (define-key php-mode-map (kbd "C-]")
+               'ac-php-find-symbol-at-point)
+
+             ;; Return back (optional)
+             (define-key php-mode-map (kbd "C-t")
+               'ac-php-location-stack-back)))
+```
+
+2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root :
+
+```sh
+$ cd /project/to/poject/root
+$ touch .ac-php-conf.json
+```
+
+And use `M-x company-complete` to complete.
+
+### company-mode
+
+1. Add hook as follows :
+
+``` elisp
+(require 'php-mode)
+
+(add-hook 'php-mode-hook
+          '(lambda ()
+             ;; Enable company-mode
              (require 'company-php)
              (company-mode t)
-             (ac-php-core-eldoc-setup) ;; enable eldoc
+
+             ;; To enable eldoc support (optional)
+             (ac-php-core-eldoc-setup )
+
              (make-local-variable 'company-backends)
              (add-to-list 'company-backends 'company-ac-php-backend)))
 ```
-use  `M-x: company-complete` to complete
 
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/company-1.png)
+2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root :
 
-
-## Usage with Spacemacs
-
-   https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
-
-
-## Php Doc completion
-define class member type:
-
-`public  $v1;`  =>
-``` php
-/**
- * @var classtype
- */
-public $v1;
+```sh
+$ cd /project/to/poject/root
+$ touch .ac-php-conf.json
 ```
 
-if you won't define `public $v1` you can define it in a class comment, like this =>
+And use `M-x company-complete` to complete.
+
+### Spacemacs
+
+To use ac-php with Spacemacs please refer to :
+https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
+
+### PHPDoc annotations
+
+ac-php supports of PHPDoc annotations. Thus auto completion should work for:
+
+
+**Property type hints**
+
 ```php
 /**
-  * @property  \Test\Testa  $v1
-  * @method  int add($a,$b)
-  * @use  \Test\TestC
+ * @var \Acme\Services\HelloService
  */
-class Testb  extends Ta {
-...
+public $hello;
+```
+
+**Invisible (magic) members**
+
+```php
+/**
+ * @property \Acme\Services\HelloService $hello
+ */
+class Test
+{
+    // ...
 }
 ```
 
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/5.png)
-
-
-define function's return type using a doc comment:
+**Return type hins**
 
 ```php
 /**
- * @return classtype
+ * @return \Acme\Services\HelloService
  */
 public function get_v1()
 
 ```
 
+**Invisible (magic) methods**
+
 ```php
 /**
-  * @method  classtype get_v1()
+ * @method \Acme\Services\HelloService hello()
  */
-class Testb  extends Ta {
-...
+class Test
+{
+    // ...
 }
 ```
 
-or define it using php7 typehints:
+**PHP 7 type hints**
 
 ```php
-public function get_v1(): classtype  {
-
-}
-
-```
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/2.png)
-
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/3.png)
-
-
-define variable: (**if function or member has no defined return value then you need to define it**)
-
-`$value=ff();` =>
-```php
-/** @var  Testa $value */
-$value=ff();
-```
-
-like this
-```php
-/**
-   class define ..
-   @property  \Test\Testa  $v8
- */
-class Testa {
-
-    /**
-     * @var int;
-     */
-    const CON=1;
-
-
-    /**
-     * @var Testb;
-     */
-    public  $v1;
-    /**
-     * @var \Test\TestC;
-     */
-    public  $v2;
-    public function set_v1($v){
-
-        //for complete system function
-        $v=trim($v);
-
-        $c=new Testb();
-        //can complete
-        $c->get_v2();
-
-        //for complete member
-        $this->v1=$v;
-
-
-        //for complete function  return type
-        $this-> get_v2()->testC();
-
-        //for complete field from comment
-        $this->v8->testA();
-
-        //for complete system class
-        $q=new SplQueue ();
-        $q->push(11);
-
-       //jump for class function point
-        $f=array($this->v8, "test_A" );
-        $f();
-
-    }
-
-    /**
-     *
-     * @return  \Test\TestC;
-     */
-    public function get_v2(){
-        $this->v2;
-    }
+public function hello(): \Acme\Services\HelloService
+{
+    // ...
 }
 ```
-![](https://raw.githubusercontent.com/xcwen/ac-php/master/images/1.png)
 
+**Variable type hins**
 
-## Tags
-tags file location dir is in  `~/.ac-php/project_dir`, for example:  `~/.ac-php/tags-home-jim-ac-php-phptest/`
+```php
+/** @var \Acme\Services\HelloService $hello */
+$hello = hello();
+```
+
+Note: if a function or a class member has no defined return value then you need to define it using annotation.
+
+### Working with tags
+
+ac-php uses its own tags format. By default all tags located at `~/.ac-php/tags-<project-directory>`.
+For example, if the real path of the project is `/home/jim/ac-php/phptest`, then tags will be placed at
+`~/.ac-php/tags-home-jim-ac-php-phptest/`.
+
+And you can redefine the base path (`~/.ac-php`) using `ac-php-tags-path` variable.
+
+The tags directory structure looks loke this:
 
 ```bash
-localhost:~/.ac-php$ tree tags-home-jim-ac-php-phptest/
+$ tree ~/.ac-php/tags-home-jim-ac-php-phptest
 tags-home-jim-ac-php-phptest/
 ├── cache-files.json
 ├── tags-data-cache2.el
@@ -379,15 +275,13 @@ tags-home-jim-ac-php-phptest/
 1 directory, 8 files
 ```
 
+### Using configuration file
 
+ac-php uses per-project configuration located in the file called `.ac-php-conf.json`.
+This file is mandatory for normal operation of auto completion.
 
-### Configure PHP file searching for a large project
-
-configuration file name  is `.ac-php-conf.json`
-
-when you run `ac-php-remake-tags`  and your `.ac-php-conf.json` is empty, default json will be generated
-
-which looks like this
+When you run `ac-php-remake-tags` and your `.ac-php-conf.json` is empty, default json will be generated.
+Its contents will be similar to:
 
 ```json
 {
@@ -403,12 +297,9 @@ which looks like this
 }
 ```
 
-
-`php-file-ext-list`: file extern name list;
-
-`php-path-list`:  paths to search for php files *recursively*;
-
-`php-path-list-without-subdir`:  paths to search for php files *excluding subdirs*;
+- `php-file-ext-list`: file extern name list
+- `php-path-list`:  base path for *recursive* file search to collect tags
+- `php-path-list-without-subdir`:  path for *non-recursive* file search to collect tags
 
 for example:
 
@@ -481,9 +372,8 @@ laravel example:
 }
 ```
 
-You can also add the standard php library with [phpstorm stubs](https://github.com/JetBrains/phpstorm-stubs).
-
-Assuming you cloned this repo into <code>/usr/local/src/phpstorm-stubs</code> you base configuration will be:
+You can also add the standard php library with [phpstorm stubs][:phpstorm-stubs:].
+Assuming you cloned this repo into `/usr/local/src/phpstorm-stubs` you base configuration will be:
 
 ```json
 {
@@ -499,93 +389,64 @@ Assuming you cloned this repo into <code>/usr/local/src/phpstorm-stubs</code> yo
 }
 ```
 
+### Rebuilding tags
 
-### Rebuild Tags
-**if source is changed, re run this command to update tags**: `ac-php-remake-tags`
+If source has been changed, you may need run `ac-php-remake-tags` to remake tags.
 
-If something goes wrong with one of your files, you can find all errors in the `Messages` buffer.  
-Fix it and get to the next error.
+ac-php internally uses [phpctags][:phpctags:], so its operability depends on the correct
+syntax you use in the project. If something goes wrong with one of your files, you can find
+all errors in the `*Messages*` buffer. For example:
 
-like this:
 ```
 phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on line 11 -
 ```
-you need to fix an error in testa.php and re run `ac-php-remake-tags`
+
+In this case you'll need to fix an error in `testa.php` and re run `ac-php-remake-tags`.
 
 
-if it shows:
+If you see something like this:
+
 ```
-no find file .ac-php-conf.json dir in path list :/home/jim/phptest/
+no find file .ac-php-conf.json dir in path list: /home/jim/phptest/
 ```
 
-then you need to *create file ".ac-php-conf.json" in root of project*
+This means you have to create the `.ac-php-conf.json` file in the project root:
 
-like this:
-
-`touch /home/jim/phptest/.ac-php-conf.json`
-
-or
-
-`touch /home/jim/.ac-php-conf.json`
-
-
+``` sh
+$ touch /path/to/the/project/.ac-php-conf.json
+```
 
 ## FAQ
-#  To approach a problem　
 
-If you want to tackle down a problem, you should
+- **Q: Something went wrong. It seems I followed all the instructions, but auto completion stopped working**
+- **A: Run `M-x ac-php-remake-tags-all`**
 
-exec: `M-x`: `ac-php-remake-tags-all`
+---
 
-and retest
+- **Q: How I can create a reproducible test to create an issue?**
+- **A: Please use [this issue][:issue-example:] as an example**
 
-# for `test code` example
-[ issue example](https://github.com/xcwen/ac-php/issues/51)
+## License
 
-```elisp
-;;; Usage: /path/to/emacs -nw -Q -l /path/to/test-ac-php.el
+ac-php is open source software licensed under the GNU General Public Licence version 3 .
 
-(toggle-debug-on-error)
-
-(global-set-key (kbd "C-h") 'delete-backward-char)
-(global-set-key (kbd "M-h") 'backward-kill-word)
-(global-set-key (kbd "<f1>") 'help-command)
-(define-key isearch-mode-map "\C-h" 'isearch-delete-char)
-
-(setq package-user-dir (format "%s/elpa--test-ac-php" user-emacs-directory))
-(setq package-archives
-      ;;'(("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")))
-       '(("melpa" . "https://melpa.org/packages/")))
-
-(package-initialize)
-
-(defmacro try-install (pkg)
-  `(unless (package-installed-p ,pkg)
-     (package-refresh-contents)
-     (package-install ,pkg)))
-
-(try-install 'ac-php)
-(try-install 'company)
-(try-install 'company-php)
-
-(require 'cl)
-(require 'php-mode)
-
-(add-hook 'php-mode-hook
-          '(lambda ()
-             (require 'company-php)
-             (company-mode t)
-             (ac-php-core-eldoc-setup ) ;; enable eldoc
-             (add-to-list 'company-backends 'company-ac-php-backend)))
-
-(setq auto-mode-alist
-      (append
-       '(("\\.php" . php-mode)) auto-mode-alist))
-
-(add-hook 'after-init-hook 'global-company-mode)
-(run-hooks 'after-init-hook)
-
-;;; test-ac-php.el ends here
-
-```
-
+[:badge-ac-php:]: http://melpa.org/packages/ac-php-badge.svg
+[:badge-ac-php-s:]: http://stable.melpa.org/packages/ac-php-badge.svg
+[:badge-ac-php-core:]: http://melpa.org/packages/ac-php-core-badge.svg
+[:badge-ac-php-core-s:]: http://stable.melpa.org/packages/ac-php-core-badge.svg
+[:badge-company-php:]: https://melpa.org/packages/company-php-badge.svg
+[:badge-company-php-s:]: http://stable.melpa.org/packages/company-php-badge.svg
+[:project-ac-php:]: http://melpa.org/#/ac-php
+[:project-ac-php-s:]: http://stable.melpa.org/#/ac-php
+[:project-ac-php-core:]: http://melpa.org/#/ac-php-core
+[:project-ac-php-core-s:]: http://stable.melpa.org/#/ac-php-core
+[:project-company-php:]: https://melpa.org/#/company-php
+[:project-company-php-s:]: http://stable.melpa.org/#/company-php
+[:gh-ac:]: https://github.com/auto-complete/auto-complete
+[:gh-company:]: https://github.com/company-mode/company-mode
+[:gh-spacemacs:]: https://github.com/syl20bnr/spacemacs
+[:gh-helm:]: https://github.com/emacs-helm/helm
+[:melpa-gs:]: https://melpa.org/#/getting-started
+[:phpstorm-stubs:]: https://github.com/JetBrains/phpstorm-stubs
+[:issue-example:]: https://github.com/xcwen/ac-php/issues/51
+[:phpctags:]: https://github.com/xcwen/phpctags

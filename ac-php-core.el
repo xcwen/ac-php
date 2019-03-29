@@ -1,12 +1,16 @@
-;;; ac-php-core.el ---  gen tags for php
+;;; ac-php-core.el ---  Auto Completion source for PHP.
 
-;; Copyright (C) 2014 - 2016 jim
+;; Copyright (C) 2014-2019 jim
 
-;; Author: xcwenn@qq.com [https://github.com/xcwen]
+;; Author: jim <xcwenn@qq.com>
+;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
+;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0"))
 
-;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1")   (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0") )
+;; This file is not part of GNU Emacs.
+
+;;; License
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,20 +25,23 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; thanks auto-complete-clang , rtags ( ac-php-location-stack-index ) , auto-java-complete  ( ac-php-remove-unnecessary-items-4-complete-method   )
-
 ;;; Commentary:
 ;;
-;; Auto Completion source for php.  Known to work on Linux and macOS systems.
+;; Auto Completion source for PHP.  Known to work on Linux and macOS systems.
 ;; For more info and examples see URL `https://github.com/xcwen/ac-php'
+;;
+;; Thanks to:
+;; - auto-complete-clang
+;; - auto-java-complete (ac-php-remove-unnecessary-items-4-complete-method)
+;; - rtags (ac-php-location-stack-index)
 
 ;;; Code:
 
-(require 'json)
-(require 's) ;;https://github.com/magnars/s.el
-(require 'f) ;;https://github.com/rejeep/f.el
+(require 'json)  ; `json-encode', `json-read-file', `json-encoding-pretty-print'
+(require 's)     ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
+(require 'f)     ; `f-write-text', `f-full', `f-join', `f-exists?', ...
 
-(require 'popup)
+(require 'popup) ; `popup-tip'
 (require 'dash)
 (require 'eldoc)
 
@@ -42,8 +49,8 @@
 
 ;;;###autoload
 (defgroup ac-php nil
-  "ac-php preferences related to the completion for PHP."
-  :tag "AC PHP"
+  "Auto Completion source for PHP."
+  :tag "Auto Complete"
   :prefix "ac-php-"
   :group 'php
   :group 'completion
@@ -55,14 +62,35 @@
   :group 'ac-php
   :type 'string)
 
-(defcustom ac-php-debug-flag nil
-  "Non-nil means enable verbose mode on processing auto complete."
+(defcustom ac-php-cscope (executable-find "cscope")
+  "Set the Csope executable path.
+For more see URL `http://cscope.sourceforge.net/'."
+  :group 'ac-php
+  :type 'string)
+
+(defcustom ac-php-use-cscope-flag nil
+  "Non-nil means use Cscope if it is possible.
+To use this feature you'll need to set cscope executable path in
+`ac-php-cscope'.  For more see URL `http://cscope.sourceforge.net'."
   :group 'ac-php
   :type 'boolean)
 
+(defcustom ac-php-debug-flag nil
+  "Non-nil means enable verbose mode when processing auto complete.
+Please notice, enabling this option entails detailed output of debugging
+information to the ‘*Messages*’ buffer.  This feature is designed for
+ac-php developer only."
+  :group 'ac-php
+  :type 'boolean)
+
+(defcustom ac-php-auto-update-intval 3600
+  "Auto remake tags interval (in seconds)."
+  :group 'ac-php
+  :type 'integer)
+
 (defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name)))
-(defvar ac-php-ctags-executable (concat   ac-php-root-directory "phpctags"))
-(defvar ac-php-common-json-file (concat   ac-php-root-directory "ac-php-comm-tags-data.el"))
+(defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags"))
+(defvar ac-php-common-json-file (concat ac-php-root-directory "ac-php-comm-tags-data.el"))
 
 (defmacro ac-php--debug (format-string &rest args)
   "Display a debug message at the bottom of the screen.
@@ -72,22 +100,14 @@ refer to `message' function."
   `(if ac-php-debug-flag
        (message (concat "[AC-PHP-DEBUG]: " ,format-string) ,@args)))
 
-(defvar ac-php-use-cscope-flag nil)
-
-(defvar ac-php-cscope (executable-find "cscope"))
-
 (defvar ac-php-prefix-str "")
-
-(defvar ac-php-auto-update-intval 3600
-  "auto remake tag intval ( seconds) " )
 
 (defvar ac-php-phptags-index-progress  0 )
 
 ;;data
-(defvar ac-php-tag-last-data-list nil) ;;(("/home/xxx/projecj/.tags".(  1213141011  data )   ))
+(defvar ac-php-tag-last-data-list nil)
 
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
-
 
 (defvar ac-php-location-stack-index 0)
 (defvar ac-php-location-stack nil)

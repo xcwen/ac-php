@@ -6,7 +6,7 @@
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24") (dash "1") (php-mode "1") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0"))
+;; Package-Requires: ((emacs "24.4") (dash "1") (php-mode "1") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -35,6 +35,10 @@
 ;; - auto-java-complete (`ac-php-remove-unnecessary-items-4-complete-method')
 ;; - rtags (`ac-php-location-stack-index')
 ;;
+;; Many options available under Help:Customize
+;; Options specific to ac-php-core are in
+;;   Convenience/Completion/Auto Complete
+;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')
 
@@ -54,7 +58,6 @@
 ;;;###autoload
 (defgroup ac-php nil
   "Auto Completion source for PHP."
-  :tag "AC PHP"
   :prefix "ac-php-"
   :group 'auto-complete
   :link '(url-link :tag "GitHub Page" "https://github.com/xcwen/ac-php")
@@ -78,14 +81,6 @@ To use this feature you'll need to set cscope executable path in
   :group 'ac-php
   :type 'boolean)
 
-(defcustom ac-php-debug-flag nil
-  "Non-nil means enable verbose mode when processing auto complete.
-Please notice, enabling this option entails detailed output of debugging
-information to the ‘*Messages*’ buffer.  This feature is designed for
-ac-php developer only."
-  :group 'ac-php
-  :type 'boolean)
-
 (defcustom ac-php-auto-update-intval 3600
   "Auto remake tags interval (in seconds)."
   :group 'ac-php
@@ -95,6 +90,8 @@ ac-php developer only."
   "Non-nil means always expand filenames using `file-truename'."
   :group 'ac-php
   :type 'boolean)
+
+;;; Internal configuration
 
 (defconst ac-php-config-file ".ac-php-conf.json"
   "Per-project configuration file.")
@@ -109,6 +106,36 @@ ac-php developer only."
   "Default tags file.
 Will be used as a fallback when unable to obtain the project related tags.")
 
+(defvar ac-php-debug-flag nil
+  "Non-nil means enable verbose mode when processing auto complete.
+Please notice, enabling this option entails detailed output of debugging
+information to the ‘*Messages*’ buffer.  This feature is designed for
+ac-php developer only.")
+
+(defvar ac-php-gen-tags-flag nil
+  "Non-nil means that remaking tags currently is under process.")
+
+(defvar ac-php-prefix-str "")
+
+(defvar ac-php-phptags-index-progress  0)
+
+(defvar ac-php-tag-last-data-list nil)
+
+(defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+")
+
+(defvar ac-php-location-stack-index 0)
+
+(defvar ac-php-location-stack nil)
+
+(defvar ac-php--php-key-list '("public"
+ "class" "namespace" "protected"
+ "private" "function" "while"
+ "extends" "return" "static"))
+
+(defvar ac-php-rebuild-tmp-error-msg nil)
+
+;;; Utils
+
 (defmacro ac-php--debug (format-string &rest args)
   "Display a debug message at the bottom of the screen.
 The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
@@ -116,34 +143,6 @@ is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
 refer to `message' function."
   `(if ac-php-debug-flag
        (message (concat "[DEBUG]: " ,format-string) ,@args)))
-
-(defvar ac-php-prefix-str "")
-
-(defvar ac-php-phptags-index-progress  0 )
-
-;;data
-(defvar ac-php-tag-last-data-list nil)
-
-(defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+" )
-
-(defvar ac-php-location-stack-index 0)
-(defvar ac-php-location-stack nil)
-(defvar ac-php-gen-tags-flag  nil )
-(defvar ac-php--php-key-list
-  '(
-    "public"
-    "class"
-    "namespace"
-    "protected"
-    "private"
-    "function"
-    "while"
-    "extends"
-    "return"
-    "static"
-    ))
-
-;;; Utils
 
 (defun ac-php--get-timestamp (time-spec)
   "Get UNIX timestamp from the TIME-SPEC."
@@ -1151,8 +1150,6 @@ then this function split it to
   (ac-php--json-save-data file-path (list :cache1-files   cache1-files)  )
   )
 
-
-(defvar ac-php-rebuild-tmp-error-msg nil )
 (defun ac-php--rebuild-file-list ( project-root-dir   save-tags-dir  do-all-flag )
     "DOCSTRING"
     (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg
@@ -1273,51 +1270,57 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       )
      )))
 
-
-(defun ac-php--remake-tags (project-root-dir do-all-flag )
-  (let ()
-    (if (not ac-php-gen-tags-flag  )
-        (progn
-          (setq ac-php-gen-tags-flag  t )
-          ( ac-php--remake-tags-ex  project-root-dir  do-all-flag )
-          )
+(defun ac-php--remake-tags (project-root-dir force)
+  "Remake the tags for the PROJECT-ROOT-DIR taking into account FORCE flag.
+This function attempts to remake tags if currently no other process is doing the same."
+  (ac-php--debug "Attempting to determine whether need to remake the tags...")
+  (if (not ac-php-gen-tags-flag)
       (progn
-        (message "remake: doing ...  [maybe you need restart emacs for remake tags]" )
-        nil
-        )
-      )))
+        (setq ac-php-gen-tags-flag t)
+        (ac-php--remake-tags-ex project-root-dir force))
+    (progn
+      (message (concat "ac-php: Skipping to remaking tags: "
+                       "there is already a process that doing the same"))
+      nil)))
 
-;;for auto check file
-(defun ac-php--remake-tags-ex (project-root-dir do-all-flag )
-  "DOCSTRING cache1-files: last edit files:  cache2-files: others"
-  (let (  save-tags-dir all-file-list  last-phpctags-errmsg update-tag-file-list
-                        (file-name (buffer-file-name) ) )
+(defun ac-php--remake-tags-ex (project-root-dir force)
+  "Remake the tags for the PROJECT-ROOT-DIR taking into account FORCE flag.
+This function is used by the `ac-php--remake-tags'."
+  (let (save-tags-dir
+        all-file-list
+        last-phpctags-errmsg
+        update-tag-file-list
+        (file-name (buffer-file-name)))
 
-    ;; if location at  vendor dir
-    (when  (and  file-name (s-match "/vendor/" file-name ))
-      (setq do-all-flag t))
+    ;; Always rebuild tags if currently opened file is from vendor directory
+    (when (and file-name (s-match "/vendor/" file-name))
+      (setq force t))
 
-    (message "do remake %s do-all-flag :%s "  project-root-dir do-all-flag  )
+    (message "ac-php: Starting to remake the tags for %s%s"
+             (ac-php--reduce-path project-root-dir 60)
+             (if force "with a forced rebuilding of all tags" ""))
 
-    (unless ( f-exists? ac-php-ctags-executable    )
-      (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))
+    (unless (f-exists? ac-php-ctags-executable)
+      (message (concat "ac-php: Unable to locate phpctags executable at %s\n"
+                       "ac-php: Restarting GNU Emacs might help")
+               ac-php-ctags-executable))
 
-    (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli and restart emacs " ))
-    (if (not project-root-dir)
-        (message "no find file '%s' in path list: %s"
-                 ac-php-config-file
-                 (file-name-directory (buffer-file-name))))
-    (if ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
+    (unless (and (not (s-blank? ac-php-php-executable))
+                 (f-exists? ac-php-php-executable))
+      (message (concat "ac-php: Unable to locate PHP executable at %s\n"
+                       "ac-php: You need to install PHP CLI and restart GNU Emacs")
+               ac-php-php-executable))
+
+    (unless project-root-dir
+      (massge "ac-php: The per-project configuration file '%s' doesn't exist at %s"
+              ac-php-config-file
+              (file-name-directory (buffer-file-name))))
+
+    (if (and (f-exists? ac-php-ctags-executable) ac-php-php-executable project-root-dir)
         (progn
-          ;;get last-save-info
-          (setq save-tags-dir (ac-php--get-tags-save-dir project-root-dir) )
-          (ac-php--rebuild-file-list  project-root-dir   save-tags-dir  do-all-flag)
-          )
-      ( setq ac-php-gen-tags-flag nil )
-      )
-    ))
-
-
+          (setq save-tags-dir (ac-php--get-tags-save-dir project-root-dir))
+          (ac-php--rebuild-file-list project-root-dir save-tags-dir force))
+      (setq ac-php-gen-tags-flag nil))))
 
 (defun  ac-php-gen-el-func (  doc)
   " example doc 'xxx($x1,$x2)' => $x1 , $x2  "
@@ -1337,7 +1340,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 This function uses PROJECT-ROOT-DIR as an of path to the directory,
 where tags should be saved.  If the directory does not exist, it will
 be created."
-  (ac-php--debug "Looking for tags directory...")
+  (ac-php--debug "Lookup for tags directory...")
   (let (ret tag-dir conf-list old-default-directory)
     (setq conf-list (ac-php--get-config project-root-dir)
           tag-dir (cdr (assoc-string "tag-dir" conf-list)))
@@ -1398,7 +1401,7 @@ a remake will be performed."
 
               (when (and (> (- now file-last-time) ac-php-auto-update-intval))
                 (progn
-                  (ac-php--debug "The file is out of date. Performing remake...")
+                  (ac-php--debug "The tags file is out of date")
                   (ac-php--remake-tags project-root-dir nil)))
 
               (list project-root-dir tags-file))
@@ -1416,11 +1419,11 @@ a remake will be performed."
 
 This function tries to recreate and / or populate configuration
 file in case of its absence, or if it is empty."
-  (ac-php--debug "Looking for per-project configuration file...")
+  (ac-php--debug "Lookup for per-project configuration file...")
   (let (config-file-name)
     (setq config-file-name (f-join project-root-dir ac-php-config-file))
 
-    ;; Looking for `ac-php-config-file'
+    ;; Lookup for `ac-php-config-file'
     (when (and
            (not (s-starts-with-p "/ssh:" config-file-name))
            (not (s-starts-with-p "/server:" config-file-name))
@@ -1596,8 +1599,6 @@ file in case of its absence, or if it is empty."
       (progn
         (ac-php--debug "Tags file doesn't exist. Remake...")
         (ac-php-remake-tags)))))
-
-;;; ==============END
 
 (defun ac-php--get-project-root-dir ()
   "Get the project root directory of the curent opened buffer."

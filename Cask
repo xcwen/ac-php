@@ -28,7 +28,6 @@
 ;; company-php.el
 (depends-on "cl-lib")
 (depends-on "company")
-(depends-on "company-template")
 
 (development
  (depends-on "php-mode" "1")

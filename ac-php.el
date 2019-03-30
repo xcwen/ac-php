@@ -52,7 +52,7 @@
 ;;
 ;; Many options available under Help:Customize
 ;; Options specific to ac-php are in
-;;   Convenience/Completion/Auto Complete/AC PHP
+;;   Convenience/Completion/Auto Complete
 ;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')

@@ -1,4 +1,4 @@
-;;; ac-php-core.el ---  Auto Completion source for PHP.
+;;; ac-php-core.el --- The core library of the ac-php.
 
 ;; Copyright (C) 2014-2019 jim
 
@@ -27,24 +27,25 @@
 
 ;;; Commentary:
 
-;; Auto Completion source for PHP.  Known to work on Linux and macOS systems.
+;; The core library of the `ac-php'.  Known to work on Linux and macOS systems.
 ;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
 ;; Thanks to:
 ;; - auto-complete-clang
-;; - auto-java-complete (ac-php-remove-unnecessary-items-4-complete-method)
-;; - rtags (ac-php-location-stack-index)
+;; - auto-java-complete (`ac-php-remove-unnecessary-items-4-complete-method')
+;; - rtags (`ac-php-location-stack-index')
 ;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')
 
 ;;; Code:
 
-(require 'json)  ; `json-encode', `json-read-file', `json-encoding-pretty-print'
+(require 'json)  ; `json-encode', `json-read-file'
 (require 's)     ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
 (require 'f)     ; `f-write-text', `f-full', `f-join', `f-exists?', ...
 
 (require 'popup) ; `popup-tip'
+(require 'cl)    ; `reduce'
 (require 'dash)
 (require 'eldoc)
 
@@ -90,9 +91,23 @@ ac-php developer only."
   :group 'ac-php
   :type 'integer)
 
-(defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name)))
-(defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags"))
-(defvar ac-php-common-json-file (concat ac-php-root-directory "ac-php-comm-tags-data.el"))
+(defcustom ac-php-project-root-dir-use-truename t
+  "Non-nil means always expand filenames using `file-truename'."
+  :group 'ac-php
+  :type 'boolean)
+
+(defconst ac-php-config-file ".ac-php-conf.json"
+  "Per-project configuration file.")
+
+(defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name))
+  "The ac-php package location.")
+
+(defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags")
+  "Set the Phpctags executable path.  Don't change the value of this variable.")
+
+(defvar ac-php-common-json-file (concat ac-php-root-directory "ac-php-comm-tags-data.el")
+  "Default tags file.
+Will be used as a fallback when unable to obtain the project related tags.")
 
 (defmacro ac-php--debug (format-string &rest args)
   "Display a debug message at the bottom of the screen.
@@ -100,7 +115,7 @@ The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
 is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
 refer to `message' function."
   `(if ac-php-debug-flag
-       (message (concat "[AC-PHP-DEBUG]: " ,format-string) ,@args)))
+       (message (concat "[DEBUG]: " ,format-string) ,@args)))
 
 (defvar ac-php-prefix-str "")
 
@@ -128,16 +143,37 @@ refer to `message' function."
     "static"
     ))
 
+;;; Utils
+
+(defun ac-php--get-timestamp (time-spec)
+  "Get UNIX timestamp from the TIME-SPEC."
+  (+ (* (nth 0 time-spec) 65536)
+     (nth 1 time-spec)))
+
+(defun ac-php--reduce-path (path max-len)
+  "Return a modified version of PATH no longer than MAX-LEN.
+
+This function replaces some components with single characters starting from the
+left to try and get the path down to MAX-LEN"
+  (let* ((components (split-string (abbreviate-file-name path) "/"))
+         (len (+ (1- (length components))
+                 (reduce '+ components :key 'length)))
+         (str ""))
+    (while (and (> len max-len)
+                (cdr components))
+      (setq str (concat str (if (= 0 (length (car components)))
+                                "/"
+                              (string (elt (car components) 0) ?/)))
+            len (- len (1- (length (car components))))
+            components (cdr components)))
+    (concat str (reduce (lambda (a b) (concat a "/" b)) components))))
+
 (defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
   "PATH for tags to be saved, default value is \"~/.ac-php\" as base for
 directories.
 
 This path get extended with the directory tree of the project that you are
 indexing the tags for.")
-
-
-(defvar ac-php-project-root-dir-use-truename t
-  "  project-root-dir use truename  no link  ")
 
 (defvar ac-php-max-bookmark-count 500 )
 (defun ac-php-location-stack-push ()
@@ -212,10 +248,6 @@ indexing the tags for.")
     ;;(ac-php-location-stack-push)
     ))
 
-
-
-
-
 (defsubst ac-php-clean-document (s)
   (when s
     (setq s (replace-regexp-in-string "<#\\|#>\\|\\[#" "" s))
@@ -225,7 +257,6 @@ indexing the tags for.")
   (s-matches-p "(" tag-name )
     )
 
-
 (defun ac-php-check-not-in-string-or-comment (pos)
   "ac-php-check-not-in-string-or-comment"
   (save-excursion (if  (nth 8 (syntax-ppss pos))  nil  t ))
@@ -234,7 +265,6 @@ indexing the tags for.")
   "ac-php-check-in-string-or-comment"
   (save-excursion (if  (nth 4 (syntax-ppss pos))  nil  t ))
   )
-
 
 (defun ac-php-split-string-with-separator(str regexp &optional replacement omit-nulls)
   "this function is a tool like split-string,
@@ -1106,16 +1136,16 @@ then this function split it to
    (s-trim (replace-regexp-in-string "|.*" "" return-type ) ) )
   )
 
-(defun ac-php--json-save-data(file-path data-list )
-  (let ((old-config-value json-encoding-pretty-print) json-data )
-    (setq  json-encoding-pretty-print  t)
-    (setq  json-data
-           (json-encode data-list ))
+(defun ac-php--json-save-data (conf-file data-list)
+  "Creating configuration by populating CONF-FILE using DATA-LIST."
+  (ac-php--debug "Populate configuration file")
 
-    (f-write-text json-data 'utf-8 file-path)
-    (setq  json-encoding-pretty-print  old-config-value)
-    ))
+  (let ((old-pp-value json-encoding-pretty-print) json-data)
+    (setq json-encoding-pretty-print t
+          json-data (json-encode data-list))
 
+    (f-write-text json-data 'utf-8 conf-file)
+    (setq json-encoding-pretty-print old-pp-value)))
 
 (defun ac-php--cache-files-save  (file-path cache1-files )
   (ac-php--json-save-data file-path (list :cache1-files   cache1-files)  )
@@ -1140,7 +1170,7 @@ then this function split it to
 
         (ac-php--debug "EXEC  %s %s %s %s %s"
         ac-php-ctags-executable
-        (concat "--config-file="  (f-join project-root-dir "./.ac-php-conf.json" )  )
+        (concat "--config-file="  (f-join project-root-dir "./" ac-php-config-file))
         (concat "--tags_dir=" ac-php-tags-path    )
         (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
         (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
@@ -1152,7 +1182,7 @@ then this function split it to
                         "*AC-PHPTAGS*"
                         ac-php-php-executable
                         ac-php-ctags-executable
-                        (concat "--config-file="  (f-join project-root-dir "./.ac-php-conf.json" )  )
+                        (concat "--config-file=" (f-join project-root-dir "./" ac-php-config-file))
                         (concat "--tags_dir=" ac-php-tags-path    )
                         (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
                         (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
@@ -1161,7 +1191,7 @@ then this function split it to
          "%s %s %s %s %s %s "
          ac-php-php-executable
          ac-php-ctags-executable
-         (concat "--config-file="  (f-join project-root-dir "./.ac-php-conf.json" )  )
+         (concat "--config-file="  (f-join project-root-dir "./" ac-php-config-file))
          (concat "--tags_dir=" ac-php-tags-path    )
          (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
          (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
@@ -1273,7 +1303,10 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       (message "%s no find ,you need restart emacs" ac-php-ctags-executable ))
 
     (if (not ac-php-php-executable ) (message "no find cmd:  php  ,you need  install php-cli and restart emacs " ))
-    (if (not project-root-dir) (message "no find file '.ac-php-conf.json'   in path list :%s " (file-name-directory (buffer-file-name)  )   ) )
+    (if (not project-root-dir)
+        (message "no find file '%s' in path list: %s"
+                 ac-php-config-file
+                 (file-name-directory (buffer-file-name))))
     (if ( and (f-exists? ac-php-ctags-executable) ac-php-php-executable  project-root-dir)
         (progn
           ;;get last-save-info
@@ -1298,57 +1331,78 @@ Non-nil SILENT will supress extra status info in the minibuffer."
       ""
       )))
 
-(defun ac-php--get-tags-save-dir(project-root-dir  )
-  (let (  ret tag-dir  old-default-directory )
-    (setq conf-list  (ac-php--get-config project-root-dir) )
-    (setq tag-dir (cdr (assoc-string "tag-dir" conf-list )) )
-    ;;(message "project-root-dir:%s,  tag-dir:%s" project-root-dir tag-dir )
+(defun ac-php--get-tags-save-dir (project-root-dir)
+  "Get an absolute path to directory where tags should be saved.
+
+This function uses PROJECT-ROOT-DIR as an of path to the directory,
+where tags should be saved.  If the directory does not exist, it will
+be created."
+  (ac-php--debug "Looking for tags directory...")
+  (let (ret tag-dir conf-list old-default-directory)
+    (setq conf-list (ac-php--get-config project-root-dir)
+          tag-dir (cdr (assoc-string "tag-dir" conf-list)))
+
     (if tag-dir
-        (progn
-          (setq old-default-directory  default-directory )
-          (setq default-directory project-root-dir)
-          (setq  ret  (file-truename tag-dir ) )
-          (setq  default-directory old-default-directory )
+        (prog
+         (ac-php--debug "Found tags directory")
+         (setq old-default-directory default-directory
+               default-directory project-root-dir
+               ret (file-truename tag-dir)
+               default-directory old-default-directory))
 
-          )
-   (when (memq system-type '(windows-nt ms-dos))
-      (setq project-root-dir (concat "/"
-        (replace-regexp-in-string  (regexp-quote ":") ""  project-root-dir ))))
-      (setq ret (concat ac-php-tags-path "/tags"
-                        (replace-regexp-in-string (regexp-quote "/") "-"
-                                                  (replace-regexp-in-string  "/$" ""  project-root-dir )
-                                                  )  ))
-      )
+      (when (memq system-type '(windows-nt ms-dos))
+        ;; Sanitize path: C:\my-project => /C/my-project
+        (setq project-root-dir
+              (concat "/"
+                      (replace-regexp-in-string
+                       (regexp-quote ":")
+                       ""
+                       project-root-dir))))
 
+      (setq ret (concat
+                 ac-php-tags-path
+                 "/tags"
+                 (replace-regexp-in-string
+                  (regexp-quote "/") "-"
+                  (replace-regexp-in-string "[/\\]*$" "" project-root-dir)))))
 
-    (unless (f-exists?  ret  )
+    (unless (f-exists? ret)
       (mkdir ret t))
-    (f-full ret )
-    ))
-
-(defun ac-php--get-timestamp (  time-arr )
-  (+  (*(nth 0  time-arr )  65536)  (nth 1  time-arr) )
-  )
+    (f-full ret)))
 
 (defun ac-php-get-tags-file ()
-  (let ((project-root-dir (ac-php--get-project-root-dir)) tags-file file-attr  file-last-time now  )
-    (if project-root-dir
-        (progn
-          (setq tags-file (concat  (ac-php--get-tags-save-dir project-root-dir)  "tags.el"  ) )
-          (setq file-attr   (file-attributes  tags-file ) )
+  "Get the actual tag file.
 
-          (when file-attr
-            (setq file-last-time  (ac-php--get-timestamp  (nth 5 file-attr) ))
-            (setq now  (ac-php--get-timestamp (current-time)  ))
-            ;;; check time , and delete tags file if  time out
-            (when  (and  (> (- now  file-last-time )  ac-php-auto-update-intval  )
-                       )
-              ( ac-php--remake-tags  project-root-dir  nil )
-              )
-            )
+Returns a list where the 1st element will be a real path to the project,
+and the 2nd element will be the a real path to the tags file.  Will return
+nil when unable to read tags file.
 
-          (list  project-root-dir tags-file )
-          )
+This function checks for modification time of the tags file.  If it is outdated,
+a remake will be performed."
+  (ac-php--debug "Retrieving tags file...")
+  (let ((project-root-dir (ac-php--get-project-root-dir))
+        tags-file
+        file-attr
+        file-last-time
+        now)
+    (when project-root-dir
+      (progn
+        (setq tags-file (concat (ac-php--get-tags-save-dir project-root-dir) "tags.el")
+              file-attr (file-attributes tags-file))
+
+        (if file-attr
+            (progn
+              (ac-php--debug "Found tags file")
+              (setq file-last-time (ac-php--get-timestamp (nth 5 file-attr))
+                    now (ac-php--get-timestamp (current-time)))
+
+              (when (and (> (- now file-last-time) ac-php-auto-update-intval))
+                (progn
+                  (ac-php--debug "The file is out of date. Performing remake...")
+                  (ac-php--remake-tags project-root-dir nil)))
+
+              (list project-root-dir tags-file))
+          (message "ac-php: Cannot get access to read tags file: %s" tags-file)))
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( project-root-dir path-str)
@@ -1357,32 +1411,33 @@ Non-nil SILENT will supress extra status info in the minibuffer."
     (format "php-path-list->%s" (f-relative path-str project-root-dir ))))
 
 
-(defun ac-php--get-config ( project-root-dir )
-  (let ( config-file-name )
+(defun ac-php--get-config (project-root-dir)
+  "Read the configuration loacated at PROJECT-ROOT-DIR and return it.
 
-    (setq config-file-name (f-join project-root-dir ".ac-php-conf.json"  ) )
-    (when(and
-          (not (s-starts-with-p  "/ssh:" config-file-name ))
-          (not (s-starts-with-p  "/server:" config-file-name ))
-          (or (not (f-exists?  config-file-name ) )
-              ( =  (f-size  config-file-name ) 0 )))
-      (ac-php--json-save-data config-file-name
-                              '(
-                                :use-cscope  nil
-                                :tag-dir nil
-                                :filter
-                                (
-                                 :php-file-ext-list
-                                 ("php")
-                                 :php-path-list (".")
-                                 :php-path-list-without-subdir []
-                                 )
-                                )
-                              ))
+This function tries to recreate and / or populate configuration
+file in case of its absence, or if it is empty."
+  (ac-php--debug "Looking for per-project configuration file...")
+  (let (config-file-name)
+    (setq config-file-name (f-join project-root-dir ac-php-config-file))
 
-    (json-read-file  config-file-name  )
+    ;; Looking for `ac-php-config-file'
+    (when (and
+           (not (s-starts-with-p "/ssh:" config-file-name))
+           (not (s-starts-with-p "/server:" config-file-name))
+           (or (not (f-exists? config-file-name))
+               (= (f-size config-file-name) 0)
+               ;; Use case for "echo '' > `config-file-name'"
+               (= (f-size config-file-name) 1)))
+      (ac-php--debug "Configuration file either empty or absent. Creating...")
+      (ac-php--json-save-data
+       config-file-name
+       '(:use-cscope nil
+         :tag-dir nil
+         :filter (:php-file-ext-list ("php")
+                  :php-path-list (".")
+                  :php-path-list-without-subdir []))))
 
-    ))
+    (json-read-file config-file-name)))
 
 (defun  ac-php--get-use-cscope-from-config-file (project-root-dir)
   (let ( conf-list  )
@@ -1462,16 +1517,19 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (define-hash-table-test 'case-fold
   'case-fold-string= 'case-fold-string-hash)
 
+(defun ac-php-load-data (file project-root-dir)
+  "Docstring."
+  (let ((file-attr (file-attributes file))
+        file-data
+        conf-last-time
+        file-last-time
+        class-map
+        function-map
+        inherit-map)
 
-(defun ac-php-load-data (file project-root-dir )
-  (let  ((file-attr   (file-attributes  file ) ) file-data  conf-last-time  file-last-time
-         class-map  function-map inherit-map  )
-
-    ;;  check time  and reload
     (when file-attr
-      (setq file-last-time (+  (*(nth 0 (nth 5 file-attr) )  65536)  (nth 1 (nth 5 file-attr)) ))
-      (setq  conf-last-time (nth  1 (assoc-string file  ac-php-tag-last-data-list   ) ) )
-
+      (setq file-last-time (ac-php--get-timestamp (nth 5 file-attr))
+             conf-last-time (nth 1 (assoc-string file ac-php-tag-last-data-list)))
 
       (when (or (null conf-last-time) (> file-last-time conf-last-time ))
         (message "ac-php reload from json-data start")
@@ -1525,54 +1583,58 @@ Non-nil SILENT will supress extra status info in the minibuffer."
 (defun ac-php-g--project-root-dir  (tags-data ) (nth 4  tags-data ) )
 
 (defun ac-php-get-tags-data ()
-  (let ( tags-file  project-root-dir (tags-arr   (ac-php-get-tags-file )))
+  "Docstring."
+  (let (tags-file project-root-dir (tags-arr (ac-php-get-tags-file)))
     (if tags-arr
         (progn
-          (setq tags-file   (nth 1 tags-arr)   )
-          (setq project-root-dir (nth 0 tags-arr) )
-          )
-      (setq tags-file   ac-php-common-json-file   )
-      )
-    (ac-php--debug  "LOAD TAGS:%s"  tags-file )
-    (if  (file-exists-p tags-file )
-      (ac-php-load-data  tags-file  project-root-dir  )
-    (ac-php-remake-tags )
-      )
-    ))
-
+          (setq tags-file (nth 1 tags-arr)
+                project-root-dir (nth 0 tags-arr)))
+      (setq tags-file ac-php-common-json-file))
+    (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
+    (if (file-exists-p tags-file)
+        (ac-php-load-data tags-file project-root-dir)
+      (progn
+        (ac-php--debug "Tags file doesn't exist. Remake...")
+        (ac-php-remake-tags)))))
 
 ;;; ==============END
 
-(defun ac-php--get-project-root-dir  ()
-  "DOCSTRING"
-  (let (project-root-dir tags-file  (file-name buffer-file-name)  )
-    (when file-name
-      (setq project-root-dir (file-name-directory  file-name  ))
+(defun ac-php--get-project-root-dir ()
+  "Get the project root directory of the curent opened buffer."
+  (ac-php--debug "Lookup for the project root...")
+  (let (project-root-dir tags-file (file-name buffer-file-name))
 
-    )
+    ;; 1. Get working directory using `buffer-file-name' or `default-directory'
+    (if file-name
+        (setq project-root-dir (file-name-directory file-name))
+      (setq project-root-dir (expand-file-name default-directory)))
 
-    (unless project-root-dir
-      (setq project-root-dir ( expand-file-name  default-directory) ))
-
+    ;; 2. Expand real path of the obtained working directory (if enabled)
     (when ac-php-project-root-dir-use-truename
-      (setq project-root-dir (file-truename project-root-dir  ) )
-      )
+      (setq project-root-dir (file-truename project-root-dir)))
 
+    ;; 3. Scan for the real project root of the opend file
+    ;; At this moment we loor for either `ac-php-config-file'
+    ;; or “.projectile” or “vendor/autoload.php”
     (let (last-dir)
-        (while (not (or
-                     (file-exists-p  (concat project-root-dir  ".ac-php-conf.json" ))
-                     (file-exists-p  (concat project-root-dir  "vendor/autoload.php" )) ;; is a composer dir
-                     (string= project-root-dir "/")
-                     ))
-          (setq  last-dir project-root-dir  )
-          (setq project-root-dir  (file-name-directory (directory-file-name  project-root-dir ) ))
-          (when (string= last-dir project-root-dir  )
-            (setq project-root-dir "/" )
-            )))
+      (while
+          (not (or
+                (file-exists-p (concat project-root-dir ac-php-config-file))
+                (file-exists-p (concat project-root-dir ".projectile"))
+                (file-exists-p (concat project-root-dir "vendor/autoload.php"))
+                (string= project-root-dir "/")))
+        (setq last-dir project-root-dir
+              project-root-dir (file-name-directory
+                                (directory-file-name project-root-dir)))
+          (when (string= last-dir project-root-dir)
+            (setq project-root-dir "/"))))
 
-    (if (string= project-root-dir "/") (setq project-root-dir nil )   )
-    project-root-dir
-    ))
+    (when (string= project-root-dir "/")
+      (progn
+        (message "ac-php: Unable to resolve project root")
+        (setq project-root-dir nil)))
+
+    project-root-dir))
 
 (defun ac-php--get-check-class-list ( class-name inherit-map  class-map )
   (let ( ret  )
@@ -2141,7 +2203,7 @@ Non-nil SILENT will supress extra status info in the minibuffer."
           (setq cscope-initial-directory  (ac-php--get-tags-save-dir  project-root-dir  )  )
           (cscope-find-egrep-pattern symbol)
           )
-      (message "need  config:  .ac-php-conf.json -> use-cscope:true  ")
+      (message "need  config: %s -> use-cscope:true" ac-php-config-file)
     )))
 
 
@@ -2247,16 +2309,14 @@ Set this variable to nil to disable the lighter."
       (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr)  ) )
       )
     (message (concat "root dir          : %s\n"
-                     "config file       : %s.ac-php-conf.json \n"
-                     "tags file         : %s \n"
-                     "tags last gen time: %s  ")
+                     "config file       : %s%s\n"
+                     "tags file         : %s\n"
+                     "tags last gen time: %s")
              project-root-dir
              project-root-dir
-             tags-file  file-last-time )
-
-    )
-  )
-
+             ac-php-config-file
+             tags-file
+             file-last-time)))
 
 ;;;###autoload
 (defun ac-php-core-eldoc-setup ()
@@ -2265,7 +2325,5 @@ Set this variable to nil to disable the lighter."
   (setq-local eldoc-documentation-function #'ac-php-core-eldoc--documentation-function)
   (eldoc-mode +1))
 
-
 (provide 'ac-php-core)
-
 ;;; ac-php-core.el ends here

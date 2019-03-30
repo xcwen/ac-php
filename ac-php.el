@@ -6,7 +6,7 @@
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
+;; Package-Requires: ((emacs "24.4") (ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
 
 ;; This file is not part of GNU Emacs.
 

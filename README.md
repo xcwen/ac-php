@@ -63,6 +63,8 @@ For more see [screenshots][:screenshots:] page.
 
 ## Installation
 
+Known to work with GNU Emacs 24.4 and later. ac-php may work with older versions of GNU Emacs, or with other flavors of GNU Emacs (e.g. XEmacs) but this is not guaranteed. Bug reports for problems related to using ac-php with older versions of Emacs will most like not be addressed.
+
 Prerequisite packages are:
 
 - php-cli

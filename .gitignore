@@ -1,3 +1,5 @@
 *.elc
-*/.tags/*
-*/commom_php/.tags/*
+
+/.tags/
+/commom_php/.tags/*
+/.cask/

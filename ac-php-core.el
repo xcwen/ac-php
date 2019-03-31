@@ -83,12 +83,12 @@ To use this feature you'll need to set cscope executable path in
   :type 'boolean)
 
 (defcustom ac-php-auto-update-intval 3600
-  "Auto remake tags interval (in seconds)."
+  "The interval between automatic re-indexing project's files (in seconds)."
   :group 'ac-php
   :type 'integer)
 
 (defcustom ac-php-project-root-dir-use-truename t
-  "Non-nil means always expand filenames using `file-truename'."
+  "Non-nil means always expand filenames using function `file-truename'."
   :group 'ac-php
   :type 'boolean)
 
@@ -142,7 +142,7 @@ ac-php developer only.")
 The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
 is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
 refer to `message' function."
-  `(if ac-php-debug-flag
+  `(when ac-php-debug-flag
        (message (concat "[DEBUG]: " ,format-string) ,@args)))
 
 (defun ac-php--get-timestamp (time-spec)
@@ -1151,142 +1151,117 @@ then this function split it to
   (ac-php--json-save-data file-path (list :cache1-files   cache1-files)  )
   )
 
-(defun ac-php--rebuild-file-list ( project-root-dir   save-tags-dir  do-all-flag )
-    "DOCSTRING"
-    (let ( tags-dir-len file-list  obj-tags-list update-tag-file-list all-file-list last-phpctags-errmsg
-                        )
+(defun ac-php--ctags-opts (project-root-dir rebuild)
+  "Create phpctags command options.
 
-    (setq tags-dir-len (length project-root-dir))
+This function uses PROJECT-ROOT-DIR as a base path for the project files.  In
+addition this function takes into account REBUILD flag which means that the
+files should be processed even though they were recently processed (so-called
+force rebuild)."
+  `(,(concat "--config-file=" (f-join project-root-dir "./" ac-php-config-file))
+    ,(concat "--tags_dir=" ac-php-tags-path)
+    ,(concat "--rebuild=" (if rebuild "yes" "no"))
+    ,(concat "--realpath_flag="
+            (if ac-php-project-root-dir-use-truename "yes" "no"))))
 
+(defun ac-php--rebuild-file-list (project-root-dir save-tags-dir rebuild)
+    "Indexing project files.
 
-    (message " REBUILD:  rebuild file start")
+This function use PROJECT-ROOT-DIR as a base path for the project files and
+SAVE-TAGS-DIR as a destination path for the index cache.  In addition this
+function takes into account REBUILD flag which means that the files should be
+processed even though they were recently processed (so-called force rebuild)."
+    (message "ac-php: Rebuild file list...")
 
-    (let  ( file-name src-time  obj-file-name   obj-item all-opt-list tmp-array)
+    (let (file-list
+          obj-tags-list
+          update-tag-file-list
+          all-file-list
+          last-phpctags-errmsg)
 
+    (let (file-name src-time obj-file-name obj-item all-opt-list tmp-array)
 
-      (let* (process)
+      (let* ((arguments (ac-php--ctags-opts project-root-dir rebuild))
+             (process (apply 'start-process
+                             "ac-phptags"
+                             "*AC-PHPTAGS*"
+                             ac-php-php-executable
+                             ac-php-ctags-executable
+                             arguments)))
 
-        (ac-php--debug "EXEC  %s %s %s %s %s"
-        ac-php-ctags-executable
-        (concat "--config-file="  (f-join project-root-dir "./" ac-php-config-file))
-        (concat "--tags_dir=" ac-php-tags-path    )
-        (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
-        (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
-        )
-
-
-        (setq process  (start-process
-                        "ac-phptags"
-                        "*AC-PHPTAGS*"
-                        ac-php-php-executable
-                        ac-php-ctags-executable
-                        (concat "--config-file=" (f-join project-root-dir "./" ac-php-config-file))
-                        (concat "--tags_dir=" ac-php-tags-path    )
-                        (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
-                        (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
-                        ))
-         (ac-php--debug
-         "%s %s %s %s %s %s "
+        (ac-php--debug
+         "%s %s %s %s %s %s"
          ac-php-php-executable
          ac-php-ctags-executable
-         (concat "--config-file="  (f-join project-root-dir "./" ac-php-config-file))
-         (concat "--tags_dir=" ac-php-tags-path    )
-         (concat "--rebuild="  (if do-all-flag "yes" "no" )    )
-         (concat "--realpath_flag="  (if  ac-php-project-root-dir-use-truename "yes" "no" )    )
-         )
+         (nth 0 arguments)
+         (nth 1 arguments)
+         (nth 2 arguments)
+         (nth 3 arguments))
 
         (ac-php-mode t)
 
-        (setq ac-php-rebuild-tmp-error-msg nil )
-        (setq ac-php-phptags-index-progress 0)
-        (force-mode-line-update)
+        (setq ac-php-rebuild-tmp-error-msg nil
+              ac-php-phptags-index-progress 0)
 
+        (force-mode-line-update)
 
         (set-process-sentinel
          process
-         '(lambda ( process event)
-
+         '(lambda (process event)
             (ac-php-mode 0)
             (cond
              ((string-match "finished" event)
               (if ac-php-rebuild-tmp-error-msg
-                  (message "REBUILD END :ERROR %s" ac-php-rebuild-tmp-error-msg )
-                (message "REBUILD SUCCESS ")
-                )
-              )
+                  (message "ac-php: An error occurred during to re-index: %s"
+                           ac-php-rebuild-tmp-error-msg)
+                (message "ac-php: Re-indexing has been finished successfully")))
              ((string-match "exited abnormally" event)
-              (message "ERROR ----- ")
-              ))))
+              (progn
+                (message (concat "ac-php: Something went wrong\n"
+                                 "ac-php: The re-indexing process exited abnormally\n"
+                                 "ac-php: Please re-check for incorrect syntax and "
+                                 "possible PHP errors and try again later"))
+                (ac-php--debug event))))))
 
-        (set-process-filter process 'ac-php-phptags-index-process-filter)
-        )
+        (set-process-filter process 'ac-php-phptags-index-process-filter)))))
 
+(defun ac-php-phptags-index-process-filter (process strings)
+  "Process status update for the indexing process.
 
-      ;; (let ( cmd cmd-output   )
+This callback function accepts two arguments:
 
-      ;;   (ac-php--json-save-data  opt-file-name all-opt-list )
-      ;;   (message "parser php files count=[%d] ,wait ... " (length all-opt-list ))
-      ;;   (setq cmd (concat ac-php-ctags-executable  " --files="   ) )
-      ;;   (ac-php--debug "exec cmd:%s" cmd)
-      ;;   (setq cmd-output (shell-command-to-string  cmd) )
-
-      ;;   (when (> (length cmd-output) 3)
-      ;;     (if ( f-exists? ac-php-ctags-executable    )
-      ;;         (setq last-phpctags-errmsg (format "phpctags ERROR:%s "  cmd-output  ))
-      ;;       (setq last-phpctags-errmsg (format "%s no find ,you need restart emacs" ac-php-ctags-executable ))
-      ;;       )
-      ;;     ))
-
-      )
-
-    ;;(list last-phpctags-errmsg all-file-list  update-tag-file-list)
-    ))
-
-
-(defun ac-php-phptags-index-process-filter (process strings &optional silent)
-  "Process status updates for the indexing process.
-
-Non-nil SILENT will supress extra status info in the minibuffer."
-
-
-  (dolist  (string (split-string strings "\n" ) )
-
-    (ac-php--debug " AC-PHP: %s" string )
+  - PROCESS, the process that created the output.
+  - STRINGS, the message containing the currently produced output."
+  (dolist (string (split-string strings "\n"))
+    (ac-php--debug "%s" string)
     (cond
-     ( (string-match "PHPParser:" string)
-
-
-       (setq ac-php-rebuild-tmp-error-msg  (concat ac-php-rebuild-tmp-error-msg  "\n" string ) )
-
-       )
-
+     ((string-match "PHPParser:" string)
+      (setq ac-php-rebuild-tmp-error-msg
+            (concat ac-php-rebuild-tmp-error-msg "\n" string)))
      ((string-match "\\([0-9]+\\)%" string)
       (let ((progress (string-to-number (match-string 1 string))))
-
-
-        (unless(= ac-php-phptags-index-progress progress )
+        (unless (= ac-php-phptags-index-progress progress)
           (setq ac-php-phptags-index-progress progress)
-          (force-mode-line-update))
-        )
-      )
-     )))
-
+          (force-mode-line-update)))))))
+;; (setq ac-php-debug-flag nil)
 (defun ac-php--remake-tags (project-root-dir force)
-  "Remake the tags for the PROJECT-ROOT-DIR taking into account FORCE flag.
-This function attempts to remake tags if currently no other process is doing the same."
-  (ac-php--debug "Attempting to determine whether need to remake the tags...")
-  (if (not ac-php-gen-tags-flag)
+  "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
+This function attempts to re-index project files only if currently no other
+process is doing the same."
+  (ac-php--debug "Attempting to determine whether need to re-index project...")
+  (if (or ac-php-debug-flag ; Force re-index on debug mode
+          (not ac-php-gen-tags-flag))
       (progn
         (setq ac-php-gen-tags-flag t)
         (ac-php--remake-tags-ex project-root-dir force))
     (progn
-      (message (concat "ac-php: Skipping to remaking tags: "
+      (message (concat "ac-php: Skip re-indexing project; "
                        "there is already a process that doing the same"))
       nil)))
 
 (defun ac-php--remake-tags-ex (project-root-dir force)
-  "Remake the tags for the PROJECT-ROOT-DIR taking into account FORCE flag.
-This function is used by the `ac-php--remake-tags'."
+  "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
+This function is used internally by the function `ac-php--remake-tags'."
   (let (save-tags-dir
         all-file-list
         last-phpctags-errmsg
@@ -1297,7 +1272,7 @@ This function is used by the `ac-php--remake-tags'."
     (when (and file-name (s-match "/vendor/" file-name))
       (setq force t))
 
-    (message "ac-php: Starting to remake the tags for %s%s"
+    (message "ac-php: Starting to re-index the project located at %s%s"
              (ac-php--reduce-path project-root-dir 60)
              (if force "with a forced rebuilding of all tags" ""))
 
@@ -1375,14 +1350,14 @@ be created."
     (f-full ret)))
 
 (defun ac-php-get-tags-file ()
-  "Get the actual tag file.
+  "Get the actual project's tag file.
 
 Returns a list where the 1st element will be a real path to the project,
 and the 2nd element will be the a real path to the tags file.  Will return
 nil when unable to read tags file.
 
-This function checks for modification time of the tags file.  If it is outdated,
-a remake will be performed."
+This function checks for modification time of the procject's tags file.
+If it is outdated, a re-index process will be performed."
   (ac-php--debug "Retrieving tags file...")
   (let ((project-root-dir (ac-php--get-project-root-dir))
         tags-file
@@ -1597,7 +1572,8 @@ file in case of its absence, or if it is empty."
     (if (file-exists-p tags-file)
         (ac-php-load-data tags-file project-root-dir)
       (progn
-        (ac-php--debug "Per-project tags file doesn't exist. Remake...")
+        (ac-php--debug (concat "Per-project tags file doesn't exist. "
+                               "Starting create a new one..."))
         (ac-php-remake-tags)))))
 
 (defun ac-php--get-project-root-dir ()
@@ -1615,8 +1591,8 @@ file in case of its absence, or if it is empty."
       (setq project-root-dir (file-truename project-root-dir)))
 
     ;; 3. Scan for the real project root of the opend file
-    ;; At this moment we loor for either `ac-php-config-file'
-    ;; or “.projectile” or “vendor/autoload.php”
+    ;; We're looking either for the `ac-php-config-file' file
+    ;; or the “.projectile” file, or the “vendor/autoload.php” file
     (let (last-dir)
       (while
           (not (or
@@ -2186,9 +2162,6 @@ file in case of its absence, or if it is empty."
         (popup-tip (concat "[" (if (string= "S" file-pos ) "system" "  user" )  "]:"  (ac-php-clean-document doc) "\n[  type]:"  return-type   ))
 
         )) )))
-
-
-
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
   "auto set  cscope-initial-directory and  Run egrep over the cscope database."

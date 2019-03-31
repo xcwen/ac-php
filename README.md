@@ -69,25 +69,21 @@ Known to work with GNU Emacs 24.4 and later. ac-php may work with older versions
 Prerequisite packages are:
 
 - **Common**
+  - GNU Emacs >= 24.4
   - PHP CLI
   - [php-mode][:gh-php-mode:]
 - **`ac-php-core.el`**
-  - json
-  - s
-  - f
-  - popup
-  - cl
-  - dash
-  - eldoc
-  - xscope
+  - [s][:melpa-s:]
+  - [f][:melpa-f:]
+  - [popup][:melpa-popup:]
+  - [dash][:elpa-dash:]
+  - [scope][:sf-cscope:] (optional)
 - **`ac-php.el`**
   - [auto-complete][:gh-ac:]
   - [yasnippet][:gh-yasnippet:]
 - **`helm-ac-php-apropros.el`**
-  - pcase
   - [helm][:gh-helm:]
 - **`company-php.el`**
-  - cl-lib
   - [company][:gh-company:]
 
 ### Using MELPA
@@ -482,3 +478,8 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:issue-example:]: https://github.com/xcwen/ac-php/issues/51
 [:phpctags:]: https://github.com/xcwen/phpctags
 [:screenshots:]: https://github.com/xcwen/ac-php/tree/master/screenshots
+[:elpa-dash:]: https://elpa.gnu.org/packages/dash.html
+[:melpa-f:]: https://melpa.org/#/f
+[:melpa-s:]: https://melpa.org/#/s
+[:melpa-popup:]: https://melpa.org/#/popup
+[:sf-cscope:]: http://cscope.sourceforge.net

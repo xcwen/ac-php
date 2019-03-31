@@ -40,7 +40,6 @@
 (eval-when-compile
   (require 'cl))
 
-
 (defvar ac-php-test-dir  (file-name-directory load-file-name)
   "Directory containing the `ac-php' test files.")
 

@@ -6,7 +6,7 @@
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24.4") (dash "1") (php-mode "1") (xcscope "1") (s "1") (f "0.17.0") (popup "0.5.0"))
+;; Package-Requires: ((emacs "24.4") (dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -27,8 +27,7 @@
 
 ;;; Commentary:
 
-;; The core library of the `ac-php'.  Known to work on Linux and macOS systems.
-;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
+;; The core library of the package `ac-php'.
 ;;
 ;; Thanks to:
 ;; - auto-complete-clang
@@ -38,6 +37,8 @@
 ;; Many options available under Help:Customize
 ;; Options specific to ac-php-core are in
 ;;   Convenience/Completion/Auto Complete
+;;
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')
@@ -2320,9 +2321,12 @@ Set this variable to nil to disable the lighter."
 
 ;;;###autoload
 (defun ac-php-core-eldoc-setup ()
-  "Set up eldoc function and enable eldoc-mode."
+  "Setting up eldoc support.
+Configure the variable `eldoc-documentation-function' and
+call the command `eldoc-mode'."
   (interactive)
-  (setq-local eldoc-documentation-function #'ac-php-core-eldoc--documentation-function)
+  (setq-local eldoc-documentation-function
+              #'ac-php-core-eldoc--documentation-function)
   (eldoc-mode +1))
 
 (provide 'ac-php-core)

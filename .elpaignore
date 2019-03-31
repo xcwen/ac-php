@@ -1,0 +1,11 @@
+.travis.yml
+.ert-runner
+.gitignore
+.gitattributes
+Makefile
+cp_to_elpa.sh
+images
+commom_php
+phptest
+screenshots
+test

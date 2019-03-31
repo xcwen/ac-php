@@ -3,7 +3,8 @@
 ;; Copyright (C) 2018  Antoine Brand
 
 ;; Author: Antoine Brand <antoine597@gmail.com>
-;; Keywords: 
+;; Keywords: convenience, helm
+;; Package-Requires: ((emacs "24.4") (helm "1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -53,7 +54,7 @@
      (lambda (k v)
        (when (not (equalp "sys" (aref v 3)))
          (insert
-          (propertize 
+          (propertize
            (pcase (aref v 0)
              ("d" (concat (if (equalp "void" (aref v 4)) "" (aref v 4)) (aref v 1)))
              ("f" (concat (if (equalp "void" (aref v 4)) "" (aref v 4)) (substring (aref v 1) 0 (- (string-width (aref v 1)) 1))))

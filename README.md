@@ -39,7 +39,7 @@ This repository contains:
 - Currently ships with [Spacemacs][:gh-spacemacs:]
 - Supports of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:] and [`helm`][:gh-helm:]
 - Auto Completion for built-in extensions
-  - Pdo
+  - PDO
   - SPL
   - mysqli
   - SQLite3
@@ -59,7 +59,11 @@ This repository contains:
 - Auto Completion for built-in functions
 - Supports of PHPDoc annotations
 
+For more see [screenshots][:screenshots:] page.
+
 ## Installation
+
+Known to work with GNU Emacs 24.4 and later. ac-php may work with older versions of GNU Emacs, or with other flavors of GNU Emacs (e.g. XEmacs) but this is not guaranteed. Bug reports for problems related to using ac-php with older versions of Emacs will most like not be addressed.
 
 Prerequisite packages are:
 
@@ -248,7 +252,7 @@ public function hello(): \Acme\Services\HelloService
 $hello = hello();
 ```
 
-Note: if a function or a class member has no defined return value then you need to define it using annotation.
+**Note:** if a function or a class member has no defined return value then you need to define it using annotation.
 
 ### Working with tags
 
@@ -404,10 +408,13 @@ phpctags[/home/jim/phptest/testa.php] ERROR:PHPParser: Unexpected token '}' on l
 In this case you'll need to fix an error in `testa.php` and re run `ac-php-remake-tags`.
 
 
+**Note:** You shouldn't download phpctags, ac-php already ships with its own modified version.
+
+
 If you see something like this:
 
 ```
-no find file .ac-php-conf.json dir in path list: /home/jim/phptest/
+ac-php: Unable to resolve project root
 ```
 
 This means you have to create the `.ac-php-conf.json` file in the project root:
@@ -418,13 +425,13 @@ $ touch /path/to/the/project/.ac-php-conf.json
 
 ## FAQ
 
-- **Q: Something went wrong. It seems I followed all the instructions, but auto completion stopped working**
-- **A: Run `M-x ac-php-remake-tags-all`**
+- **Q:** Something went wrong. It seems I followed all the instructions, but auto completion stopped working
+- **A:** Run `M-x ac-php-remake-tags-all`
 
 ---
 
-- **Q: How I can create a reproducible test to create an issue?**
-- **A: Please use [this issue][:issue-example:] as an example**
+- **Q:** How I can create a reproducible test to create an issue?
+- **A:** Please use [this issue][:issue-example:] as an example
 
 ## License
 
@@ -450,3 +457,4 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:phpstorm-stubs:]: https://github.com/JetBrains/phpstorm-stubs
 [:issue-example:]: https://github.com/xcwen/ac-php/issues/51
 [:phpctags:]: https://github.com/xcwen/phpctags
+[:screenshots:]: https://github.com/xcwen/ac-php/tree/master/screenshots

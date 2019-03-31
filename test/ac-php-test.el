@@ -1,10 +1,12 @@
-;;; ac-php-test.el --- Tests for ac-php
+;;; ac-php-test.el --- AC PHP: Base test -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013 Daniel Hackney
-;;               2014, 2015 Eric James Michael Ritz
+;; Copyright (C) 2014-2019 jim
 
-;; Author: Daniel Hackney <dan@haxney.org>
-;; URL: https://github.com/ejmr/ac-php
+;; Author: jim <xcwenn@qq.com>
+;; Maintainer: jim
+;; URL: https://github.com/xcwen/ac-php
+
+;; This file is not part of GNU Emacs.
 
 ;;; License
 
@@ -25,20 +27,16 @@
 
 ;;; Commentary:
 
-;; Automate tests from the "tests" directory using `ert', which comes bundled
+;;   Automate tests from the "test" directory using `ert', which comes bundled
 ;; with Emacs >= 24.1.
 
 ;;; Code:
-(require 'package)
-(package-initialize)
 
 (require 'f)
 
-(setq load-path (append  (list (f-parent(f-parent load-file-name))) load-path ) )
-;;(message "load-path %S" load-path )
+(setq load-path (append (list (f-parent(f-parent load-file-name))) load-path))
 
 (require 'ac-php)
-(require 'ert)
 (eval-when-compile
   (require 'cl))
 
@@ -203,7 +201,7 @@ run with specific customizations set."
     (ac-php-test--parse-line line-txt ret  )
     ))
 
- 
+
 
 (ert-deftest ac-php-test-parse-line-11 ()
   (let (line-txt  ret )
@@ -310,6 +308,5 @@ run with specific customizations set."
 
 ;;; ac-php-test.el ends here
 
-;; emacs --debug-init -Q --script ./php-mode-test.el 
+;; emacs --debug-init -Q --script ./php-mode-test.el
 ;; End:
-

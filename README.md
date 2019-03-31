@@ -1,4 +1,5 @@
 # ac-php
+[![Build Status][:badge-travis:]][:project-travis:]
 
 A GNU Emacs auto completion source for the PHP.
 
@@ -67,8 +68,27 @@ Known to work with GNU Emacs 24.4 and later. ac-php may work with older versions
 
 Prerequisite packages are:
 
-- php-cli
-- php-mode
+- **Common**
+  - PHP CLI
+  - [php-mode][:gh-php-mode:]
+- **`ac-php-core.el`**
+  - json
+  - s
+  - f
+  - popup
+  - cl
+  - dash
+  - eldoc
+  - xscope
+- **`ac-php.el`**
+  - [auto-complete][:gh-ac:]
+  - [yasnippet][:gh-yasnippet:]
+- **`helm-ac-php-apropros.el`**
+  - pcase
+  - [helm][:gh-helm:]
+- **`company-php.el`**
+  - cl-lib
+  - [company][:gh-company:]
 
 ### Using MELPA
 
@@ -443,6 +463,8 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:badge-ac-php-core-s:]: http://stable.melpa.org/packages/ac-php-core-badge.svg
 [:badge-company-php:]: https://melpa.org/packages/company-php-badge.svg
 [:badge-company-php-s:]: http://stable.melpa.org/packages/company-php-badge.svg
+[:badge-travis:]: https://travis-ci.com/xcwen/ac-php.svg
+[:project-travis:]:https://travis-ci.com/xcwen/ac-php
 [:project-ac-php:]: http://melpa.org/#/ac-php
 [:project-ac-php-s:]: http://stable.melpa.org/#/ac-php
 [:project-ac-php-core:]: http://melpa.org/#/ac-php-core
@@ -453,6 +475,8 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:gh-company:]: https://github.com/company-mode/company-mode
 [:gh-spacemacs:]: https://github.com/syl20bnr/spacemacs
 [:gh-helm:]: https://github.com/emacs-helm/helm
+[:gh-php-mode:]: https://github.com/emacs-php/php-mode
+[:gh-yasnippet:]: https://github.com/joaotavora/yasnippet
 [:melpa-gs:]: https://melpa.org/#/getting-started
 [:phpstorm-stubs:]: https://github.com/JetBrains/phpstorm-stubs
 [:issue-example:]: https://github.com/xcwen/ac-php/issues/51

@@ -1388,24 +1388,23 @@ a remake will be performed."
         file-attr
         file-last-time
         now)
-    (when project-root-dir
-      (progn
-        (setq tags-file (concat (ac-php--get-tags-save-dir project-root-dir) "tags.el")
-              file-attr (file-attributes tags-file))
+    (if project-root-dir
+        (progn
+          (setq tags-file (concat (ac-php--get-tags-save-dir project-root-dir) "tags.el")
+                file-attr (file-attributes tags-file))
 
-        (if file-attr
+          (when file-attr
             (progn
               (ac-php--debug "Found tags file")
               (setq file-last-time (ac-php--get-timestamp (nth 5 file-attr))
-                    now (ac-php--get-timestamp (current-time)))
+                    now (ac-php--get-timestamp (current-time))))
 
-              (when (and (> (- now file-last-time) ac-php-auto-update-intval))
-                (progn
-                  (ac-php--debug "The tags file is out of date")
-                  (ac-php--remake-tags project-root-dir nil)))
+            (when (and (> (- now file-last-time) ac-php-auto-update-intval))
+              (progn
+                (ac-php--debug "The tags file is out of date")
+                (ac-php--remake-tags project-root-dir nil))))
 
-              (list project-root-dir tags-file))
-          (message "ac-php: Cannot get access to read tags file: %s" tags-file)))
+          (list project-root-dir tags-file))
       nil)))
 
 (defun ac-php--get-config-path-noti-str ( project-root-dir path-str)
@@ -1597,7 +1596,7 @@ file in case of its absence, or if it is empty."
     (if (file-exists-p tags-file)
         (ac-php-load-data tags-file project-root-dir)
       (progn
-        (ac-php--debug "Tags file doesn't exist. Remake...")
+        (ac-php--debug "Per-project tags file doesn't exist. Remake...")
         (ac-php-remake-tags)))))
 
 (defun ac-php--get-project-root-dir ()

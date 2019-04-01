@@ -7,6 +7,7 @@
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
 ;; Package-Requires: ((emacs "24.4") (dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
+;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
 
 ;; This file is not part of GNU Emacs.
 
@@ -61,6 +62,9 @@
   "Auto Completion source for PHP."
   :prefix "ac-php-"
   :group 'auto-complete
+  :group 'completion
+  :group 'convenience
+  :link '(url-link :tag "Bug Tracker" "https://github.com/xcwen/ac-php/issues")
   :link '(url-link :tag "GitHub Page" "https://github.com/xcwen/ac-php")
   :link '(emacs-commentary-link :tag "Commentary" "ac-php"))
 
@@ -92,6 +96,23 @@ To use this feature you'll need to set cscope executable path in
   :group 'ac-php
   :type 'boolean)
 
+(defcustom ac-php-mode-line
+  '(:eval (format "AP%s" (ac-php-mode-line-project-status)))
+  "Mode line lighter for ac-php.
+Set this variable to nil to disable the lighter."
+  :group 'ac-php
+  :type 'sexp
+  :risky t)
+
+(defcustom ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
+  "Use this directory as a base path for the per-projects tags directories..
+
+The idea is to have a common local directory for the all projects.  This path
+get extended with the directory tree of the project that you are indexing the
+tags for."
+  :group 'ac-php
+  :type 'string)
+
 ;;; Internal configuration
 
 (defconst ac-php-config-file ".ac-php-conf.json"
@@ -116,9 +137,11 @@ ac-php developer only.")
 (defvar ac-php-gen-tags-flag nil
   "Non-nil means that remaking tags currently is under process.")
 
-(defvar ac-php-prefix-str "")
+(defvar ac-php-phptags-index-progress 0
+  "The re-index progress indicator.
+Used in function `ac-php-mode-line-project-status'")
 
-(defvar ac-php-phptags-index-progress  0)
+(defvar ac-php-prefix-str "")
 
 (defvar ac-php-tag-last-data-list nil)
 
@@ -134,6 +157,8 @@ ac-php developer only.")
  "extends" "return" "static"))
 
 (defvar ac-php-rebuild-tmp-error-msg nil)
+
+(defvar ac-php-max-bookmark-count 500 )
 
 ;;; Utils
 
@@ -168,14 +193,10 @@ left to try and get the path down to MAX-LEN"
             components (cdr components)))
     (concat str (reduce (lambda (a b) (concat a "/" b)) components))))
 
-(defvar ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
-  "PATH for tags to be saved, default value is \"~/.ac-php\" as base for
-directories.
+(defun ac-php-mode-line-project-status ()
+  "Report status of current project index."
+  (format ":%02d%%%%" ac-php-phptags-index-progress))
 
-This path get extended with the directory tree of the project that you are
-indexing the tags for.")
-
-(defvar ac-php-max-bookmark-count 500 )
 (defun ac-php-location-stack-push ()
   (let ((bm (ac-php-current-location)))
     (if  ( functionp  'xref-push-marker-stack)
@@ -1234,7 +1255,7 @@ This callback function accepts two arguments:
         (unless (= ac-php-phptags-index-progress progress)
           (setq ac-php-phptags-index-progress progress)
           (force-mode-line-update)))))))
-;; (setq ac-php-debug-flag nil)
+
 (defun ac-php--remake-tags (project-root-dir force)
   "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
 This function attempts to re-index project files only if currently no other
@@ -2170,24 +2191,6 @@ file in case of its absence, or if it is empty."
           )
       (message "need  config: %s -> use-cscope:true" ac-php-config-file)
     )))
-
-
-;; mode --- info
-(defcustom ac-php-mode-line
-  '(:eval (format "AP%s"
-                  ( ac-php-mode-line-project-status)))
-  "Mode line lighter for AC-PHP.
-
-Set this variable to nil to disable the lighter."
-  :group 'ac-php
-  :type 'sexp
-  :risky t)
-
-(defun ac-php-mode-line-project-status ()
-  "Report status of current project index."
-  (format ":%02d%%%%" ac-php-phptags-index-progress   )
-    )
-
 
 (define-minor-mode ac-php-mode
   "AC-PHP "

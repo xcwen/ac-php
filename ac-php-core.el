@@ -1172,58 +1172,49 @@ SAVE-TAGS-DIR as a destination path for the index cache.  In addition this
 function takes into account REBUILD flag which means that the files should be
 processed even though they were recently processed (so-called force rebuild)."
     (message "ac-php: Rebuild file list...")
+    (let* ((arguments (ac-php--ctags-opts project-root-dir rebuild))
+           (process (apply 'start-process
+                           "ac-phptags"
+                           "*AC-PHPTAGS*"
+                           ac-php-php-executable
+                           ac-php-ctags-executable
+                           arguments)))
 
-    (let (file-list
-          obj-tags-list
-          update-tag-file-list
-          all-file-list
-          last-phpctags-errmsg)
+      (ac-php--debug
+       "%s %s %s %s %s %s"
+       ac-php-php-executable
+       ac-php-ctags-executable
+       (nth 0 arguments)
+       (nth 1 arguments)
+       (nth 2 arguments)
+       (nth 3 arguments))
 
-    (let (file-name src-time obj-file-name obj-item all-opt-list tmp-array)
+      (ac-php-mode t)
 
-      (let* ((arguments (ac-php--ctags-opts project-root-dir rebuild))
-             (process (apply 'start-process
-                             "ac-phptags"
-                             "*AC-PHPTAGS*"
-                             ac-php-php-executable
-                             ac-php-ctags-executable
-                             arguments)))
+      (setq ac-php-rebuild-tmp-error-msg nil
+            ac-php-phptags-index-progress 0)
 
-        (ac-php--debug
-         "%s %s %s %s %s %s"
-         ac-php-php-executable
-         ac-php-ctags-executable
-         (nth 0 arguments)
-         (nth 1 arguments)
-         (nth 2 arguments)
-         (nth 3 arguments))
+      (force-mode-line-update)
 
-        (ac-php-mode t)
+      (set-process-sentinel
+       process
+       '(lambda (process event)
+          (ac-php-mode 0)
+          (cond
+           ((string-match "finished" event)
+            (if ac-php-rebuild-tmp-error-msg
+                (message "ac-php: An error occurred during to re-index: %s"
+                         ac-php-rebuild-tmp-error-msg)
+              (message "ac-php: Re-indexing has been finished successfully")))
+           ((string-match "exited abnormally" event)
+            (progn
+              (message (concat "ac-php: Something went wrong\n"
+                               "ac-php: The re-indexing process exited abnormally\n"
+                               "ac-php: Please re-check for incorrect syntax and "
+                               "possible PHP errors and try again later"))
+              (ac-php--debug event))))))
 
-        (setq ac-php-rebuild-tmp-error-msg nil
-              ac-php-phptags-index-progress 0)
-
-        (force-mode-line-update)
-
-        (set-process-sentinel
-         process
-         '(lambda (process event)
-            (ac-php-mode 0)
-            (cond
-             ((string-match "finished" event)
-              (if ac-php-rebuild-tmp-error-msg
-                  (message "ac-php: An error occurred during to re-index: %s"
-                           ac-php-rebuild-tmp-error-msg)
-                (message "ac-php: Re-indexing has been finished successfully")))
-             ((string-match "exited abnormally" event)
-              (progn
-                (message (concat "ac-php: Something went wrong\n"
-                                 "ac-php: The re-indexing process exited abnormally\n"
-                                 "ac-php: Please re-check for incorrect syntax and "
-                                 "possible PHP errors and try again later"))
-                (ac-php--debug event))))))
-
-        (set-process-filter process 'ac-php-phptags-index-process-filter)))))
+      (set-process-filter process 'ac-php-phptags-index-process-filter)))
 
 (defun ac-php-phptags-index-process-filter (process strings)
   "Process status update for the indexing process.

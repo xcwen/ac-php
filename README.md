@@ -209,7 +209,7 @@ https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 ac-php supports of PHPDoc annotations. Thus auto completion should work for:
 
 
-**Property type hints**
+**Property annotations**
 
 ```php
 /**
@@ -218,7 +218,7 @@ ac-php supports of PHPDoc annotations. Thus auto completion should work for:
 public $hello;
 ```
 
-**Invisible (magic) members**
+**Invisible (magic) members annotations**
 
 ```php
 /**
@@ -230,7 +230,7 @@ class Test
 }
 ```
 
-**Return type hins**
+**Return type annotations**
 
 ```php
 /**
@@ -240,13 +240,24 @@ public function get_v1()
 
 ```
 
-**Invisible (magic) methods**
+**Invisible (magic) methods annotations**
 
 ```php
 /**
  * @method \Acme\Services\HelloService hello()
  */
 class Test
+{
+    // ...
+}
+```
+
+**Parameters type hints**
+
+``` php
+use Acme\Services\HelloService;
+
+public function hello(HelloService $service)
 {
     // ...
 }
@@ -261,7 +272,7 @@ public function hello(): \Acme\Services\HelloService
 }
 ```
 
-**Variable type hins**
+**Variable annotations**
 
 ```php
 /** @var \Acme\Services\HelloService $hello */

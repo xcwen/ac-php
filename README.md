@@ -5,22 +5,10 @@ A GNU Emacs auto completion source for the PHP.
 
 ---
 
-This repository contains:
-
-- **ac-php-core**, the core library of the ac-php
-  [![MELPA][:badge-ac-php-core:]][:project-ac-php-core:]
-  [![MELPA Stable][:badge-ac-php-core-s:]][:project-ac-php-core-s:]
-- **ac-php**, a frontend for the `auto-complete`
-  [![MELPA][:badge-ac-php:]][:project-ac-php:]
-  [![MELPA Stable][:badge-ac-php-s:]][:project-ac-php-s:]
-- **company-php**, a frontend for the `company-mode`
-  [![MELPA][:badge-company-php:]][:project-company-php:]
-  [![MELPA Stable][:badge-company-php-s:]][:project-company-php-s:]
-- **helm-ac-php-apropros**, an apropos functionality using the ac-php index and `helm` as interface
-
 ## Table of Contents
 
-* [Features](#features)
+* [About ac-php](#about-ac-php)
+* [Provide Features](#provide-features)
   * [PHPDoc annotations](#phpdoc-annotations)
   * [Type hints](#type-hints)
 * [Install](#installation)
@@ -36,7 +24,24 @@ This repository contains:
 * [FAQ](#faq)
 * [License](#license)
 
-## Features
+## About ac-php
+
+This repository contains:
+
+- **ac-php-core**, the core library of the ac-php
+  [![MELPA][:badge-ac-php-core:]][:project-ac-php-core:]
+  [![MELPA Stable][:badge-ac-php-core-s:]][:project-ac-php-core-s:]
+- **ac-php**, a frontend for the `auto-complete`
+  [![MELPA][:badge-ac-php:]][:project-ac-php:]
+  [![MELPA Stable][:badge-ac-php-s:]][:project-ac-php-s:]
+- **company-php**, a frontend for the `company-mode`
+  [![MELPA][:badge-company-php:]][:project-company-php:]
+  [![MELPA Stable][:badge-company-php-s:]][:project-company-php-s:]
+- **helm-ac-php-apropros**, an apropos functionality using the ac-php index and `helm` as interface
+
+## Provide Features
+
+The PHP code completion and the jump to definition/declaration/inclusion-file provided by [phpctags][:phpctags:].
 
 - Support of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:]
   and [`helm`][:gh-helm:] (an apropos functionality)
@@ -234,7 +239,7 @@ You can install `ac-php` manually by adding following to your init file :
              (yas-global-mode 1)
 
              ;; To enable eldoc support (optional)
-             (ac-php-core-eldoc-setup )
+             (ac-php-core-eldoc-setup)
 
              ;; Jump to definition (optional)
              (define-key php-mode-map (kbd "C-]")

@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; An apropos functionnality using the ac-php index and helm as interface.
+;; An apropos functionality using the ac-php index and helm as interface.
 
 ;;; Code:
 

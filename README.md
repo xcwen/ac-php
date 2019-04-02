@@ -16,11 +16,13 @@ This repository contains:
 - **company-php**, a frontend for the `company-mode`
   [![MELPA][:badge-company-php:]][:project-company-php:]
   [![MELPA Stable][:badge-company-php-s:]][:project-company-php-s:]
-- **helm-ac-php-apropros**, an apropos functionnality using the ac-php index and `helm` as interface
+- **helm-ac-php-apropros**, an apropos functionality using the ac-php index and `helm` as interface
 
 ## Table of Contents
 
 * [Features](#features)
+  * [PHPDoc annotations](#phpdoc-annotations)
+  * [Type hints](#type-hints)
 * [Install](#installation)
   * [Using MELPA](#using-melpa)
 * [Usage](#usage)
@@ -28,7 +30,6 @@ This repository contains:
   * [auto-complete](#auto-complete)
   * [company-mode](#company-mode)
   * [Spacemacs](#spacemacs)
-  * [PHPDoc annotations](#phpdoc-annotations)
   * [Working with tags](#working-with-tags)
   * [Using configuration file](#using-configuration-file)
   * [Rebuilding tags](#rebuilding-tags)
@@ -37,15 +38,15 @@ This repository contains:
 
 ## Features
 
-- Currently ships with [Spacemacs][:gh-spacemacs:]
-- Supports of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:] and [`helm`][:gh-helm:]
+- Support of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:]
+  and [`helm`][:gh-helm:] (an apropos functionality)
 - Auto Completion for built-in extensions
   - PDO
   - SPL
   - mysqli
   - SQLite3
   - ...
-- Auto Completion for PECL extesnions
+- Auto Completion for PECL extensions
   - Redis
   - Imagick
   - Swoole
@@ -58,9 +59,92 @@ This repository contains:
   - ...
 - Auto Completion for user defined classes
 - Auto Completion for built-in functions
-- Supports of PHPDoc annotations
+- Support of annotations and type hints
+- Currently ships with [Spacemacs][:gh-spacemacs:]
 
 For more see [screenshots][:screenshots:] page.
+
+#### PHPDoc annotations
+
+ac-php supports PHPDoc annotations. Thus auto completion should work for:
+
+
+**Property annotations**
+
+```php
+/**
+ * @var \Acme\Services\HelloService
+ */
+public $hello;
+```
+
+**Invisible (magic) members annotations**
+
+```php
+/**
+ * @property \Acme\Services\HelloService $hello
+ */
+class Test
+{
+    // ...
+}
+```
+
+**Return type annotations**
+
+```php
+/**
+ * @return \Acme\Services\HelloService
+ */
+public function get_v1()
+
+```
+
+**Invisible (magic) methods annotations**
+
+```php
+/**
+ * @method \Acme\Services\HelloService hello()
+ */
+class Test
+{
+    // ...
+}
+```
+
+**Variable annotations**
+
+```php
+/** @var \Acme\Services\HelloService $hello */
+$hello = hello();
+```
+
+**Note:** if a function or a class member has no defined return value then you need to define it using annotation.
+
+#### Type hints
+
+In addition, ac-php supports return / parameter type hints.
+Thus you'll get additional auto completion support for the following cases:
+
+**Parameter type hints**
+
+``` php
+use Acme\Services\HelloService;
+
+public function hello(HelloService $service)
+{
+    // ...
+}
+```
+
+**PHP 7 return type hints**
+
+```php
+public function hello(): \Acme\Services\HelloService
+{
+    // ...
+}
+```
 
 ## Installation
 
@@ -204,83 +288,6 @@ And use `M-x company-complete` to complete.
 To use ac-php with Spacemacs please refer to :
 https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 
-### PHPDoc annotations
-
-ac-php supports of PHPDoc annotations. Thus auto completion should work for:
-
-
-**Property annotations**
-
-```php
-/**
- * @var \Acme\Services\HelloService
- */
-public $hello;
-```
-
-**Invisible (magic) members annotations**
-
-```php
-/**
- * @property \Acme\Services\HelloService $hello
- */
-class Test
-{
-    // ...
-}
-```
-
-**Return type annotations**
-
-```php
-/**
- * @return \Acme\Services\HelloService
- */
-public function get_v1()
-
-```
-
-**Invisible (magic) methods annotations**
-
-```php
-/**
- * @method \Acme\Services\HelloService hello()
- */
-class Test
-{
-    // ...
-}
-```
-
-**Parameters type hints**
-
-``` php
-use Acme\Services\HelloService;
-
-public function hello(HelloService $service)
-{
-    // ...
-}
-```
-
-**PHP 7 type hints**
-
-```php
-public function hello(): \Acme\Services\HelloService
-{
-    // ...
-}
-```
-
-**Variable annotations**
-
-```php
-/** @var \Acme\Services\HelloService $hello */
-$hello = hello();
-```
-
-**Note:** if a function or a class member has no defined return value then you need to define it using annotation.
-
 ### Working with tags
 
 ac-php uses its own tags format. By default all tags located at `~/.ac-php/tags-<project-directory>`.
@@ -289,7 +296,7 @@ For example, if the real path of the project is `/home/jim/ac-php/phptest`, then
 
 And you can redefine the base path (`~/.ac-php`) using `ac-php-tags-path` variable.
 
-The tags directory structure looks loke this:
+The tags directory structure looks like this:
 
 ```bash
 $ tree ~/.ac-php/tags-home-jim-ac-php-phptest
@@ -386,7 +393,8 @@ filter result is:
 
 `31.php` `33.php` will be ignored during tag generation;
 
-laravel example:
+Laravel example:
+
 ```json
 {
   "filter": {

@@ -151,7 +151,7 @@ Used in function `ac-php-mode-line-project-status'")
 ;;     functions-array
 ;;     inherit-list
 ;;     project-files-array
-;;     paroject-root))
+;;     project-root))
 ;;
 ;; Below is a small example to understand the structure
 ;; of this database:
@@ -159,7 +159,7 @@ Used in function `ac-php-mode-line-project-status'")
 ;;   (("/path/to/the/tags.el" 1553935654
 ;;     (("class1" "class2" "...")
 ;;      ["fn1" "fn2" "fn3" "fn4" "fn5" "..."]
-;;      ("inherit1" "inherit2", "...")
+;;      ("inherit1" "inherit2" "...")
 ;;      ["/file3.php" "/file4.php" "..."]
 ;;      "/path/to/the/project-1/root"))
 ;;    ("/path/to/the/tags.el" 1553935654
@@ -225,6 +225,10 @@ left to try and get the path down to MAX-LEN"
             len (- len (1- (length (car components))))
             components (cdr components)))
     (concat str (reduce (lambda (a b) (concat a "/" b)) components))))
+
+(defun ac-php-g--project-root-dir (tags-data)
+  "Return a project path using the TAGS-DATA list."
+  (nth 4 tags-data))
 
 (defun ac-php-mode-line-project-status ()
   "Report status of current project index."
@@ -1616,7 +1620,6 @@ will be loaded and the in-memory storage will be updated."
 (defun ac-php-g--function-map (tags-data ) (nth 1  tags-data ) )
 (defun ac-php-g--inherit-map (tags-data ) (nth 2  tags-data ) )
 (defun ac-php-g--file-list (tags-data ) (nth 3  tags-data ) )
-(defun ac-php-g--project-root-dir  (tags-data ) (nth 4  tags-data ) )
 
 (defun ac-php-get-tags-data ()
   "Load a tags data for the particular project."
@@ -1897,23 +1900,26 @@ will be loaded and the in-memory storage will be updated."
 (defun ac-php--get-namespace-from-classname (classname)
   (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname ) ) )
 
-(defun ac-php-find-symbol-at-point-pri ( tags-data &optional  as-function-flag as-name-flag )
-  (let ( key-str-list
-         cur-word val-name class-name output-vec
-         jump-pos  cmd complete-cmd  find-flag ret
-         (project-root-dir ( ac-php-g--project-root-dir tags-data ))
-         )
+(defun ac-php-find-symbol-at-point-pri (tags-data &optional as-fn-p as-id-p)
+  "Docstring."
+  (let (key-str-list
+        cur-word
+        val-name
+        class-name
+        output-vec
+        jump-pos
+        cmd
+        complete-cmd
+        find-flag ret
+        (project-root-dir (ac-php-g--project-root-dir tags-data)))
 
+    (if as-id-p
+        (setq cur-word (ac-php--get-cur-word))
+      (if as-fn-p
+          (setq cur-word (concat (ac-php--get-cur-word) "("))
+        (setq cur-word (ac-php--get-cur-word-with-function-flag))))
 
-    (if as-name-flag
-        (setq cur-word  (ac-php--get-cur-word ))
-      (if as-function-flag
-          (setq cur-word  (concat (ac-php--get-cur-word ) "(" ))
-        (setq cur-word  (ac-php--get-cur-word-with-function-flag ))
-        )
-      )
-
-    (ac-php--debug "key-str-list==begin:cur-word:%s" cur-word )
+    (ac-php--debug "key-str-list==begin:cur-word:%s" cur-word)
     (setq key-str-list (ac-php-get-class-at-point  tags-data ))
 
     (ac-php--debug "key-str-list==end:%s" key-str-list)
@@ -2140,15 +2146,33 @@ will be loaded and the in-memory storage will be updated."
         (ac-php-candidate-class tags-data key-str-list  )
       (ac-php-candidate-other tags-data))
     ))
-(defun ac-php--get-cur-word ( )
+
+(defun ac-php--get-cur-word ()
+  "Return the “word” before current point.
+
+The word “word” means a combination of characters that forms a
+valid identifier in PHP except the dollar sign.
+
+Examples:
+
+  :-------------------------:--------------------:
+  | If the point at the end | Will return        |
+  :-------------------------:--------------------:
+  | $someVariable           | someWariable       |
+  | Acme\\Service\\Foo      | Acme\\Service\\Foo |
+  | foo()->bar              | bar                |
+  | foo()                   |                    |
+  | \"some string\"         |                    |
+  :-------------------------:--------------------:
+
+Return empty string if there is no valid sequence of characters."
   (let (start-pos cur-word)
   (save-excursion
     (skip-chars-backward "a-z0-9A-Z_\\\\")
     (setq start-pos (point))
     (skip-chars-forward "a-z0-9A-Z_\\\\")
-      (buffer-substring-no-properties start-pos (point))
-    )
-    ))
+      (buffer-substring-no-properties start-pos (point)))))
+
 (defun ac-php-get-cur-word-with-dollar ( )
   (let (start-pos cur-word)
   (save-excursion
@@ -2161,7 +2185,7 @@ will be loaded and the in-memory storage will be updated."
 
 (defun ac-php--get-cur-word-with-function-flag ( )
   (let (start-pos cur-word)
-  (save-excursion
+    (save-excursion
       (ac-php--debug "ac-php--get-cur-word-with-function-flag:%S" (point)  )
     (skip-chars-backward "a-z0-9A-Z_\\\\")
     (setq start-pos (point))
@@ -2238,31 +2262,29 @@ will be loaded and the in-memory storage will be updated."
       (message "need  config: %s -> use-cscope:true" ac-php-config-file)
     )))
 
-(define-minor-mode ac-php-mode
-  "AC-PHP "
-  :lighter ac-php-mode-line
-  :global nil
-  :group 'ac-php
-  (cond (ac-php-mode
-         ;; Enable ac-php-mode
-         (setq ac-php-gen-tags-flag t )
-         )
-        (t
-         (setq ac-php-gen-tags-flag nil )
-         ;; Disable ac-php-mode
-         ;; Disable semantic
-         )))
+(defun ac-php-eldoc-documentation-function ()
+  "Support for ElDoc in function `ac-php-mode'.
 
+Returns a doc string appropriate for the current context, or nil.
+See `eldoc-documentation-function' for what this function is
+supposed to do."
 
-
-(defun  ac-php-core-eldoc--documentation-function(&optional prefix)
   (interactive "P")
-  ;;检查是类还是 符号
-  (let ( (tags-data  (ac-php-get-tags-data )  )
-         symbol-ret   type  doc class-name access return-type member-info tag-name function-item file-pos member-info-len )
-    (when tags-data
 
-      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data ))
+  (let ((tags-data (ac-php-get-tags-data))
+        symbol-ret
+        type
+        doc
+        class-name
+        access
+        return-type
+        member-info
+        tag-name
+        function-item
+        file-pos
+        member-info-len)
+    (when tags-data
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
       (when symbol-ret
         (setq type (car symbol-ret ))
         (setq member-info (nth 3 symbol-ret))
@@ -2332,14 +2354,46 @@ will be loaded and the in-memory storage will be updated."
              tags-file
              file-last-time)))
 
+;;; Initialization
+
+(define-minor-mode ac-php-mode
+  "Minor mode to enable autocompletion for the PHP language.
+
+When called interactively, toggle `ac-php-mode'.  With prefix
+ARG, enable `ac-php-mode' if ARG is positive, otherwise disable
+it.
+
+When called from Lisp, enable `ac-php-mode' if ARG is omitted,
+nil or positive.  If ARG is `toggle', toggle `ac-php-mode'.
+Otherwise behave as if called interactively.
+
+Usually you shouldn't call this function manually.  It will be
+called from Lisp when necessary."
+
+  ;; The indicator for the mode line.
+  :lighter ac-php-mode-line
+  ;; The minor mode should be buffer-local
+  :global nil
+  ;; Custom group name to use in all generated ‘defcustom’ forms
+  :group 'ac-php
+  ;; The initial value
+  (cond
+   (ac-php-mode
+    ;; Enable `ac-php-mode'
+    (setq ac-php-gen-tags-flag t))
+   (t
+    ;; Disable `ac-php-mode'
+    (setq ac-php-gen-tags-flag nil))))
+
 ;;;###autoload
 (defun ac-php-core-eldoc-setup ()
-  "Setting up eldoc support.
+  "Enable the ElDoc support for the PHP language.
 Configure the variable `eldoc-documentation-function' and
 call the command `eldoc-mode'."
   (interactive)
+
   (setq-local eldoc-documentation-function
-              #'ac-php-core-eldoc--documentation-function)
+              #'ac-php-eldoc-documentation-function)
   (eldoc-mode +1))
 
 (provide 'ac-php-core)

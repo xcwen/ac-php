@@ -238,7 +238,7 @@ You can install `ac-php` manually by adding following to your init file :
              ;; As an example (optional)
              (yas-global-mode 1)
 
-             ;; To enable eldoc support (optional)
+             ;; Enable the ElDoc support for the PHP (optional)
              (ac-php-core-eldoc-setup)
 
              ;; Jump to definition (optional)
@@ -273,7 +273,7 @@ And use `M-x company-complete` to complete.
              (company-mode t)
 
              ;; To enable eldoc support (optional)
-             (ac-php-core-eldoc-setup )
+             (ac-php-core-eldoc-setup)
 
              (make-local-variable 'company-backends)
              (add-to-list 'company-backends 'company-ac-php-backend)))

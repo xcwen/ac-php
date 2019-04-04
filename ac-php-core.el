@@ -51,7 +51,7 @@
 (require 'f)     ; `f-write-text', `f-full', `f-join', `f-exists?', ...
 
 (require 'popup) ; `popup-tip'
-(require 'cl)    ; `reduce'
+(require 'cl)    ; `reduce', `defun*'
 (require 'dash)
 (require 'eldoc)
 
@@ -726,7 +726,7 @@ then this function split it to
           (end-of-line))))
     ret-list ))
 
-(defun ac-php-get-class-at-point (tags-data &optional pos)
+(defun* ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
   (let (line-txt
         old-line-txt
@@ -745,13 +745,17 @@ then this function split it to
                     (buffer-substring-no-properties
                      (line-beginning-position) pos)))
 
+    ;; Get out early from function
+    (when (= (length line-txt) 0)
+      (return-from ac-php-get-class-at-point))
+
     ;; Looking for method chaining like this:
     ;;
     ;;   $class->method1()
     ;;         ->method2()
     ;;         ->method3();
     ;;
-    ;; And sets the ‘line-txt’ variable to:
+    ;; and setting the ‘line-txt’ variable to:
     ;;
     ;;   $class->method1()->method2()->method3();
     ;;
@@ -779,7 +783,7 @@ then this function split it to
     ;;
     ;;   array ($foo, "bar")
     ;;
-    ;; And sets the ‘line-txt’ variable to:
+    ;; and setting the ‘line-txt’ variable to:
     ;;
     ;;   $foo->bar
     ;;
@@ -796,7 +800,7 @@ then this function split it to
     ;;
     ;;   [$foo, "bar"]
     ;;
-    ;; And sets the ‘line-txt’ variable to:
+    ;; and setting the ‘line-txt’ variable to:
     ;;
     ;;   $foo->bar
     ;;

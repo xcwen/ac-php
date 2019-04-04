@@ -738,22 +738,27 @@ then this function split it to
     )
   )
 
-(defun ac-php-get-class-at-point( tags-data  &optional pos  )
-
+(defun ac-php-get-class-at-point (tags-data &optional pos)
+  "Docstring."
   (let (line-txt
-        old-line-txt  key-line-txt  key-list   tmp-key-list first-class-name  frist-key  ret-str frist-key-str
-        reset-array-to-class-function-flag )
+        old-line-txt
+        key-line-txt
+        key-list
+        tmp-key-list
+        first-class-name
+        frist-key
+        ret-str
+        frist-key-str
+        reset-array-to-class-function-flag)
+    (unless pos
+      (setq pos (point)))
 
-    ;; default use cur point
-    (unless  pos (setq pos (point) ))
+    (setq line-txt (s-trim
+                    (buffer-substring-no-properties
+                     (line-beginning-position) pos)))
 
-    (setq line-txt (s-trim (buffer-substring-no-properties
-                    (line-beginning-position)
-                     pos  )))
-    ;;; join   $this->xxx()
-    ;;;             ->yyy();
     (save-excursion
-      (while  (and (> (length line-txt   ) 0 ) (= (aref line-txt 0 ) ?- ) )
+      (while (and (> (length line-txt) 0) (= (aref line-txt 0) ?-))
         (previous-line)
         (let ( (no-comment-code "") (text-check-pos (line-beginning-position)) (line-end-pos (line-end-position )) )
           (while (< text-check-pos line-end-pos )
@@ -1913,14 +1918,17 @@ will be loaded and the in-memory storage will be updated."
         find-flag ret
         (project-root-dir (ac-php-g--project-root-dir tags-data)))
 
+    ;; TODO: How about new line
     (if as-id-p
         (setq cur-word (ac-php--get-cur-word))
       (if as-fn-p
           (setq cur-word (concat (ac-php--get-cur-word) "("))
         (setq cur-word (ac-php--get-cur-word-with-function-flag))))
 
-    (ac-php--debug "key-str-list==begin:cur-word:%s" cur-word)
-    (setq key-str-list (ac-php-get-class-at-point  tags-data ))
+    (when cur-word
+      (ac-php--debug "Current word: %s" cur-word))
+
+    (setq key-str-list (ac-php-get-class-at-point tags-data))
 
     (ac-php--debug "key-str-list==end:%s" key-str-list)
 
@@ -2114,7 +2122,6 @@ will be loaded and the in-memory storage will be updated."
 
 
 (defun ac-php-location-stack-jump (by)
-  (interactive)
   (let ((instack (nth ac-php-location-stack-index ac-php-location-stack))
         (cur (ac-php-current-location)))
     (if (not (string= instack cur))
@@ -2148,10 +2155,10 @@ will be loaded and the in-memory storage will be updated."
     ))
 
 (defun ac-php--get-cur-word ()
-  "Return the “word” before current point.
+  "Return a “word” before current point.
 
-The word “word” means a combination of characters that forms a
-valid identifier in PHP except the dollar sign.
+The word “word” means a combination of characters that forms a valid identifier
+in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
 
@@ -2173,6 +2180,36 @@ Return empty string if there is no valid sequence of characters."
     (skip-chars-forward "a-z0-9A-Z_\\\\")
       (buffer-substring-no-properties start-pos (point)))))
 
+(defun ac-php--get-cur-word-with-function-flag ()
+  "Return a “function” name before current point.
+
+The word “function” means a combination of characters that forms a valid
+function name.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+Examples:
+
+  :-------------------------:--------------------:
+  | If the point at #       | Will return        |
+  :-------------------------:--------------------:
+  | function foo()#         |                    |
+  | function foo(#          |                    |
+  | function foo#()         | foo(               |
+  | foo()->bar# ();         | bar(               |
+  | fo#o()->bar ();         | foo(               |
+  :-------------------------:--------------------:
+
+Return empty string if there is no valid sequence of characters."
+  (let (start-pos cur-word)
+    (save-excursion
+      (skip-chars-backward "a-z0-9A-Z_\\\\")
+      (setq start-pos (point))
+      (skip-chars-forward "a-z0-9A-Z_\\\\")
+      (skip-chars-forward " \t")
+      (skip-chars-forward "(")
+      (s-replace-all '((" " . "")
+                       ("\t" . ""))
+                     (buffer-substring-no-properties start-pos (point))))))
+
 (defun ac-php-get-cur-word-with-dollar ( )
   (let (start-pos cur-word)
   (save-excursion
@@ -2180,19 +2217,6 @@ Return empty string if there is no valid sequence of characters."
     (setq start-pos (point))
     (skip-chars-forward "\\$a-z0-9A-Z_")
       (buffer-substring-no-properties start-pos (point))
-    )
-    ))
-
-(defun ac-php--get-cur-word-with-function-flag ( )
-  (let (start-pos cur-word)
-    (save-excursion
-      (ac-php--debug "ac-php--get-cur-word-with-function-flag:%S" (point)  )
-    (skip-chars-backward "a-z0-9A-Z_\\\\")
-    (setq start-pos (point))
-    (skip-chars-forward "a-z0-9A-Z_\\\\")
-    (skip-chars-forward " \t")
-    (skip-chars-forward "(")
-      (s-replace-all '((" "."" )  ("\t"."" ))    (buffer-substring-no-properties start-pos (point)))
     )
     ))
 
@@ -2263,7 +2287,7 @@ Return empty string if there is no valid sequence of characters."
     )))
 
 (defun ac-php-eldoc-documentation-function ()
-  "Support for ElDoc in function `ac-php-mode'.
+  "A function to provide ElDoc support.
 
 Returns a doc string appropriate for the current context, or nil.
 See `eldoc-documentation-function' for what this function is

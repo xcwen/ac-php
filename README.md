@@ -218,6 +218,7 @@ You can install `ac-php` manually by adding following to your init file :
 | `ac-php-find-symbol-at-point` | Jump to definition                                         |
 | `ac-php-location-stack-back`  | Return back                                                |
 | `ac-php-show-tip`             | Show definition at point                                   |
+| `ac-php-toggle-debug`         | Toggle debug mode                                          |
 | `helm-ac-php-apropos`         | Search through all the definitions of a project with helm  |
 
 ### auto-complete

@@ -230,6 +230,25 @@ left to try and get the path down to MAX-LEN"
   "Return a project path using the TAGS-DATA list."
   (nth 4 tags-data))
 
+(defun ac-php--in-comment-p (pos)
+  "Determine whether POS is inside a comment."
+  (let ((state (save-excursion (syntax-ppss pos))))
+    (nth 4 state)))
+
+(defun ac-php-toggle-debug ()
+  "Toggle debug mode.
+Please notice, enabling debug mode entails detailed output of debugging
+information to the ‘*Messages*’ buffer.  This feature is designed for
+ac-php developer only."
+
+  (interactive)
+  (let ((debug-p (not ac-php-debug-flag)))
+    (progn
+      (setq ac-php-debug-flag debug-p
+            debug-on-error debug-p)
+      (message "Debug mode was %s in ac-php"
+               (if debug-p "enabled" "disabled")))))
+
 (defun ac-php-mode-line-project-status ()
   "Report status of current project index."
   (format ":%02d%%%%" ac-php-phptags-index-progress))
@@ -706,37 +725,6 @@ then this function split it to
 
           (end-of-line))))
     ret-list ))
-(defun ac-php-toggle-debug ( )
-    "DOCSTRING"
-    (interactive)
-  (let ()
-    (setq ac-php-debug-flag  (not ac-php-debug-flag) )
-    (setq debug-on-error ac-php-debug-flag  )
-    (message "set:  ac-php-debug-flag: %s " ac-php-debug-flag )
-    ))
-
-(defun ac-php-test ()
-    "DOCSTRING"
-  (interactive)
-  (let (v)
-    (message "==%s"
-             (ac-php--check-is-comment  (point) )
-             ) ;ss
-    ))
-
-
-
-
-
-(defun ac-php--check-is-comment (pos )
-  (let ( ( face (get-text-property pos 'face) ) )
-    (and   face
-         (or
-          (equal face font-lock-comment-delimiter-face)
-          (equal face font-lock-comment-face)
-          ))
-    )
-  )
 
 (defun ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
@@ -757,31 +745,71 @@ then this function split it to
                     (buffer-substring-no-properties
                      (line-beginning-position) pos)))
 
+    ;; Looking for method chaining like this:
+    ;;
+    ;;   $class->method1()
+    ;;         ->method2()
+    ;;         ->method3();
+    ;;
+    ;; And sets the ‘line-txt’ variable to:
+    ;;
+    ;;   $class->method1()->method2()->method3();
+    ;;
     (save-excursion
+      (ac-php--debug "Looking for method chaining...")
       (while (and (> (length line-txt) 0) (= (aref line-txt 0) ?-))
         (previous-line)
-        (let ( (no-comment-code "") (text-check-pos (line-beginning-position)) (line-end-pos (line-end-position )) )
-          (while (< text-check-pos line-end-pos )
-            (unless (ac-php--check-is-comment text-check-pos  )
-              (setq  no-comment-code (concat  no-comment-code (buffer-substring-no-properties text-check-pos  (1+ text-check-pos)  ) ))
-              )
-            (setq text-check-pos  (1+ text-check-pos) )
-            )
-          (setq line-txt (concat
-                          (s-trim  no-comment-code  )
-                          line-txt ) )
-          )
-        )
-      )
+        (let ((no-comment-code "")
+              (line-start-pos (line-beginning-position))
+              (line-end-pos (line-end-position)))
+          (while (< line-start-pos line-end-pos)
+            (unless (ac-php--in-comment-p line-start-pos)
+              (setq no-comment-code
+                    (concat no-comment-code
+                            (buffer-substring-no-properties
+                             line-start-pos (1+ line-start-pos)))))
+            (setq line-start-pos (1+ line-start-pos)))
+          (setq line-txt (concat (s-trim no-comment-code) line-txt)))))
 
-    (ac-php--debug "11 line-txt:%s " line-txt )
+    (ac-php--debug "Current working string: %s" line-txt)
 
     (setq old-line-txt line-txt)
-    ;;  array($xxx, "abc" ) => $xxx->abc
-    ;;(setq line-string  (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  "$server->on('sdfa',array($this, \"sss" ))
-    (setq line-txt (replace-regexp-in-string   ".*array[ \t]*([ \t]*\\(\\$[a-z0-9A-Z_> \t-]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  line-txt ))
-    (setq line-txt (replace-regexp-in-string   ".*\\[[ \t]*\\(\\$[a-z0-9A-Z_> \t-]+\\)[ \t]*,[ \t]*['\"]\\([a-z0-9A-Z_]*\\).*"   "\\1->\\2"  line-txt ))
-    (ac-php--debug "line-txt:%s" line-txt)
+
+    ;; Looking for callable form like this:
+    ;;
+    ;;   array ($foo, "bar")
+    ;;
+    ;; And sets the ‘line-txt’ variable to:
+    ;;
+    ;;   $foo->bar
+    ;;
+    (ac-php--debug "Looking for callable form #1...")
+    (setq line-txt
+          (replace-regexp-in-string
+           (concat ".*array[ \t\n]*"
+                   "([ \t\n]*\\(\\$[a-z0-9A-Z_> \t-]+\\)[ \t\n]*,"
+                   "[ \t\n]*['\"]\\([a-z0-9A-Z_]*\\).*")
+           "\\1->\\2"
+           line-txt))
+
+    ;; Looking for callable form like this:
+    ;;
+    ;;   [$foo, "bar"]
+    ;;
+    ;; And sets the ‘line-txt’ variable to:
+    ;;
+    ;;   $foo->bar
+    ;;
+    (ac-php--debug "Looking for callable form #2...")
+    (setq line-txt
+          (replace-regexp-in-string
+           (concat ".*\\[[ \t\n]*"
+                   "\\(\\$[a-z0-9A-Z_> \t-]+\\)[ \t\n]*,"
+                   "[ \t\n]*['\"]\\([a-z0-9A-Z_]*\\).*")
+           "\\1->\\2"
+           line-txt))
+
+    (ac-php--debug "Current working string: %s" line-txt)
 
     (setq reset-array-to-class-function-flag (not (string= line-txt old-line-txt )))
 
@@ -2119,7 +2147,6 @@ will be loaded and the in-memory storage will be updated."
 (defun ac-php-location-stack-back ()
   (interactive)
   (ac-php-location-stack-jump 1))
-
 
 (defun ac-php-location-stack-jump (by)
   (let ((instack (nth ac-php-location-stack-index ac-php-location-stack))

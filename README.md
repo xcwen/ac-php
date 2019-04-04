@@ -238,15 +238,15 @@ You can install `ac-php` manually by adding following to your init file :
              ;; As an example (optional)
              (yas-global-mode 1)
 
-             ;; Enable the ElDoc support for the PHP (optional)
+             ;; Enable ElDoc support (optional)
              (ac-php-core-eldoc-setup)
 
              ;; Jump to definition (optional)
-             (define-key php-mode-map (kbd "C-]")
+             (define-key php-mode-map (kbd "M-]")
                'ac-php-find-symbol-at-point)
 
              ;; Return back (optional)
-             (define-key php-mode-map (kbd "C-t")
+             (define-key php-mode-map (kbd "M-[")
                'ac-php-location-stack-back)))
 ```
 
@@ -270,13 +270,22 @@ And use `M-x company-complete` to complete.
           '(lambda ()
              ;; Enable company-mode
              (require 'company-php)
+
              (company-mode t)
 
-             ;; To enable eldoc support (optional)
+             ;; Enable ElDoc support (optional)
              (ac-php-core-eldoc-setup)
 
              (make-local-variable 'company-backends)
-             (add-to-list 'company-backends 'company-ac-php-backend)))
+             (add-to-list 'company-backends 'company-ac-php-backend)
+
+             ;; Jump to definition (optional)
+             (define-key php-mode-map (kbd "M-]")
+               'ac-php-find-symbol-at-point)
+
+             ;; Return back (optional)
+             (define-key php-mode-map (kbd "M-[")
+               'ac-php-location-stack-back))))
 ```
 
 2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root :

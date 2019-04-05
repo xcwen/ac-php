@@ -3,7 +3,7 @@
 .gitignore
 .gitattributes
 Makefile
-cp_to_elpa.sh
+cp2elpa.sh
 images
 commom_php
 phptest

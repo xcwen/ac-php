@@ -235,6 +235,11 @@ left to try and get the path down to MAX-LEN"
   (let ((state (save-excursion (syntax-ppss pos))))
     (nth 4 state)))
 
+(defsubst ac-php--in-string-or-comment-p (pos)
+  "Determine whether POS is inside a string or comment."
+  (let ((state (save-excursion (syntax-ppss pos))))
+    (nth 8 state)))
+
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.
 Please notice, enabling debug mode entails detailed output of debugging
@@ -257,7 +262,7 @@ ac-php developer only."
   (let ((bm (ac-php-current-location)))
     (if  ( functionp  'xref-push-marker-stack)
         (xref-push-marker-stack)
-      (ring-insert find-tag-marker-ring (point-marker))
+      (ring-insert (with-no-warnings find-tag-marker-ring) (point-marker))
       )
     (while (> ac-php-location-stack-index 0)
       (decf ac-php-location-stack-index)
@@ -333,15 +338,6 @@ ac-php developer only."
 (defun  ac-php--tag-name-is-function ( tag-name )
   (s-matches-p "(" tag-name )
     )
-
-(defun ac-php-check-not-in-string-or-comment (pos)
-  "ac-php-check-not-in-string-or-comment"
-  (save-excursion (if  (nth 8 (syntax-ppss pos))  nil  t ))
-  )
-(defun ac-php-check-not-in-comment (pos)
-  "ac-php-check-in-string-or-comment"
-  (save-excursion (if  (nth 4 (syntax-ppss pos))  nil  t ))
-  )
 
 (defun ac-php-split-string-with-separator(str regexp &optional replacement omit-nulls)
   "this function is a tool like split-string,
@@ -621,7 +617,6 @@ then this function split it to
       ))
   )
 
-
 (defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  min-pos )
   "DOCSTRING"
   (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search  search-pos)
@@ -632,9 +627,10 @@ then this function split it to
       (while  need-find-flag
         (if (setq search-pos (re-search-backward  re-str  min-pos t 1) )
             (progn
+
               (when (if in-comment-flag
-                        (not (ac-php-check-not-in-comment (point) ) )
-                      (ac-php-check-not-in-string-or-comment (point)))
+                        (ac-php--in-comment-p (point))
+                      (not (ac-php--in-string-or-comment-p (point))))
                 (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
                 (when (string-match   re-str    line-txt)
                   (setq  ret-str  (match-string pos line-txt))
@@ -649,9 +645,6 @@ then this function split it to
     (ac-php--debug "regstr=:%s; min-pos=%S ret-str:%s" re-str min-pos ret-str )
     ret-str
     ))
-
-
-
 
 (defun ac-php-get-cur-class-name ()
   "DOCSTRING"
@@ -736,8 +729,7 @@ then this function split it to
         first-class-name
         frist-key
         ret-str
-        frist-key-str
-        reset-array-to-class-function-flag)
+        frist-key-str)
     (unless pos
       (setq pos (point)))
 
@@ -815,11 +807,9 @@ then this function split it to
 
     (ac-php--debug "Current working string: %s" line-txt)
 
-    (setq reset-array-to-class-function-flag (not (string= line-txt old-line-txt )))
+    (if (or (not (ac-php--in-string-or-comment-p pos))
+            (not (string= line-txt old-line-txt)))
 
-    (if (or (ac-php-check-not-in-string-or-comment pos)
-            reset-array-to-class-function-flag
-            )
         (progn
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt )))
@@ -2032,7 +2022,7 @@ will be loaded and the in-memory storage will be updated."
     (beginning-of-defun)
 
     (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
-    (while  (not (ac-php-check-not-in-string-or-comment (point )) )
+    (while (ac-php--in-string-or-comment-p (point))
       (re-search-forward (concat "\\" local-var "\\b"  ) ) ; => \\$var\\b
       )
     ;;(ac-php-location-stack-push)

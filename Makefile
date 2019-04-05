@@ -21,8 +21,9 @@
 
 SHELL := $(shell which bash)
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-EMACS := emacs
-CASK = cask
+EMACS ?= emacs
+CASK ?= cask
+PANDOC ?= pandoc --atx-headers
 EMACSFLAGS ?=
 TESTFLAGS ?= --reporter ert+duration
 PKGDIR := $(shell EMACS=$(EMACS) $(CASK) package-directory)
@@ -59,6 +60,9 @@ endif
 $(PKGDIR): Cask
 	$(CASK) install
 	touch $(PKGDIR)
+
+README: README.md
+	$(PANDOC) -t plain -o $@ $^
 
 # Public targets
 

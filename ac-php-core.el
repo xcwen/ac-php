@@ -3,6 +3,7 @@
 ;; Copyright (C) 2014-2019 jim
 
 ;; Author: jim <xcwenn@qq.com>
+;;      Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense

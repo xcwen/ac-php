@@ -54,4 +54,10 @@
   (load (expand-file-name "company-php" source-directory))
   (load (expand-file-name "helm-ac-php-apropros" source-directory)))
 
+(defun ac-php-test-parse-equal (line expected)
+  "Verifies that after parsing LINE will be the same as EXPECTED."
+  (let* ((splitted (ac-php-split-line-4-complete-method line))
+         (actual (ac-php-remove-unnecessary-items-4-complete-method splitted)))
+    (should (equal actual expected))))
+
 ;;; test-helper.el ends here

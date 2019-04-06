@@ -118,48 +118,44 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "  \t $this->func1()->s")
     (setq  ret '("this" "." "func1(" "." "s" ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
-
-(defun ac-php-test--parse-line ( line-txt ret)
-  (should (equal  (ac-php-remove-unnecessary-items-4-complete-method
-                   (ac-php-split-line-4-complete-method line-txt ))
-                  ret)))
 
 (ert-deftest ac-php-test-parse-line-2 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt " this->asdfa ( \t (new class1( ))->run()->ss")
     (setq  ret '("class1(" "." "run(" "." "ss" ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
+
 (ert-deftest ac-php-test-parse-line-3 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt " $this->func")
     (setq  ret '("this" "." "func"  ))
-    (ac-php-test--parse-line line-txt ret  )
-    ))
+    (ac-php-test-parse-equal line-txt ret)))
+
 (ert-deftest ac-php-test-parse-line-4 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt "this")
     (setq  ret '("this"  ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 (ert-deftest ac-php-test-parse-line-5 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt "return this->sdfa&& this->ttt->ss")
     (setq  ret '("this" "." "ttt" "." "ss"  ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 (ert-deftest ac-php-test-parse-line-6 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt "return this->sdfa ||  ClassT::getV")
     (setq  ret '("ClassT::" "." "getV"   ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -169,7 +165,7 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "return (($this->tt())->kk())->ss ")
     (setq  ret '("this" "." "tt("   "." "kk(" "."  "ss"  ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -178,7 +174,7 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "\"sdfa\" => $this->tt ")
     (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -190,14 +186,14 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "$ss > $this->tt ")
     (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 (ert-deftest ac-php-test-parse-line-21 ()
   "text"
   (let (line-txt  ret )
     (setq line-txt "  } else  if ($role   == Erole:: ")
     (setq  ret '("Erole::" "."      ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -206,14 +202,14 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "$ss <= $this->tt ")
     (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 (ert-deftest ac-php-test-parse-line-12 ()
   (let (line-txt  ret )
     (setq line-txt "$this->ss(0 <= $this->tt)->kk ")
     (setq  ret '("this" "." "ss(" "." "kk"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -221,20 +217,20 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "$this->ss? this->tt ")
     (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 (ert-deftest ac-php-test-parse-line-14 ()
   (let (line-txt  ret )
     (setq line-txt "   \t  tt ")
     (setq  ret '("tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 (ert-deftest ac-php-test-parse-line-15 ()
   (let (line-txt  ret )
     (setq line-txt "   \t  if (this->ss?this->tt ")
     (setq  ret '("this" "." "tt"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -242,20 +238,20 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "   \t  if (this->ss?this->tt:this->kk ")
     (setq  ret '("this" "." "kk"     ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 (ert-deftest ac-php-test-parse-line-17 ()
   (let (line-txt  ret )
     (setq line-txt "   \t  parent::ss")
     (setq  ret '( "parent::" "."  "ss"   ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 (ert-deftest ac-php-test-parse-line-18 ()
   (let (line-txt  ret )
     (setq line-txt "   \t $v >= $ff? \"sdfa\" : parent::ss . parent::xx")
     (setq  ret '("parent::"  "." "xx"  ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 
@@ -264,7 +260,7 @@ run with specific customizations set."
   (let (line-txt  ret )
     (setq line-txt "(yii\\web\\Application(config))->ru")
     (setq  ret '("yii\\web\\Application" "." "ru"   ))
-    (ac-php-test--parse-line line-txt ret  )
+    (ac-php-test-parse-equal line-txt ret  )
     ))
 
 

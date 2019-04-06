@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This allows the configuration of the package path as follows:
-#     - .cp2elpa.sh
-#     - PACKAGE_USER_DIR=~/.emacs.d/.local/packages/ .cp2elpa.sh
+# This allows the configuration of the packages path as follows:
+#     - PACKAGE_USER_DIR=~/.local/state/emacs/elpa .cp2elpa.sh
+#     - PACKAGE_USER_DIR=~/.emacs.d/.local/packages .cp2elpa.sh
 : ${PACKAGE_USER_DIR:=~/.emacs.d/elpa}
 
 cd `dirname $0`

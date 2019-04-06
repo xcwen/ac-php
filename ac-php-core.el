@@ -456,7 +456,7 @@ been replaced by “ and ”."
     ret-data))
 
 (defun ac-php--get-key-list-from-parser-data (parser-data)
-  "Get a keuword list from the PARSER-DATA list."
+  "Get keywords list from the PARSER-DATA list."
   (ac-php--debug "Building a key list from the parser data: %S" parser-data)
   (let ((frist-key (nth 0 parser-data))
         item

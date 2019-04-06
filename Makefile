@@ -21,11 +21,17 @@
 
 SHELL := $(shell which bash)
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
 EMACS ?= emacs
 CASK ?= cask
-PANDOC ?= pandoc --atx-headers
+PANDOC ?= pandoc
+
 EMACSFLAGS ?=
 TESTFLAGS ?= --reporter ert+duration
+PANDOCLAGS ?= --fail-if-warnings \
+	--reference-links \
+	--atx-headers
+
 PKGDIR := $(shell EMACS=$(EMACS) $(CASK) package-directory)
 
 # File lists
@@ -62,13 +68,13 @@ $(PKGDIR): Cask
 	touch $(PKGDIR)
 
 README: README.md
-	$(PANDOC) -t plain -o $@ $^
+	$(PANDOC) $(PANDOCLAGS) $(PANDOCLAGS) -f markdown+empty_paragraphs -t plain -o $@ $^
 
 # Public targets
 
 .PHONY: .title
 .title:
-	$(info AC PHP $(shell cat $(ROOT_DIR)/$(SRCS) | grep ";; Version:" | awk -F': ' '{print $$2}'))
+	$(info AC PHP $(VERSION))
 	$(info )
 
 .PHONY: init
@@ -88,6 +94,7 @@ test:
 .PHONY: clean
 clean:
 	$(CASK) clean-elc
+	$(RM) -f README
 
 .PHONY: help
 help: .title

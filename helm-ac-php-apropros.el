@@ -1,10 +1,17 @@
-;;; helm-ac-php-apropros.el --- An helm apropos of all defined symbols in an ac-php project.  -*- lexical-binding: t; -*-
+;;; helm-ac-php-apropros.el --- A helm apropos.  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018  Antoine Brand
+;; Copyright (C) 2018  Antoine Brand <antoine597@gmail.com>
 
 ;; Author: Antoine Brand <antoine597@gmail.com>
+;; Maintainer: jim
+;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: convenience, helm
-;; Package-Requires: ((emacs "24.4") (helm "1"))
+;; Package-Requires: ((ac-php-core "2.0.3") (helm "1"))
+;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
+
+;; This file is NOT part of GNU Emacs.
+
+;;; License
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,6 +29,16 @@
 ;;; Commentary:
 
 ;; An apropos functionality using the ac-php index and helm as interface.
+;;
+;; Many options available under Help:Customize
+;; Options specific to ac-php are in
+;;   Convenience/Completion/Auto Complete
+;;
+;; Known to work with Linux and macOS.  Windows support is in beta stage.
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
+;;
+;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
+;; (see URL `https://github.com/xcwen/ac-php/issues')
 
 ;;; Code:
 

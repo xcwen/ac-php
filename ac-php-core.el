@@ -1,16 +1,20 @@
 ;;; ac-php-core.el --- The core library of the ac-php.
 
-;; Copyright (C) 2014-2019 jim
+;; Copyright (C) 2019 Serghei Iakovlev <sadhooklay@gmail.com>
+;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
+;; Copyright (C) 2011-2016 Jan Erik Hanssen and Anders Bakken
+;; Copyright (C) 2011 Joseph <jixiuf@gmail.com>
+;; Copyright (C) 2010 Brian Jiang
 
 ;; Author: jim <xcwenn@qq.com>
 ;;      Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24.4") (dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
+;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
 
-;; This file is not part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;;; License
 
@@ -29,20 +33,37 @@
 
 ;;; Commentary:
 
-;; The core library of the package `ac-php'.
+;; The core library of the `ac-php' package.  Acts like a backend for the
+;; following components:
 ;;
-;; Thanks to:
+;; - `ac-php'
+;; - `company-php'
+;; - `helm-ac-php-apropros'
 ;;
-;; - auto-complete-clang
+;; Can be used as an API to build your own components.  This engine currently
+;; provides:
+;;
+;; - Support of PHP code completion
+;; - Support of jumping to definition/declaration/inclusion-file
+;;
+;; When creating this package, the ideas of the following packages were used:
+;;
 ;; - auto-java-complete
+;;
 ;;   - `ac-php-remove-unnecessary-items-4-complete-method'
 ;;   - `ac-php-split-string-with-separator'
-;; - rtags (`ac-php-location-stack-index')
+;;
+;; - auto-complete-clang
+;;
+;; - rtags
+;;
+;;   - `ac-php-location-stack-index'
 ;;
 ;; Many options available under Help:Customize
 ;; Options specific to ac-php-core are in
 ;;   Convenience/Completion/Auto Complete
 ;;
+;; Known to work with Linux and macOS.  Windows support is in beta stage.
 ;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
@@ -149,8 +170,7 @@ Used in function `ac-php-mode-line-project-status'")
 ;;
 ;; A schematic designation of every element of this database:
 ;;
-;;   (tags-file-name
-;;    tags-file-mtime
+;;   (tags-file-name tags-file-mtime
 ;;    (class-list
 ;;     functions-array
 ;;     inherit-list
@@ -178,7 +198,7 @@ Used in function `ac-php-mode-line-project-status'")
 ;; The number “1553935654” in this example means the modification
 ;; time of the “/path/to/the/tags.el” file.
 (defvar ac-php-tag-last-data-list nil
-  "Holds in-memory database for the per-project tags.")
+  "Holds in-memory database for per-project tags.")
 
 (defvar ac-php-prefix-str "")
 
@@ -373,73 +393,92 @@ refer to original `split-string' function."
         (setq split-list (list str)))
       split-list)))
 
-(defun ac-php--get-clean-node (paser-data &optional check-len)
-  "clean  before ';'  "
+(defun ac-php--get-clean-node (parser-data &optional check-len)
+  "Clean PARSER-DATA from unnecessary elements.
+
+This function is used to drop all elements before “;”.  For example:
+
+  \(ac-php--get-clean-node '(\"A\" \";\" \"B\"))
+
+will return:
+
+  \(\"B\")
+
+The CHECK-LEN may be passed to indicate the limit to analyze items:
+
+  \(ac-php--get-clean-node '(\"A\" \"B\" \"C\" \"D\") 2)
+
+will return:
+
+  \(\"A\" \"B\")"
+  (ac-php--debug "Going to clean parser data: %s" parser-data)
   (let ((i 0) ret-data item)
-    (ac-php--debug "clean-node start:%S"  paser-data)
     (unless check-len
-      (setq check-len (length paser-data)))
+      (setq check-len (length parser-data)))
     (while (< i check-len)
-      (setq item (nth i paser-data))
+      (setq item (nth i parser-data))
       (if (and (stringp item)
                (string= item ";"))
           (setq ret-data nil)
         (push item ret-data))
       (setq i (1+ i)))
 
-    (ac-php--debug "clean-node:%S" ret-data)
-    (reverse ret-data)))
+    (setq ret-data (reverse ret-data))
+    (ac-php--debug "Parser data after cleaning up is: %s" ret-data)
+    ret-data))
 
-(defun ac-php--get-node-paser-data (paser-data)
+(defun ac-php--get-node-parser-data (parser-data)
   "Docstring"
-  (let ((last-item (nth (1- (length paser-data)) paser-data))
+  (let* ((check-len (1- (length parser-data)))
+         (last-item (nth check-len parser-data))
         ret-data)
     (if (and (stringp last-item)
              (string= last-item "__POINT__"))
-        (let ((initial-len (1- (length paser-data))))
-          (setq ret-data (ac-php--get-clean-node paser-data initial-len)))
-      (when last-item
-        (setq ret-data (ac-php--get-node-paser-data last-item))))
+        (setq ret-data (ac-php--get-clean-node parser-data check-len))
+      ;; TODO: Until version 2.0.7 this worked incorrectly.
+      ;; Previous implementation just did the following test:
+      ;;
+      ;; (when last-item
+      ;;   (setq ret-data (ac-php--get-node-parser-data last-item)))
+      ;;
+      ;; So I fixed this.  However I'll need to verify that
+      ;; all still works as expected.  Consider this as an experimental branch.
+      (when (and last-item (listp last-item))
+        (progn
+          (setq ret-data (ac-php--get-node-parser-data last-item))
+          (ac-php--debug "The node after deep scan is: %s" ret-data))))
     ret-data))
 
-(defun ac-php--get-key-list-from-paser-data( paser-data)
-  (let (
-        (frist-key (nth 0  paser-data ))
+(defun ac-php--get-key-list-from-paser-data (paser-data)
+  "Docstring."
+  (let ((frist-key (nth 0 paser-data))
         item
         (i 1)
         (ret)
         (len-paser-data (length paser-data)))
-    ;;处理list
-
-
-    (if (and (listp  frist-key)  frist-key   )
-        (progn
-          (setq ret  (ac-php--get-clean-node (ac-php--get-key-list-from-paser-data frist-key )) )
-        )
-      (if  (and  (> len-paser-data 1)  (not (nth 1 paser-data  )) )
-          (setq ret  (list (concat frist-key "(" )) )
-        (setq ret  (list frist-key) )
-        )
-      )
-
+    (if (and (listp frist-key) frist-key)
+        (setq ret (ac-php--get-clean-node
+                   (ac-php--get-key-list-from-paser-data frist-key)))
+      (if (and (> len-paser-data 1) (not (nth 1 paser-data)))
+          (setq ret (list (concat frist-key "(")))
+        (setq ret (list frist-key))))
 
     (setq i 1)
     (while (< i len-paser-data)
-      (setq item (nth i paser-data) )
+      (setq item (nth i paser-data))
       (cond
-       ((and (stringp item) ( and (<(1+ i) len-paser-data ) (listp (nth (1+ i) paser-data))  ) )
-        ;;function
-        (setq ret (append ret  (list (concat item "("))))
-        (setq i (+ i 2) ))
-
+       ((and (stringp item)
+             (and (<(1+ i) len-paser-data)
+                  (listp (nth (1+ i) paser-data))))
+        ;; function
+        (setq ret (append ret (list (concat item "("))))
+        (setq i (+ i 2)))
        ((stringp item)
-        ;;var
-        (setq ret (append ret  (list item)))
-        (setq i (1+ i) ))
-       (t (setq i (1+ i) ))
-      ))
-    ret
-    ))
+        ;; variable
+        (setq ret (append ret (list item)))
+        (setq i (1+ i)))
+       (t (setq i (1+ i)))))
+    ret))
 
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
   "Remove unnecessary items in the SPLITED-LINE-ITEMS."
@@ -450,7 +489,7 @@ refer to original `split-string' function."
         (i 0)
         item
         (elisp-str "(")
-        paser-data
+        parser-data
         ret)
     (while (< i item-count)
       (setq item (nth i splited-line-items))
@@ -477,9 +516,11 @@ refer to original `split-string' function."
       (setq elisp-str "()"))
 
     (ac-php--debug "Prepared Elisp string to read: %s" elisp-str)
-    (setq paser-data (read elisp-str))
-    (setq paser-data (ac-php--get-node-paser-data paser-data))
-    (setq ret (ac-php--get-key-list-from-paser-data paser-data)) ret))
+    (setq parser-data (read elisp-str))
+    (setq parser-data (ac-php--get-node-parser-data parser-data))
+    (setq ret (ac-php--get-key-list-from-paser-data parser-data))
+
+    ret))
 
 (defun ac-php--get-class-full-name-in-cur-buffer ( first-key function-map get-return-type-flag)
     "DOCSTRING"
@@ -625,7 +666,7 @@ then this function split it to:
                          line-string))
 
       (unless (string= old-string line-string)
-        (ac-php--debug "Input string was changed during to splitting: %s"
+        (ac-php--debug "Input string was changed during to splitting: \"%s\""
                        line-string))
 
       ;; Split ‘line-string’ with ".", but add "." as an element at

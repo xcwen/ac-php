@@ -369,11 +369,14 @@ ac-php developer only."
 This function is a tool like `split-string', but it treat separator as an
 element of returned list for example:
 
-  \(ac-php-split-string-with-separator abc.def.g \"\\.\" \".\")
+  \(ac-php-split-string-with-separator abc.def.g “\\.” “.”)
 
 will return:
 
-  '(\"abc\" \".\" \"def\" \".\" \"g\" )
+  '(“abc” “.” “def” “.” “g”)
+
+To conveniently describe in the documentation, double quotes (\") have
+been replaced by “ and ”.
 
 The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
 refer to original `split-string' function."
@@ -398,20 +401,23 @@ refer to original `split-string' function."
 
 This function is used to drop all elements before “;”.  For example:
 
-  \(ac-php--get-clean-node '(\"A\" \";\" \"B\"))
+  \(ac-php--get-clean-node '(“A” “;” “B”))
 
 will return:
 
-  \(\"B\")
+  \(“B”)
 
 The CHECK-LEN may be passed to indicate the limit to analyze items:
 
-  \(ac-php--get-clean-node '(\"A\" \"B\" \"C\" \"D\") 2)
+  \(ac-php--get-clean-node '(“A” “B” “C” “D”) 2)
 
 will return:
 
-  \(\"A\" \"B\")"
-  (ac-php--debug "Going to clean parser data: %s" parser-data)
+  \(“A” “B”)
+
+To conveniently describe in the documentation, double quotes (\") have
+been replaced by “ and ”."
+  (ac-php--debug "Going to clean parser data: %S" parser-data)
   (let ((i 0) ret-data item)
     (unless check-len
       (setq check-len (length parser-data)))
@@ -424,7 +430,7 @@ will return:
       (setq i (1+ i)))
 
     (setq ret-data (reverse ret-data))
-    (ac-php--debug "Parser data after cleaning up is: %s" ret-data)
+    (ac-php--debug "Parser data after cleaning up is: %S" ret-data)
     ret-data))
 
 (defun ac-php--get-node-parser-data (parser-data)
@@ -446,30 +452,29 @@ will return:
       (when (and last-item (listp last-item))
         (progn
           (setq ret-data (ac-php--get-node-parser-data last-item))
-          (ac-php--debug "The node after deep scan is: %s" ret-data))))
+          (ac-php--debug "The node after deep scan is: %S" ret-data))))
     ret-data))
 
-(defun ac-php--get-key-list-from-paser-data (paser-data)
-  "Docstring."
-  (let ((frist-key (nth 0 paser-data))
+(defun ac-php--get-key-list-from-parser-data (parser-data)
+  "Get a keuword list from the PARSER-DATA list."
+  (ac-php--debug "Building a key list from the parser data: %S" parser-data)
+  (let ((frist-key (nth 0 parser-data))
         item
         (i 1)
-        (ret)
-        (len-paser-data (length paser-data)))
+        ret
+        (parser-data-len (length parser-data)))
     (if (and (listp frist-key) frist-key)
         (setq ret (ac-php--get-clean-node
-                   (ac-php--get-key-list-from-paser-data frist-key)))
-      (if (and (> len-paser-data 1) (not (nth 1 paser-data)))
+                   (ac-php--get-key-list-from-parser-data frist-key)))
+      (if (and (> parser-data-len 1) (not (nth 1 parser-data)))
           (setq ret (list (concat frist-key "(")))
         (setq ret (list frist-key))))
-
-    (setq i 1)
-    (while (< i len-paser-data)
-      (setq item (nth i paser-data))
+    (while (< i parser-data-len)
+      (setq item (nth i parser-data))
       (cond
        ((and (stringp item)
-             (and (<(1+ i) len-paser-data)
-                  (listp (nth (1+ i) paser-data))))
+             (and (< (1+ i) parser-data-len)
+                  (listp (nth (1+ i) parser-data))))
         ;; function
         (setq ret (append ret (list (concat item "("))))
         (setq i (+ i 2)))
@@ -481,9 +486,27 @@ will return:
     ret))
 
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
-  "Remove unnecessary items in the SPLITED-LINE-ITEMS."
-  (ac-php--debug "Start removing unnecessary items for complete method")
-  (ac-php--debug "Intial items: %s" splited-line-items)
+  "Remove unnecessary items in the SPLITED-LINE-ITEMS.
+
+Used to sanitize auto completion data.  Below are some examples for possible
+return values:
+
+  :-------------------------------:------------------------:
+  | SPLITED-LINE-ITEMS            | Will return            |
+  :-------------------------------------------:------------:
+  | (“foo” “.” “bar” “(” “)” “.”) | (“foo” “.” “bar(” “.”) |
+  | (“foo” “.” “bar” “(” “a”)     | (“a”)                  |
+  | (“foo” “.” “bar”)             | (“foo” “.” “bar”)      |
+  | (“foo” “.”)                   | (“foo” “.”)            |
+  | (“foo”)                       | (“foo”)                |
+  :-------------------------------:------------------------:
+
+Meant for `ac-php-get-class-at-point' .
+
+To conveniently describe in the documentation, double quotes (\") have
+been replaced by “ and ”."
+  (ac-php--debug "Start removing unnecessary items for complete method...")
+  (ac-php--debug "Intial items are: %S" splited-line-items)
   (let ((need-add-right-count 1)
         (item-count (length splited-line-items))
         (i 0)
@@ -518,8 +541,10 @@ will return:
     (ac-php--debug "Prepared Elisp string to read: %s" elisp-str)
     (setq parser-data (read elisp-str))
     (setq parser-data (ac-php--get-node-parser-data parser-data))
-    (setq ret (ac-php--get-key-list-from-paser-data parser-data))
+    (setq ret (ac-php--get-key-list-from-parser-data parser-data))
 
+    (ac-php--debug "The list after removing unnecessary items is: %S"
+                   ret)
     ret))
 
 (defun ac-php--get-class-full-name-in-cur-buffer ( first-key function-map get-return-type-flag)
@@ -600,22 +625,26 @@ will return:
     ))
 
 (defun ac-php-split-line-4-complete-method (line-string)
-  "This function is used to tokinize methods call.
+  "This function is used to tokinize PHP string.
 
 First this function will split LINE-STRING to small items.
-For example, suppose line-string is
 
-  \"$class->method($parameter)\"
+For example, suppose LINE-STRING is:
+
+  “$class->method($parameter)”
 
 then this function split it to:
 
-  \"class\" \".\" \"method\" \"(\" \"parameter\" \")\""
+  “class” “.” “method” “(” “parameter” “)”
+
+To conveniently describe in the documentation, double quotes (\") have
+been replaced by “ and ”."
   (ac-php--debug "Start splitting the string to items")
   (save-excursion
     (let ((stack-list nil)
           (old-string line-string))
 
-      ;; "some words" => string
+      ;; "a sequence of characters" => string
       (setq line-string (replace-regexp-in-string
                          "\".*?\"" "string"
                          line-string))
@@ -630,7 +659,7 @@ then this function split it to:
                          "\\([^:]\\):\\([^:]\\)" "\\1;\\2"
                          line-string))
 
-      ;; -> => .
+      ;; class->method => class.method
       (setq line-string (replace-regexp-in-string
                          "[ \t]*->[ \t]*" "."
                          line-string))
@@ -902,12 +931,10 @@ then this function split it to:
             (not (string= line-txt old-line-txt)))
         (progn
           (if (not (string= line-txt old-line-txt))
-              (ac-php--debug "Updated working string: %s" line-txt))
+              (ac-php--debug "Updated working string: \"%s\"" line-txt))
 
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt)))
-
-          (ac-php--debug "ac-php-remove-unnecessary-items-4-complete-method:%S" key-list)
 
           ;; out of function like : class Testb  extends test\Testa[point]
           (if (not (and (stringp (nth 1 key-list))
@@ -2281,10 +2308,13 @@ Examples:
   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
   | foo()->bar              | bar                |
   | foo()                   |                    |
-  | \"some string\"         |                    |
+  | “some string”           |                    |
   :-------------------------:--------------------:
 
-Return empty string if there is no valid sequence of characters."
+Return empty string if there is no valid sequence of characters.
+
+To conveniently describe in the documentation, double quotes (\") have
+been replaced by “ and ”."
   (let (start-pos cur-word)
   (save-excursion
     (skip-chars-backward "a-z0-9A-Z_\\\\")

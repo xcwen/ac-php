@@ -1,14 +1,15 @@
 ;;; ac-php.el --- auto-completion source for php
 
-;; Copyright (C) 2014-2019 jim
+;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 
 ;; Author: jim <xcwenn@qq.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24.4") (ac-php-core "1") (auto-complete "1.4.0") (yasnippet "0.8.0"))
+;; Package-Requires: ((ac-php-core "2.0") (auto-complete "1.4.0") (yasnippet "0.8.0"))
+;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
 
-;; This file is not part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;;; License
 
@@ -30,11 +31,6 @@
 ;; Auto Completion source for PHP.  Known to work on Linux and macOS systems.
 ;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
-;; Thanks to:
-;; - auto-complete-clang
-;; - auto-java-complete (ac-php-remove-unnecessary-items-4-complete-method)
-;; - rtags (ac-php-location-stack-index)
-;;
 ;; Usage:  Put this package in your Emacs Lisp path (eg. site-lisp) and add to
 ;; your .emacs file:
 ;;
@@ -53,6 +49,9 @@
 ;; Many options available under Help:Customize
 ;; Options specific to ac-php are in
 ;;   Convenience/Completion/Auto Complete
+;;
+;; Known to work with Linux and macOS.  Windows support is in beta stage.
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
 ;;
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')

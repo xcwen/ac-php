@@ -1,10 +1,17 @@
-;;; company-php.el --- company completion source for php
-;; Copyright (C) 2014 - 2016 jim
-;; Author: xcwenn@qq.com [https://github.com/xcwen]
+;;; company-php.el --- A company back-end for PHP
+
+;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
+
+;; Author: jim <xcwenn@qq.com>
+;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
-;; Package-Version: 20171209.2243
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((emacs "24.4") (cl-lib "0.5") (ac-php-core "1") (company "0.9"))
+;; Package-Requires: ((cl-lib "0.5") (ac-php-core "2.0") (company "0.9"))
+;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
+
+;; This file is NOT part of GNU Emacs.
+
+;;; License
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,16 +27,25 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;  company source for php.
-;; support  Linux and OSX,  but windows need more test
-;; More info and **example** at : https://github.com/xcwen/ac-php
 
-;;(add-hook 'php-mode-hook
-;;          '(lambda ()
+;; A company back-end for PHP.
+;;
+;; (add-hook 'php-mode-hook
+;;           '(lambda ()
 ;;             (require 'company-php)
 ;;             (company-mode t)
 ;;             (add-to-list 'company-backends 'company-ac-php-backend )))
-
+;;
+;; Many options available under Help:Customize
+;; Options specific to ac-php are in
+;;   Convenience/Completion/Auto Complete
+;;   Convenience/Completion/Company
+;;
+;; Known to work with Linux and macOS.  Windows support is in beta stage.
+;; For more info and examples see URL `https://github.com/xcwen/ac-php' .
+;;
+;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
+;; (see URL `https://github.com/xcwen/ac-php/issues')
 
 ;;; Code:
 

@@ -185,7 +185,7 @@ The best way of installing ac-php, at least for GNU Emacs 24, is to use the pack
              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 ```
-For those who want rolling releases as they happen use MELPA :
+For those who want rolling releases as they happen use MELPA:
 
 ``` elisp
 (require 'package)
@@ -199,7 +199,7 @@ the package listing and install `ac-php` from there. MELPA tracks this Git repos
 and updates relatively soon after each commit or formal release.  For more detail on
 setting up see [MELPA Getting Started][:melpa-gs:].
 
-You can install `ac-php` manually by adding following to your init file :
+You can install `ac-php` manually by adding following to your init file:
 
 ``` elisp
 (unless (package-installed-p 'ac-php)
@@ -223,7 +223,7 @@ You can install `ac-php` manually by adding following to your init file :
 
 ### auto-complete
 
-1. Add hook as follows :
+1. Add hook as follows:
 
 ``` elisp
 (require 'php-mode)
@@ -251,7 +251,7 @@ You can install `ac-php` manually by adding following to your init file :
                'ac-php-location-stack-back)))
 ```
 
-2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root :
+2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root:
 
 ```sh
 $ cd /project/to/poject/root
@@ -262,7 +262,7 @@ And use `M-x company-complete` to complete.
 
 ### company-mode
 
-1. Add hook as follows :
+1. Add hook as follows:
 
 ``` elisp
 (require 'php-mode)
@@ -271,14 +271,14 @@ And use `M-x company-complete` to complete.
           '(lambda ()
              ;; Enable company-mode
              (require 'company-php)
-
              (company-mode t)
 
              ;; Enable ElDoc support (optional)
              (ac-php-core-eldoc-setup)
 
-             (make-local-variable 'company-backends)
-             (add-to-list 'company-backends 'company-ac-php-backend)
+             (set (make-local-variable 'company-backends)
+                  '((company-ac-php-backend company-dabbrev-code)
+                    company-capf company-files))
 
              ;; Jump to definition (optional)
              (define-key php-mode-map (kbd "M-]")
@@ -289,7 +289,7 @@ And use `M-x company-complete` to complete.
                'ac-php-location-stack-back))))
 ```
 
-2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root :
+2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root:
 
 ```sh
 $ cd /project/to/poject/root
@@ -300,7 +300,7 @@ And use `M-x company-complete` to complete.
 
 ### Spacemacs
 
-To use ac-php with Spacemacs please refer to :
+To use ac-php with Spacemacs please refer to:
 https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 
 ### Working with tags
@@ -333,6 +333,7 @@ tags-home-jim-ac-php-phptest/
 Because of the way that the ac-php package works, there are a couple of simple
 initialization tasks which must occur to get the completion working as it should.
 On any new project make sure to perform the following initialization tasks:
+
 1. Run the following
 
    ```sh
@@ -343,10 +344,14 @@ On any new project make sure to perform the following initialization tasks:
 2. Inside of Emacs run:
    `M-x` `ac-php-remake-tags`
 
-The `.ac-php-conf.json` file is mandatory for normal operation of auto completion.
+The `.ac-php-conf.json` file is required to enable auto-completion. When you run `ac-php-remake-tags` and your `.ac-php-conf.json` file is empty the default configuration will be used and inserted in the file.
 
-When you run `ac-php-remake-tags` and your `.ac-php-conf.json` is empty, default json file
-will be generated. Its contents will be similar to:
+If your project contains the following files at the root folder:
+
+1. `.projectile`
+2. `vendor/autoload.php`
+
+the necessary configuration file (`.ac-php-conf.json`) will be created automatically if it does not exist. Its contents will be similar to:
 
 ```json
 {

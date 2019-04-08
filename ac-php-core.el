@@ -369,7 +369,7 @@ ac-php developer only."
 This function is a tool like `split-string', but it treat separator as an
 element of returned list for example:
 
-  \(ac-php-split-string-with-separator abc.def.g “\\.” “.”)
+  \(ac-php-split-string-with-separator “abc.def.g” “\\.” “.”)
 
 will return:
 
@@ -434,14 +434,14 @@ been replaced by “ and ”."
     ret-data))
 
 (defun ac-php--get-node-parser-data (parser-data)
-  "Docstring"
+  "Get a node of keywords from a PARSER-DATA."
   (let* ((check-len (1- (length parser-data)))
          (last-item (nth check-len parser-data))
-        ret-data)
+         ret-data)
     (if (and (stringp last-item)
              (string= last-item "__POINT__"))
         (setq ret-data (ac-php--get-clean-node parser-data check-len))
-      ;; TODO: Until version 2.0.7 this worked incorrectly.
+      ;; TODO: Until version 2.0.7 the code below worked incorrectly.
       ;; Previous implementation just did the following test:
       ;;
       ;; (when last-item
@@ -543,8 +543,7 @@ been replaced by “ and ”."
     (setq parser-data (ac-php--get-node-parser-data parser-data))
     (setq ret (ac-php--get-key-list-from-parser-data parser-data))
 
-    (ac-php--debug "The list after removing unnecessary items is: %S"
-                   ret)
+    (ac-php--debug "The list after removing unnecessary items is: %S" ret)
     ret))
 
 (defun ac-php--get-class-full-name-in-cur-buffer ( first-key function-map get-return-type-flag)

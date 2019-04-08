@@ -330,11 +330,23 @@ tags-home-jim-ac-php-phptest/
 
 ### Using configuration file
 
-ac-php uses per-project configuration located in the file called `.ac-php-conf.json`.
-This file is mandatory for normal operation of auto completion.
+Because of the way that the ac-php package works, there are a couple of simple
+initialization tasks which must occur to get the completion working as it should.
+On any new project make sure to perform the following initialization tasks:
+1. Run the following
 
-When you run `ac-php-remake-tags` and your `.ac-php-conf.json` is empty, default json will be generated.
-Its contents will be similar to:
+   ```sh
+   cd /root/of/project
+   touch .ac-php-conf.json
+   ```
+
+2. Inside of Emacs run:
+   `M-x` `ac-php-remake-tags`
+
+The `.ac-php-conf.json` file is mandatory for normal operation of auto completion.
+
+When you run `ac-php-remake-tags` and your `.ac-php-conf.json` is empty, default json file
+will be generated. Its contents will be similar to:
 
 ```json
 {

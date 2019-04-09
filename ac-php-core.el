@@ -1448,7 +1448,7 @@ process is doing the same."
         (setq ac-php-gen-tags-flag t)
         (ac-php--remake-tags-ex project-root-dir force))
     (progn
-      (message (concat "ac-php: Skip re-indexing project; "
+      (ac-php--debug (concat "ac-php: Skip re-indexing project; "
                        "there is already a process that doing the same"))
       nil)))
 

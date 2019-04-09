@@ -28,13 +28,13 @@ A GNU Emacs auto completion source for the PHP.
 
 This repository contains:
 
-- **ac-php-core**, the core library of the ac-php
+- **ac-php-core**, the core library of the ac-php package
   [![MELPA][:badge-ac-php-core:]][:project-ac-php-core:]
   [![MELPA Stable][:badge-ac-php-core-s:]][:project-ac-php-core-s:]
-- **ac-php**, a frontend for the `auto-complete`
+- **ac-php**, auto completion source for PHP to use with `auto-complete`
   [![MELPA][:badge-ac-php:]][:project-ac-php:]
   [![MELPA Stable][:badge-ac-php-s:]][:project-ac-php-s:]
-- **company-php**, a frontend for the `company-mode`
+- **company-php**, a `company-mode` back-end for PHP
   [![MELPA][:badge-company-php:]][:project-company-php:]
   [![MELPA Stable][:badge-company-php-s:]][:project-company-php-s:]
 - **helm-ac-php-apropros**, an apropos functionality using the ac-php index and `helm` as interface

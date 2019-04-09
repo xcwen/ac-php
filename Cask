@@ -3,7 +3,7 @@
 (source gnu)
 (source melpa)
 
-(package "ac-php" "2.0.7" "Auto Completion source for PHP.")
+(package "ac-php" "2.0.8" "Auto Completion source for PHP.")
 
 (files "*.el" "ac-php-comm-tags-data.json" "phpctags")
 

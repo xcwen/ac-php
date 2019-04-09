@@ -271,7 +271,6 @@ And use `M-x company-complete` to complete.
           '(lambda ()
              ;; Enable company-mode
              (require 'company-php)
-             (company-mode t)
 
              ;; Enable ElDoc support (optional)
              (ac-php-core-eldoc-setup)

@@ -1,4 +1,4 @@
-;;; company-php.el --- A company back-end for PHP
+;;; company-php.el --- A company back-end for PHP.
 
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 

@@ -10,6 +10,7 @@
 ;;      Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
+;; Version: 2.0.8
 ;; Keywords: completion, convenience, intellisense
 ;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
@@ -1448,7 +1449,7 @@ process is doing the same."
         (setq ac-php-gen-tags-flag t)
         (ac-php--remake-tags-ex project-root-dir force))
     (progn
-      (message (concat "ac-php: Skip re-indexing project; "
+      (ac-php--debug (concat "ac-php: Skip re-indexing project; "
                        "there is already a process that doing the same"))
       nil)))
 

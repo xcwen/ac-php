@@ -38,6 +38,8 @@ PKGDIR := $(shell EMACS=$(EMACS) $(CASK) package-directory)
 SRCS = ac-php-core.el ac-php.el company-php.el helm-ac-php-apropros.el
 OBJS = $(SRCS:.el=.elc)
 
+VERSION ?= $(shell $(CASK) version)
+
 .SILENT: ;               # no need for @
 .ONESHELL: ;             # recipes execute in same shell
 .NOTPARALLEL: ;          # wait for this target to finish

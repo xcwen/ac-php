@@ -1,4 +1,4 @@
-;;; ac-php.el --- auto-completion source for php
+;;; ac-php.el --- Auto Completion source for PHP.
 
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 

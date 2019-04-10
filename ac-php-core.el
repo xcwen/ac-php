@@ -936,26 +936,29 @@ been replaced by “ and ”."
           (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
                           (ac-php-split-line-4-complete-method line-txt)))
 
-          ;; out of function like : class Testb  extends test\Testa[point]
+          (ac-php--debug "Keyword list is: %S" key-list)
           (if (not (and (stringp (nth 1 key-list))
                         (string= "." (nth 1 key-list))))
               (setq key-list nil)))
       (setq key-list nil))
 
-    (when  key-list
-      (setq frist-key-str (nth 0 (ac-php--get-item-info (nth 0  key-list)   )))
-      ;;检查 ::
-      (if (and (string-match  "::"  frist-key-str  ) (not (string-match  "\\/\\*"  line-txt ) ))
+    (when key-list
+      (setq frist-key-str (nth 0 (ac-php--get-item-info (nth 0 key-list))))
+      (if (and (string-match "::" frist-key-str)
+               (not (string-match "\\/\\*" line-txt)))
           (progn
-            (setq frist-key (substring-no-properties  frist-key-str  0 -2  ) )
-            (setq first-class-name  frist-key  )
+            (ac-php--debug "Found a static method call")
+            (setq frist-key (substring-no-properties frist-key-str 0 -2)
+                  first-class-name frist-key)
             (cond
-             ((string= frist-key "parent" )
-              (setq first-class-name (concat (ac-php-get-cur-full-class-name) ".__parent__" ) ))
-             ((or (string= frist-key "self" ) (string= frist-key "static" )   )
-              (setq first-class-name (concat (ac-php-get-cur-full-class-name) ) ))
-             ((string-match  "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt  )  (setq first-class-name nil))
-             ))
+             ((string= frist-key "parent")
+              (setq first-class-name (concat (ac-php-get-cur-full-class-name)
+                                             ".__parent__")))
+             ((or (string= frist-key "self")
+                  (string= frist-key "static"))
+              (setq first-class-name (concat (ac-php-get-cur-full-class-name))))
+             ((string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt)
+              (setq first-class-name nil))))
         (progn
           (setq frist-key  frist-key-str )
 
@@ -1883,16 +1886,23 @@ will be loaded and the in-memory storage will be updated."
       check-class-list
       )))
 
+(defun ac-php--get-item-info (member)
+  "Recognize current MEMBER type.
 
-(defun ac-php--get-item-info (member )
-    "DOCSTRING"
-  (let (type-str )
-    (if (and (> (length member ) 1)  (string=  "(" ( substring  member  -1 )) )
+This function tries to determine whether passed MEMBER is a method or a
+property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
+\"m\" (method) or \"p\" (property).
+
+Note that this function does not perform in-depth analysis and its main task is
+to determine whether the current MEMBER is a “method call”.  All other cases are
+considered at this stage as a “property usage”, although in fact they may not be."
+  (ac-php--debug "Recognize current member type")
+  (let (type-str)
+    (if (and (> (length member) 1) (string= "(" (substring member -1)))
         (progn
           (setq type-str "m"))
       (setq type-str "p"))
-    (list member type-str )
-    ))
+    (list member type-str)))
 
 (defun ac-php-get-class-member-return-type (class-map inherit-map  class-name member )
   "get class member return type from super classes "

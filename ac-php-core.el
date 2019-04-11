@@ -435,7 +435,7 @@ been replaced by “ and ”."
     ret-data))
 
 (defun ac-php--get-node-parser-data (parser-data)
-  "Get a node of keywords from a PARSER-DATA."
+  "Get keywords node from a PARSER-DATA."
   (let* ((check-len (1- (length parser-data)))
          (last-item (nth check-len parser-data))
          ret-data)

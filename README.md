@@ -285,7 +285,7 @@ And use `M-x company-complete` to complete.
 
              ;; Return back (optional)
              (define-key php-mode-map (kbd "M-[")
-               'ac-php-location-stack-back))))
+               'ac-php-location-stack-back)))
 ```
 
 2. Create the [configuration file](#using-configuration-file) `.ac-php-conf.json` in the project root:

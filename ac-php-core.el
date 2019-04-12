@@ -203,12 +203,18 @@ Used in function `ac-php-mode-line-project-status'")
 
 (defconst ac-php-re-classlike-pattern
   (concat
-   ;; First see if 'abstract' or 'final' appear
-   "^\\s-*\\(?:\\(?:abstract\\|final\\)\\s-+\\)?"
+   ;; Class declaration may begin at the 1st line.
+   ;; The file may start with <?php, <? or <%.
+   ;; Example:
+   ;;   <?php class Foo {}
+   "^\\(?:<\\(?:\\?\\(?:php\\)?\\|%\\)\\)?"
+   ;; Then see if 'abstract' or 'final' appear
+   "\\s-*\\(?:\\(?:abstract\\|final\\)\\s-+\\)?"
    ;; The classlike type
    "\\(?:class\\|trait\\)"
    ;; Its name, which is the first captured group in the regexp
-   "\\s-+\\([a-zA-Z]\\(?:\\sw\\|_\\)+\\)")
+   ;; See URL `https://www.php.net/manual/en/language.oop5.basic.php'
+   "\\s-+\\([a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*\\)")
   "The regular expression for classlike.")
 
 (defvar ac-php-prefix-str "")

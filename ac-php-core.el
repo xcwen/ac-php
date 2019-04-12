@@ -739,34 +739,49 @@ been replaced by “ and ”."
 
       stack-list)))
 
-(defun ac-php-get-syntax-backward ( re-str  pos  &optional  in-comment-flag  min-pos )
-  "DOCSTRING"
-  (let (line-txt ret-str find-pos need-find-flag  old-case-fold-search  search-pos)
-    (setq  old-case-fold-search case-fold-search )
-    (setq need-find-flag t )
+(defun ac-php-get-syntax-backward (regexp num &optional in-comment-p bound)
+  "Search backward from current point for regular expression REGEXP.
 
+The second argument NUM specifies which parenthesized expression in the REGEXP
+should be returned.  The optional third argument IN-COMMENT-P indicates should
+we search inside a comment or not.  The optional fourth argument BOUND is a
+buffer position that bounds the search.  The match found nust not end after that
+position.  A value of nil means search to the end of the accessible portion of
+the buffer.
+
+Return a propertized string in a format #(\"some string\" 0 11 (pos POINT))
+where POINT is a point position that bounds the search.
+
+Return nil in case of unsuccessful search."
+  (ac-php--debug "Search backward from current point up to %s"
+                 (if bound
+                     (format "point: %d" bound)
+                   "accessible prtion of the buffer"))
+  (ac-php--debug "Used regular expression: \"%s\"" regexp)
+  (let ((old-cfs case-fold-search)
+        (found-p nil)
+        line-txt
+        ret-str
+        search-pos)
     (save-excursion
-      (while  need-find-flag
-        (if (setq search-pos (re-search-backward  re-str  min-pos t 1) )
+      (while (not found-p)
+        (setq search-pos (re-search-backward regexp bound t 1))
+        (if search-pos
             (progn
-
-              (when (if in-comment-flag
+              (when (if in-comment-p
                         (ac-php--in-comment-p (point))
                       (not (ac-php--in-string-or-comment-p (point))))
-                (setq line-txt (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-                (when (string-match   re-str    line-txt)
-                  (setq  ret-str  (match-string pos line-txt))
-                  (setq  ret-str (propertize ret-str 'pos  search-pos))
-
-                  (setq need-find-flag nil))))
-          (setq need-find-flag nil)
-          )
-        )
-      )
-    (setq   case-fold-search old-case-fold-search )
-    (ac-php--debug "regstr=:%s; min-pos=%S ret-str:%s" re-str min-pos ret-str )
-    ret-str
-    ))
+                (setq line-txt (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position)))
+                (when (string-match regexp line-txt)
+                  (setq ret-str (match-string num line-txt))
+                  (setq ret-str (propertize ret-str 'pos search-pos))
+                  (setq found-p t))))
+          (setq found-p t))))
+    (setq case-fold-search old-cfs)
+    (ac-php--debug "Search result: %s" ret-str)
+    ret-str))
 
 (defun ac-php-get-cur-class-name ()
   "DOCSTRING"

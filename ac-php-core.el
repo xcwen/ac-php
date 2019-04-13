@@ -201,6 +201,22 @@ Used in function `ac-php-mode-line-project-status'")
 (defvar ac-php-tag-last-data-list nil
   "Holds in-memory database for per-project tags.")
 
+(defconst ac-php-re-classlike-pattern
+  (concat
+   ;; Class declaration may begin at the 1st line.
+   ;; The file may start with <?php, <? or <%.
+   ;; Example:
+   ;;   <?php class Foo {}
+   "^\\(?:<\\(?:\\?\\(?:php\\)?\\|%\\)\\)?"
+   ;; Then see if 'abstract' or 'final' appear
+   "\\s-*\\(?:\\(?:abstract\\|final\\)\\s-+\\)?"
+   ;; The classlike type
+   "\\(?:class\\|trait\\)"
+   ;; Its name, which is the first captured group in the regexp
+   ;; See URL `https://www.php.net/manual/en/language.oop5.basic.php'
+   "\\s-+\\([a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*\\)")
+  "The regular expression for classlike.")
+
 (defvar ac-php-prefix-str "")
 
 (defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+")
@@ -784,8 +800,12 @@ Return nil in case of unsuccessful search."
     ret-str))
 
 (defun ac-php-get-cur-class-name ()
-  "DOCSTRING"
-  ( ac-php-get-syntax-backward "^[ \t]*\\(abstract[ \t]+\\|final[ \t]+\\)*\\(class\\|trait\\)[ \t]+\\([a-zA-Z0-9_]+\\)" 3 ))
+  "Get current class name.
+
+Tries to retrieve current class name if it is possible.
+Returns the name of the current class as a string or nil if the search failed."
+  (ac-php-get-syntax-backward ac-php-re-classlike-pattern 1))
+
 (defun ac-php-clean-namespace-name (namespace-name)
   (if (and (stringp namespace-name)
            (> (length namespace-name)   1)

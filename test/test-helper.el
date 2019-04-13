@@ -33,6 +33,7 @@
 
 (require 'ert-x)  ; `ert-with-test-buffer'
 (require 'cl-lib) ; `cl-defmacro'
+(require 'php-mode)
 
 ;; Make sure the exact Emacs version can be found in the build output
 (message "Running tests on Emacs %s" emacs-version)
@@ -53,6 +54,17 @@
   (load (expand-file-name "ac-php-core" source-directory))
   (load (expand-file-name "company-php" source-directory))
   (load (expand-file-name "helm-ac-php-apropros" source-directory)))
+
+(defmacro ac-php-test-with-temp-buffer (content &rest body)
+  "Evaluate BODY in a temporary buffer with CONTENT."
+  (declare (debug t)
+           (indent 1))
+  `(with-temp-buffer
+     (insert ,content)
+     (php-mode)
+     (font-lock-fontify-buffer)
+     (goto-char (point-min))
+     ,@body))
 
 (defun ac-php-test-parse-equal (line expected)
   "Verifies that after parsing LINE will be the same as EXPECTED."

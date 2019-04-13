@@ -1,4 +1,4 @@
-;;; ac-php-test.el --- AC PHP: Base test -*- lexical-binding: t; -*-
+;;; ac-php-parser-test.el --- Parser test -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 
@@ -140,5 +140,5 @@
     (setq ret '("yii\\web\\Application" "." "ru"))
     (ac-php-test-parse-equal line-txt ret)))
 
-(provide 'ac-php-test)
-;;; ac-php-test.el ends here
+(provide 'ac-php-parser-test)
+;;; ac-php-parser-test.el ends here

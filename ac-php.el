@@ -137,10 +137,10 @@
 
     (dolist (item (split-string raw-help "\n"))
       ;;do_f($v1,$v2 =0,$v3 =0)
-      (if (s-matches-p ( concat"^" ac-php-word-re-str "(" )  item )
+      (if (s-matches-p ( concat"^" ac-php-re-namespace-unit-pattern "(" )  item )
           (let (match-ret args-list)
             (setq match-ret (s-match
-                             (concat "^\\(" ac-php-word-re-str  "\\)(\\(.*\\))$"  )
+                             (concat "^\\(" ac-php-re-namespace-unit-pattern  "\\)(\\(.*\\))$"  )
                              item  ))
 
             (if match-ret

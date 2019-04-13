@@ -857,15 +857,17 @@ backslash or not.  Always returns a string, even if the namespace was not found.
       namespace-name))
 
 (defun ac-php-get-cur-full-class-name ()
-  "DOCSTRING"
-  (let (class-name namespace-name )
-    (setq class-name (ac-php-get-cur-class-name))
-    (setq namespace-name (ac-php-get-cur-namespace-name))
-
+  "Get current class name in a fully qualified form.
+Returns nil if could not find class name in current buffer."
+  (let (class-name namespace)
+    (setq class-name (ac-php-get-cur-class-name)
+          namespace (ac-php-get-cur-namespace-name))
     (if class-name
-        (concat namespace-name   class-name )
-      nil
-        )))
+        (progn
+          (when (string= "" namespace)
+            (setq namespace "\\"))
+          (concat namespace class-name))
+      nil)))
 
 (defun ac-php-get-use-as-name (item-name   )
   "DOCSTRING"

@@ -270,6 +270,7 @@ And use `M-x company-complete` to complete.
 (add-hook 'php-mode-hook
           '(lambda ()
              ;; Enable company-mode
+             (company-mode t)
              (require 'company-php)
 
              ;; Enable ElDoc support (optional)

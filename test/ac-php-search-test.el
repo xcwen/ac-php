@@ -186,5 +186,44 @@ class Bar {}"
    (goto-char (point-max))
    (should (string= (ac-php-get-cur-namespace-name) ""))))
 
+;;;; FQCN
+
+(ert-deftest ac-php-search/fqcn-std-class ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "class Foo;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-full-class-name) "\\Foo"))))
+
+(ert-deftest ac-php-search/fqcn-complex-name ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "<?php
+
+namespace Symfony\\Component\\Console\\Descriptor;
+
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+class JsonDescriptor;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-full-class-name)
+                    "\\Symfony\\Component\\Console\\Descriptor\\JsonDescriptor"))))
+
+(ert-deftest ac-php-search/fqcn-class-absence ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "<?php namespace Acme;
+
+function helper() {}"
+   (goto-char (point-max))
+   (should (eq (ac-php-get-cur-full-class-name) nil))))
+
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

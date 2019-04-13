@@ -212,14 +212,36 @@ Used in function `ac-php-mode-line-project-status'")
    "\\s-*\\(?:\\(?:abstract\\|final\\)\\s-+\\)?"
    ;; The classlike type
    "\\(?:class\\|trait\\)"
-   ;; Its name, which is the first captured group in the regexp
+   ;; Its name, which is the first captured group in the regexp.
    ;; See URL `https://www.php.net/manual/en/language.oop5.basic.php'
    "\\s-+\\([a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*\\)")
   "The regular expression for classlike.")
 
-(defvar ac-php-prefix-str "")
+(defconst ac-php-re-namespace-unit-pattern
+  (concat
+   ;; First see if '\' appear, although really it is not valid for all use cases
+   "\\(?:\\\\\\)?"
+   ;; We allow backslashes in the name to handle namespaces, parts of namespaces
+   ;; and fully qualified class names, but again this is not necessarily correct
+   ;; for all use cases.
+   ;; See URL `https://www.php.net/manual/en/language.oop5.basic.php'
+   "\\(?:[a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ\\]*\\)")
+  "The regular expression for a part of a namespace.")
 
-(defvar ac-php-word-re-str "[0-9a-zA-Z_\\]+")
+(defconst ac-php-re-namespace-pattern
+  (concat
+   ;; Namespace declaration may begin at the 1st line.
+   ;; The file may start with <?php, <? or <%.
+   ;; Example:
+   ;;   <?php namespace Acme;
+   "^\\(?:<\\(?:\\?\\(?:php\\)?\\|%\\)\\)?"
+   ;; Namespace keyword
+   "\\s-*namespace"
+   ;; Namespace value, which is the first captured group in the regexp
+   "\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\s-*;")
+  "The regular expression for a namespace.")
+
+(defvar ac-php-prefix-str "")
 
 (defvar ac-php-location-stack-index 0)
 
@@ -806,6 +828,27 @@ Tries to retrieve current class name if it is possible.
 Returns the name of the current class as a string or nil if the search failed."
   (ac-php-get-syntax-backward ac-php-re-classlike-pattern 1))
 
+(defun ac-php-get-cur-namespace-name (&optional trim-trailing-backslash-p)
+  "Get fully qualified namespace.
+
+Tries to retrieve current fully qualified namespace if it is possible.
+TRIM-TRAILING-BACKSLASH-P is used to indicate whether we should trim trailng
+backslash or not.  Always returns a string, even if the namespace was not found."
+  (let (namespace (not-found ""))
+    (setq namespace (ac-php-get-syntax-backward ac-php-re-namespace-pattern 1))
+    (if namespace
+        (progn
+          ;; Concatenate leading backslash
+          (unless (string= (substring namespace 0 1) "\\")
+            (setq namespace (concat "\\" namespace)))
+          ;; Trim trailng backslash
+          (setq namespace (replace-regexp-in-string "\\\\$" "" namespace))
+          ;; Add trailing backslash only if needed
+          (if (not trim-trailing-backslash-p)
+              (setq namespace (concat namespace "\\"))
+            namespace))
+      not-found)))
+
 (defun ac-php-clean-namespace-name (namespace-name)
   (if (and (stringp namespace-name)
            (> (length namespace-name)   1)
@@ -816,43 +859,27 @@ Returns the name of the current class as a string or nil if the search failed."
 (defun ac-php-get-cur-full-class-name ()
   "DOCSTRING"
   (let (class-name namespace-name )
-    (setq class-name (ac-php-get-cur-class-name) )
-    (setq namespace-name   (ac-php-get-cur-namespace-name) )
+    (setq class-name (ac-php-get-cur-class-name))
+    (setq namespace-name (ac-php-get-cur-namespace-name))
 
     (if class-name
         (concat namespace-name   class-name )
       nil
         )))
 
-
-(defun ac-php-get-cur-namespace-name ( &optional not-need-end-flag )
-  (interactive)
-  "DOCSTRING"
-  (let (namespace  )
-    (setq namespace
-          (or
-           ( ac-php-get-syntax-backward  (concat "^[ \t]*namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
-           ( ac-php-get-syntax-backward  (concat "<\\?php[ \t]+namespace[ \t]+\\(" ac-php-word-re-str "\\)")  1  )
-           ))
-    (if not-need-end-flag
-        (if namespace  (concat  "\\"  namespace  )  "" )
-      (if namespace  (concat  "\\"  namespace "\\" )  "\\" )
-      )
-    ))
-
-
 (defun ac-php-get-use-as-name (item-name   )
   "DOCSTRING"
   (let ( use-name )
     (setq item-name (nth 0 (s-split "(" item-name  )) )
     (setq use-name (or
-                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\\\" item-name "\\)[ \t]*;") 1  nil  )
-                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
+                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\\\" item-name "\\)[ \t]*;") 1  nil  )
+                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
           )
     ))
 
-(defun ac-php--get-all-use-as-name-in-cur-buffer () "make a regex to match   use statements "
-  (let ( ret-list (search-re (concat "use[ \t]+" ac-php-word-re-str ".*;")  ) line-txt match-ret )
+(defun ac-php--get-all-use-as-name-in-cur-buffer ()
+  "Make a regex to match use statements."
+  (let ( ret-list (search-re (concat "use[ \t]+" ac-php-re-namespace-unit-pattern ".*;")  ) line-txt match-ret )
     (save-match-data
       (save-excursion
         (goto-char (point-min))
@@ -862,11 +889,11 @@ Returns the name of the current class as a string or nil if the search failed."
                           (line-end-position )))
           (ac-php--debug "line-text:%s" line-txt)
 
-           (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]+as[ \t]+\\("ac-php-word-re-str "\\)[ \t]*;") line-txt ))
+           (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)[ \t]+as[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)[ \t]*;") line-txt ))
           (if match-ret
               (add-to-list 'ret-list (list    (ac-php--as-global-name (nth 1 match-ret)) (nth 2 match-ret)   ))
             (progn
-              (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-word-re-str "\\)[ \t]*;") line-txt ))
+              (setq match-ret (s-match   (concat "use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)[ \t]*;") line-txt ))
               (when match-ret
                 (let ((key-arr (s-split "\\\\" (nth 1 match-ret) ) ))
                   (ac-php--debug "key-arr %S " key-arr)
@@ -1007,7 +1034,7 @@ Returns the name of the current class as a string or nil if the search failed."
             (setq first-class-name
                                      (ac-php-get-syntax-backward
                                       (concat "@var[\t ]+\\("
-                                              ac-php-word-re-str "\\)[\t ]+$" frist-key )
+                                              ac-php-re-namespace-unit-pattern "\\)[\t ]+$" frist-key )
                                       1 t
                                       (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
 
@@ -1017,7 +1044,7 @@ Returns the name of the current class as a string or nil if the search failed."
           (unless first-class-name
             (setq first-class-name
                                      (ac-php-get-syntax-backward
-                                      (concat "\\(" ac-php-word-re-str "\\)" "[\t ]+\\(&\\)?$" frist-key  "[ \t]*[),]" )
+                                      (concat "\\(" ac-php-re-namespace-unit-pattern "\\)" "[\t ]+\\(&\\)?$" frist-key  "[ \t]*[),]" )
                                       1 nil
                                       (save-excursion  (beginning-of-defun) (beginning-of-line)  ))))
 
@@ -1027,7 +1054,7 @@ Returns the name of the current class as a string or nil if the search failed."
             (setq first-class-name
                   (ac-php-get-syntax-backward
                    (concat "@param[\t ]+"  "\\("
-                           ac-php-word-re-str "\\)[\t ]+$" frist-key  )
+                           ac-php-re-namespace-unit-pattern "\\)[\t ]+$" frist-key  )
                    1 t
                    (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
 
@@ -2148,7 +2175,7 @@ considered at this stage as a “property usage”, although in fact they may no
               (class-map ( ac-php-g--function-map tags-data  )) full-name tmp-ret file-pos  )
 
           (when (string= "" cur-word) ;;new
-            (setq tmp-ret  ( ac-php-get-syntax-backward (concat "new[ \t]+\\(" ac-php-word-re-str "\\)") 1 ))
+            (setq tmp-ret  ( ac-php-get-syntax-backward (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)") 1 ))
             (when tmp-ret (setq cur-word   tmp-ret ))
             )
           ;;check "namespace" "use as"

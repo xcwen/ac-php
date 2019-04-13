@@ -33,6 +33,8 @@
 
 ;;; Code:
 
+;;;; Classlike
+
 (ert-deftest ac-php-search/classlike-std-class ()
   :tags '(re search)
   (ac-php-test-with-temp-buffer
@@ -110,6 +112,79 @@ class Bar {}"
    "class !Ÿ¼ÿ©¥ {}"
    (goto-char (point-max))
    (should-not (string= (ac-php-get-cur-class-name) "!Ÿ¼ÿ©¥"))))
+
+;;;; Namespace
+
+(ert-deftest ac-php-search/namespace-std-name ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace Acme;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Acme\\"))))
+
+(ert-deftest ac-php-search/namespace-1st-line ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "<?php namespace Acme;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Acme\\"))))
+
+(ert-deftest ac-php-search/namespace-symbols-and-digits ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace PhpParser\\Node_2\\Class_;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name)
+                    "\\PhpParser\\Node_2\\Class_\\"))))
+
+(ert-deftest ac-php-search/namespace-leading-backslashes ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace \\Acme;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Acme\\"))))
+
+(ert-deftest ac-php-search/namespace-trim-extra-backslashes ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace Acme\\Foo\\;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Acme\\Foo\\"))))
+
+(ert-deftest ac-php-search/namespace-trim-trailing-backslashes ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace Acme\\Foo\\;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name t) "\\Acme\\Foo"))))
+
+(ert-deftest ac-php-search/namespace-stress-spaces ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "                    namespace              Acme                 ;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Acme\\"))))
+
+(ert-deftest ac-php-search/namespace-extended-ascii-codes ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace Ÿ¼ÿ©¥;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) "\\Ÿ¼ÿ©¥\\"))))
+
+(ert-deftest ac-php-search/namespace-invalid-ascii-code ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "namespace !Ÿ¼ÿ©¥;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) ""))))
+
+(ert-deftest ac-php-search/namespace-not-found ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "class Foo;"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-cur-namespace-name) ""))))
 
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

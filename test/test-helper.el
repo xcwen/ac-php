@@ -35,6 +35,9 @@
 (require 'cl-lib) ; `cl-defmacro'
 (require 'php-mode)
 
+;; reading/writing/loading compressed files
+(require 'jka-compr)
+
 ;; Make sure the exact Emacs version can be found in the build output
 (message "Running tests on Emacs %s" emacs-version)
 

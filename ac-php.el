@@ -59,7 +59,6 @@
 ;;; Code:
 
 (require 'ac-php-core)
-
 (require 'auto-complete)
 
 (defface ac-php-candidate-face

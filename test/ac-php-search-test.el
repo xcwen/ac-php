@@ -256,5 +256,31 @@ function helper() {}"
    (goto-char (point-max))
    (should (eq (ac-php-get-annotated-var-class "extension") nil))))
 
+(ert-deftest ac-php-search/annotated-var-out-of-scope ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer "
+function hello() {
+    /** @var Extension $extension */
+}
+
+function test() {
+
+}"
+   (goto-char (point-max))
+   (should (eq (ac-php-get-annotated-var-class "extension") nil))))
+
+(ert-deftest ac-php-search/annotated-var-out-correct-scope ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer "
+function hello() {
+    /** @var Extension $extension */
+}
+
+function test() {
+    /** @var Fake $extension */
+}"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
+
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

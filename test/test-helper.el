@@ -35,9 +35,6 @@
 (require 'cl-lib) ; `cl-defmacro'
 (require 'php-mode)
 
-;; reading/writing/loading compressed files
-(require 'jka-compr)
-
 ;; Make sure the exact Emacs version can be found in the build output
 (message "Running tests on Emacs %s" emacs-version)
 
@@ -53,10 +50,10 @@
        ;; Don't load old byte-compiled versions
        (load-prefer-newer t))
   ;; Load the file under test
-  (load (expand-file-name "ac-php" source-directory))
-  (load (expand-file-name "ac-php-core" source-directory))
-  (load (expand-file-name "company-php" source-directory))
-  (load (expand-file-name "helm-ac-php-apropros" source-directory)))
+  (load (expand-file-name "ac-php" source-directory) nil t)
+  (load (expand-file-name "ac-php-core" source-directory) nil t)
+  (load (expand-file-name "company-php" source-directory) nil t)
+  (load (expand-file-name "helm-ac-php-apropros" source-directory) nil t))
 
 (defmacro ac-php-test-with-temp-buffer (content &rest body)
   "Evaluate BODY in a temporary buffer with CONTENT."

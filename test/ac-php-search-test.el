@@ -282,5 +282,21 @@ function test() {
    (goto-char (point-max))
    (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
 
+(ert-deftest ac-php-search/annotated-var-out-of-function ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer "
+/** @var Fake $extension */
+$extension->bar();
+
+function hello($extension) {
+    /** @var Extension $extension */
+    $extension->foo();
+}
+
+$extension->bar();
+"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
+
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

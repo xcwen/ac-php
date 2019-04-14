@@ -241,6 +241,12 @@ Used in function `ac-php-mode-line-project-status'")
    "\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\s-*;")
   "The regular expression for a namespace.")
 
+(defconst ac-php-re-annotated-var-pattern
+  (concat
+   "@var"
+   "\\s-+\\(" ac-php-re-namespace-unit-pattern  "\\)\\>\\s-+")
+  "The regular expression for a class inside an annotated variable.")
+
 (defvar ac-php-prefix-str "")
 
 (defvar ac-php-location-stack-index 0)
@@ -497,17 +503,17 @@ been replaced by “ and ”."
 (defun ac-php--get-key-list-from-parser-data (parser-data)
   "Get keywords list from the PARSER-DATA list."
   (ac-php--debug "Building a key list from the parser data: %S" parser-data)
-  (let ((frist-key (nth 0 parser-data))
+  (let ((first-key (nth 0 parser-data))
         item
         (i 1)
         ret
         (parser-data-len (length parser-data)))
-    (if (and (listp frist-key) frist-key)
+    (if (and (listp first-key) first-key)
         (setq ret (ac-php--get-clean-node
-                   (ac-php--get-key-list-from-parser-data frist-key)))
+                   (ac-php--get-key-list-from-parser-data first-key)))
       (if (and (> parser-data-len 1) (not (nth 1 parser-data)))
-          (setq ret (list (concat frist-key "(")))
-        (setq ret (list frist-key))))
+          (setq ret (list (concat first-key "(")))
+        (setq ret (list first-key))))
     (while (< i parser-data-len)
       (setq item (nth i parser-data))
       (cond
@@ -589,7 +595,7 @@ been replaced by “ and ”."
     "DOCSTRING"
   (let (cur-namespace tmp-name ret-name tmp-ret)
     (let (  split-arr   cur-class-name )
-      (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer  frist-key:%s" first-key )
+      (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer  first-key:%s" first-key )
 
 
       (if ( ac-php--check-global-name  first-key )
@@ -792,9 +798,8 @@ where POINT is a point position that bounds the search.
 
 Return nil in case of unsuccessful search."
   (ac-php--debug "Search backward from current point up to %s"
-                 (if bound
-                     (format "point: %d" bound)
-                   "accessible prtion of the buffer"))
+                 (if bound (format "point: %d" bound)
+                   "accessible portion of the buffer"))
   (ac-php--debug "Used regular expression: \"%s\"" regexp)
   (let ((old-cfs case-fold-search)
         (found-p nil)
@@ -905,6 +910,22 @@ Returns nil if could not find class name in current buffer."
           (end-of-line))))
     ret-list ))
 
+(defun ac-php-get-annotated-var-class (variable)
+  "Get a class name for an annotated VARIABLE.
+
+Tries to retrieve a class name from a variable annotation like this:
+
+  /** @var Extension $extension */
+  $extension->...
+
+Aimed to work inside a function.  May return unexpected result if the current
+point is outside of function.  Returns a class name as a string or nil if the
+search failed."
+  (ac-php-get-syntax-backward
+   (concat ac-php-re-annotated-var-pattern "$" variable)
+   1 t
+   (save-excursion (beginning-of-defun) (beginning-of-line))))
+
 (defun* ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
   (let (line-txt
@@ -913,9 +934,9 @@ Returns nil if could not find class name in current buffer."
         key-list
         tmp-key-list
         first-class-name
-        frist-key
+        first-key
         ret-str
-        frist-key-str)
+        first-key-str)
     (unless pos
       (setq pos (point)))
 
@@ -1007,46 +1028,43 @@ Returns nil if could not find class name in current buffer."
       (setq key-list nil))
 
     (when key-list
-      (setq frist-key-str (nth 0 (ac-php--get-item-info (nth 0 key-list))))
-      (if (and (string-match "::" frist-key-str)
+      (setq first-key-str (nth 0 (ac-php--get-item-info (nth 0 key-list))))
+      (if (and (string-match "::" first-key-str)
                (not (string-match "\\/\\*" line-txt)))
           (progn
-            (ac-php--debug "Found a static method call")
-            (setq frist-key (substring-no-properties frist-key-str 0 -2)
-                  first-class-name frist-key)
+            (ac-php--debug "Detected a static method call")
+            (setq first-key (substring-no-properties first-key-str 0 -2)
+                  first-class-name first-key)
             (cond
-             ((string= frist-key "parent")
+             ((string= first-key "parent")
               (setq first-class-name (concat (ac-php-get-cur-full-class-name)
                                              ".__parent__")))
-             ((or (string= frist-key "self")
-                  (string= frist-key "static"))
+             ((or (string= first-key "self")
+                  (string= first-key "static"))
               (setq first-class-name (concat (ac-php-get-cur-full-class-name))))
              ((string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt)
               (setq first-class-name nil))))
         (progn
-          (setq frist-key  frist-key-str )
+          (setq first-key first-key-str)
 
-          (when (and(not first-class-name) (or (string= frist-key "this")  ) )
-            (setq first-class-name (ac-php-get-cur-full-class-name)  ))
+          (when (and (not first-class-name) (string= first-key "this"))
+            (ac-php--debug "Detected call on $this")
+            (setq first-class-name (ac-php-get-cur-full-class-name)))
 
+          (ac-php--debug "Attempt #1. Class name is: %s" first-class-name)
 
-          (ac-php--debug " 00 first-class-name  %s" first-class-name)
-          ;;check for new define  /* @var $v  class_type  */
+          ;; Check for annotated variable like
+          ;;   /** @var Extension $extension */
           (unless first-class-name
-            (setq first-class-name
-                                     (ac-php-get-syntax-backward
-                                      (concat "@var[\t ]+\\("
-                                              ac-php-re-namespace-unit-pattern "\\)[\t ]+$" frist-key )
-                                      1 t
-                                      (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
-
+            (setq first-class-name (ac-php-get-annotated-var-class first-key))
+            (ac-php--debug "Attempt #2. Class name is: %s" first-class-name))
 
           ;;check  function xxx (classtype $val)
           ;;check   catch ( classtype $val)
           (unless first-class-name
             (setq first-class-name
                                      (ac-php-get-syntax-backward
-                                      (concat "\\(" ac-php-re-namespace-unit-pattern "\\)" "[\t ]+\\(&\\)?$" frist-key  "[ \t]*[),]" )
+                                      (concat "\\(" ac-php-re-namespace-unit-pattern "\\)" "[\t ]+\\(&\\)?$" first-key  "[ \t]*[),]" )
                                       1 nil
                                       (save-excursion  (beginning-of-defun) (beginning-of-line)  ))))
 
@@ -1056,7 +1074,7 @@ Returns nil if could not find class name in current buffer."
             (setq first-class-name
                   (ac-php-get-syntax-backward
                    (concat "@param[\t ]+"  "\\("
-                           ac-php-re-namespace-unit-pattern "\\)[\t ]+$" frist-key  )
+                           ac-php-re-namespace-unit-pattern "\\)[\t ]+$" first-key  )
                    1 t
                    (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
 
@@ -1069,7 +1087,7 @@ Returns nil if could not find class name in current buffer."
           (unless first-class-name
             (let (define-str symbol-ret symbol-type )
               (setq define-str (ac-php-get-syntax-backward
-                                (concat   "$" frist-key "[\t ]*=\\([^=]*\\)[;]*" )
+                                (concat   "$" first-key "[\t ]*=\\([^=]*\\)[;]*" )
                                 1 nil
                                 (save-excursion  (beginning-of-defun)  (beginning-of-line)  )) )
               (when define-str
@@ -1114,7 +1132,7 @@ Returns nil if could not find class name in current buffer."
             ))
 
 
-          (unless first-class-name (setq first-class-name frist-key)))))
+          (unless first-class-name (setq first-class-name first-key)))))
 
 
     ;;fix use-as-name ,same namespace

@@ -225,5 +225,36 @@ function helper() {}"
    (goto-char (point-max))
    (should (eq (ac-php-get-cur-full-class-name) nil))))
 
+;;;; Annotated variable
+
+(ert-deftest ac-php-search/annotated-var-std-class ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "function hello() {
+    /** @var Extension $extension */
+}"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-annotated-var-class "extension")
+                    "Extension"))))
+
+(ert-deftest ac-php-search/annotated-var-complex-class ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "function hello() {
+    /** @var \\Symfony\\Component\\Console\\Descriptor\\JsonDescriptor $extension */
+}"
+   (goto-char (point-max))
+   (should (string= (ac-php-get-annotated-var-class "extension")
+                    "\\Symfony\\Component\\Console\\Descriptor\\JsonDescriptor"))))
+
+(ert-deftest ac-php-search/annotated-var-not-found ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer
+   "function hello() {
+    /** @var Extension $variable */
+}"
+   (goto-char (point-max))
+   (should (eq (ac-php-get-annotated-var-class "extension") nil))))
+
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

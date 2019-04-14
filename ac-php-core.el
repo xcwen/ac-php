@@ -245,7 +245,7 @@ Used in function `ac-php-mode-line-project-status'")
   (concat
    "@var"
    "\\s-+\\(" ac-php-re-namespace-unit-pattern  "\\)\\>\\s-+")
-  "The regular expression for an annotated variable.")
+  "The regular expression for a class inside an annotated variable.")
 
 (defvar ac-php-prefix-str "")
 
@@ -911,11 +911,12 @@ Returns nil if could not find class name in current buffer."
     ret-list ))
 
 (defun ac-php-get-annotated-var-class (variable)
-  "Get a class name from an annotated VARIABLE.
+  "Get a class name for an annotated VARIABLE.
 
 Tries to retrieve a class name from a variable annotation like this:
 
   /** @var Extension $extension */
+  $extension->...
 
 Aimed to work inside a function.  May return unexpected result if the current
 point is outside of function.  Returns a class name as a string or nil if the

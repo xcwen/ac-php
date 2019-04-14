@@ -920,11 +920,18 @@ Tries to retrieve a class name from a variable annotation like this:
 
 Aimed to work inside a function.  May return unexpected result if the current
 point is outside of function.  Returns a class name as a string or nil if the
-search failed."
+search failed.
+
+At this time doesn't aimed to work for multi class hint:
+
+  /** @var Foo|Bar $baz */"
+  (ac-php--debug "Scan for annotated variable")
+  ;; TODO: Doesn't aimed to work for multi class hint:
+  ;;  /** @var Foo|Bar $baz */
   (ac-php-get-syntax-backward
    (concat ac-php-re-annotated-var-pattern "$" variable)
    1 t
-   (save-excursion (beginning-of-defun) (beginning-of-line))))
+   (save-excursion (beginning-of-defun) (beginning-of-line) (point))))
 
 (defun* ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
@@ -1051,53 +1058,69 @@ search failed."
             (ac-php--debug "Detected call on $this")
             (setq first-class-name (ac-php-get-cur-full-class-name)))
 
-          (ac-php--debug "Attempt #1. Class name is: %s" first-class-name)
+          (ac-php--debug "Class name is: %s" first-class-name)
 
-          ;; Check for annotated variable like
+          ;; Scan for annotated variable like:
+          ;;
           ;;   /** @var Extension $extension */
+          ;;
+          ;; TODO: Doesn't aimed to work for multi class hint:
+          ;;
+          ;;  /** @var Foo|Bar $baz */
+          ;;
           (unless first-class-name
-            (setq first-class-name (ac-php-get-annotated-var-class first-key))
-            (ac-php--debug "Attempt #2. Class name is: %s" first-class-name))
+            (setq first-class-name (ac-php-get-annotated-var-class first-key)))
 
-          ;;check  function xxx (classtype $val)
-          ;;check   catch ( classtype $val)
+          ;; Scan for function like calls or catch statements like:
+          ;;
+          ;;   - function hello (Request $request)
+          ;;   - function () use (Filter $filter)
+          ;;   - catch (\Exception $e)
+          ;;
+          ;; TODO: Doesn't aimed to work for multi catch exception handling:
+          ;;
+          ;;   - catch (MyException | MyOtherException $e)
+          ;;
           (unless first-class-name
-            (setq first-class-name
-                                     (ac-php-get-syntax-backward
-                                      (concat "\\(" ac-php-re-namespace-unit-pattern "\\)" "[\t ]+\\(&\\)?$" first-key  "[ \t]*[),]" )
-                                      1 nil
-                                      (save-excursion  (beginning-of-defun) (beginning-of-line)  ))))
-
-
-          ;;check for @param  \Illuminate\Http\Request  $request
-          (unless first-class-name
+            (ac-php--debug "Scan for funcation like call or a catch statement")
             (setq first-class-name
                   (ac-php-get-syntax-backward
-                   (concat "@param[\t ]+"  "\\("
-                           ac-php-re-namespace-unit-pattern "\\)[\t ]+$" first-key  )
+                   (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
+                           "\\s-+\\(&\\)?$" first-key "\\s-*[),]")
+                   1 nil
+                   (save-excursion (beginning-of-defun) (beginning-of-line)))))
+
+          ;; Scan for @param annotation like this:
+          ;;
+          ;;   @param \Phalcon\Http\Request $request
+          ;;
+          ;; TODO: @property, @property-read, @property-write
+          ;;
+          (unless first-class-name
+            (ac-php--debug "Scan for method annotations")
+            (setq first-class-name
+                  (ac-php-get-syntax-backward
+                   (concat "@param\\s-+"  "\\("
+                           ac-php-re-namespace-unit-pattern "\\)\\s-+$" first-key)
                    1 t
-                   (save-excursion  (beginning-of-defun)  (beginning-of-line) ))))
-
-
-
-
-          (ac-php--debug " 11 first-class-name  %s" first-class-name)
+                   (save-excursion (beginning-of-defun) (beginning-of-line)))))
 
           ;; check $v = new .... or $v = $this->sadfa() ;
           (unless first-class-name
-            (let (define-str symbol-ret symbol-type )
-              (setq define-str (ac-php-get-syntax-backward
-                                (concat   "$" first-key "[\t ]*=\\([^=]*\\)[;]*" )
-                                1 nil
-                                (save-excursion  (beginning-of-defun)  (beginning-of-line)  )) )
+            (let (define-str symbol-ret symbol-type)
+              (setq define-str
+                    (ac-php-get-syntax-backward
+                     (concat "$" first-key "\\s-*=\\([^=]*\\)[;]*")
+                     1 nil
+                     (save-excursion (beginning-of-defun) (beginning-of-line))))
               (when define-str
                 (save-excursion
-                  (goto-char (get-text-property 0 'pos  define-str))
+                  (goto-char (get-text-property 0 'pos define-str))
                   (end-of-line)
 
                   (setq line-txt (buffer-substring-no-properties
                                   (line-beginning-position)
-                                  (line-end-position )))
+                                  (line-end-position)))
 
 
                   (if  (string-match "(" line-txt)

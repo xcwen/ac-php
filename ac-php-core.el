@@ -196,8 +196,8 @@ Used in function `ac-php-mode-line-project-status'")
 ;;    (...)
 ;;    (...))
 ;;
-;; The number “1553935654” in this example means the modification
-;; time of the “/path/to/the/tags.el” file.
+;; The number '1553935654' in this example means the modification
+;; time of the '/path/to/the/tags.el' file.
 (defvar ac-php-tag-last-data-list nil
   "Holds in-memory database for per-project tags.")
 
@@ -414,17 +414,17 @@ ac-php developer only."
 This function is a tool like `split-string', but it treat separator as an
 element of returned list for example:
 
-  \(ac-php-split-string-with-separator “abc.def.g” “\\.” “.”)
+  \(ac-php-split-string-with-separator 'abc.def.g' '\\.' '.')
 
 will return:
 
-  '(“abc” “.” “def” “.” “g”)
-
-To conveniently describe in the documentation, double quotes (\") have
-been replaced by “ and ”.
+  '('abc' '.' 'def' '.' 'g')
 
 The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
-refer to original `split-string' function."
+refer to original `split-string' function.
+
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
   (when str
     (let (split-list substr match-end)
       (if (string-match regexp str)
@@ -444,24 +444,24 @@ refer to original `split-string' function."
 (defun ac-php--get-clean-node (parser-data &optional check-len)
   "Clean PARSER-DATA from unnecessary elements.
 
-This function is used to drop all elements before “;”.  For example:
+This function is used to drop all elements before ';'.  For example:
 
-  \(ac-php--get-clean-node '(“A” “;” “B”))
+  \(ac-php--get-clean-node '('A' ';' 'B'))
 
 will return:
 
-  \(“B”)
+  \('B')
 
 The CHECK-LEN may be passed to indicate the limit to analyze items:
 
-  \(ac-php--get-clean-node '(“A” “B” “C” “D”) 2)
+  \(ac-php--get-clean-node '('A' 'B' 'C' 'D') 2)
 
 will return:
 
-  \(“A” “B”)
+  \('A' 'B')
 
-To conveniently describe in the documentation, double quotes (\") have
-been replaced by “ and ”."
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
   (ac-php--debug "Going to clean parser data: %S" parser-data)
   (let ((i 0) ret-data item)
     (unless check-len
@@ -539,17 +539,17 @@ return values:
   :-------------------------------:------------------------:
   | SPLITED-LINE-ITEMS            | Will return            |
   :-------------------------------------------:------------:
-  | (“foo” “.” “bar” “(” “)” “.”) | (“foo” “.” “bar(” “.”) |
-  | (“foo” “.” “bar” “(” “a”)     | (“a”)                  |
-  | (“foo” “.” “bar”)             | (“foo” “.” “bar”)      |
-  | (“foo” “.”)                   | (“foo” “.”)            |
-  | (“foo”)                       | (“foo”)                |
+  | ('foo' '.' 'bar' '(' ')' '.') | ('foo' '.' 'bar(' '.') |
+  | ('foo' '.' 'bar' '(' 'a')     | ('a')                  |
+  | ('foo' '.' 'bar')             | ('foo' '.' 'bar')      |
+  | ('foo' '.')                   | ('foo' '.')            |
+  | ('foo')                       | ('foo')                |
   :-------------------------------:------------------------:
 
 Meant for `ac-php-get-class-at-point' .
 
-To conveniently describe in the documentation, double quotes (\") have
-been replaced by “ and ”."
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
   (ac-php--debug "Start removing unnecessary items for complete method...")
   (ac-php--debug "Intial items are: %S" splited-line-items)
   (let ((need-add-right-count 1)
@@ -675,14 +675,14 @@ First this function will split LINE-STRING to small items.
 
 For example, suppose LINE-STRING is:
 
-  “$class->method($parameter)”
+  '$class->method($parameter)'
 
 then this function split it to:
 
-  “class” “.” “method” “(” “parameter” “)”
+  'class' '.' 'method' '(' 'parameter' ')'
 
-To conveniently describe in the documentation, double quotes (\") have
-been replaced by “ and ”."
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
   (ac-php--debug "Start splitting the string to items")
   (save-excursion
     (let ((stack-list nil)
@@ -1883,7 +1883,7 @@ will be loaded and the in-memory storage will be updated."
 
     ;; 3. Scan for the real project root of the opend file
     ;; We're looking either for the `ac-php-config-file' file
-    ;; or the “.projectile” file, or the “vendor/autoload.php” file
+    ;; or the '.projectile' file, or the 'vendor/autoload.php' file
     (let (last-dir)
       (while
           (not (or
@@ -1976,8 +1976,8 @@ property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
 \"m\" (method) or \"p\" (property).
 
 Note that this function does not perform in-depth analysis and its main task is
-to determine whether the current MEMBER is a “method call”.  All other cases are
-considered at this stage as a “property usage”, although in fact they may not be."
+to determine whether the current MEMBER is a 'method call'.  All other cases are
+considered at this stage as a 'property usage', although in fact they may not be."
   (ac-php--debug "Recognize current member type")
   (let (type-str)
     (if (and (> (length member) 1) (string= "(" (substring member -1)))
@@ -2386,9 +2386,9 @@ considered at this stage as a “property usage”, although in fact they may no
     ))
 
 (defun ac-php--get-cur-word ()
-  "Return a “word” before current point.
+  "Return a 'word' before current point.
 
-The word “word” means a combination of characters that forms a valid identifier
+The word 'word' means a combination of characters that forms a valid identifier
 in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
@@ -2400,13 +2400,13 @@ Examples:
   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
   | foo()->bar              | bar                |
   | foo()                   |                    |
-  | “some string”           |                    |
+  | 'some string'           |                    |
   :-------------------------:--------------------:
 
 Return empty string if there is no valid sequence of characters.
 
-To conveniently describe in the documentation, double quotes (\") have
-been replaced by “ and ”."
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
   (let (start-pos cur-word)
   (save-excursion
     (skip-chars-backward "a-z0-9A-Z_\\\\")
@@ -2415,9 +2415,9 @@ been replaced by “ and ”."
       (buffer-substring-no-properties start-pos (point)))))
 
 (defun ac-php--get-cur-word-with-function-flag ()
-  "Return a “function” name before current point.
+  "Return a 'function' name before current point.
 
-The word “function” means a combination of characters that forms a valid
+The word 'function' means a combination of characters that forms a valid
 function name.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:

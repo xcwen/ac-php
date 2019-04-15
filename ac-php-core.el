@@ -311,13 +311,19 @@ left to try and get the path down to MAX-LEN"
 
 (defsubst ac-php--in-function-p (&optional pos)
   "Determine whether POS is inside a function."
-  (unless pos (setq pos (point)))
-  (let ((bof (save-excursion (beginning-of-defun) (point)))
-        (eof (save-excursion (end-of-defun) (point))))
-    (cond
-     ((or (null bof) (null eof)) nil)
-     ((and (> pos bof) (< pos eof)) t)
-     (t nil))))
+  (let (bof (pos (or pos (point))))
+    (save-excursion
+      ;; `php-mode' defines `beginning-of-defun-function' in a non
+      ;; standard way and `beginning-of-defun' always return nil.
+      ;; So you can't always rely on this function ¯\_(ツ)_/¯
+      ;; For more see: https://github.com/emacs-php/php-mode/issues/503
+      ;;
+      ;; TODO: Create our own implementation.
+      (beginning-of-defun)
+      (setq bof (point))
+      (end-of-defun)
+      (and (> pos bof)
+           (< pos (point))))))
 
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.

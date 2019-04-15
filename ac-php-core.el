@@ -311,13 +311,19 @@ left to try and get the path down to MAX-LEN"
 
 (defsubst ac-php--in-function-p (&optional pos)
   "Determine whether POS is inside a function."
-  (unless pos (setq pos (point)))
-  (let ((bof (save-excursion (beginning-of-defun) (point)))
-        (eof (save-excursion (end-of-defun) (point))))
-    (cond
-     ((or (null bof) (null eof)) nil)
-     ((and (> pos bof) (< pos eof)) t)
-     (t nil))))
+  (let (bof (pos (or pos (point))))
+    (save-excursion
+      ;; `php-mode' defines `beginning-of-defun-function' in a non
+      ;; standard way and `beginning-of-defun' always return nil.
+      ;; So you can't always rely on this function ¯\_(ツ)_/¯
+      ;; For more see: https://github.com/emacs-php/php-mode/issues/503
+      ;;
+      ;; TODO: Create our own implementation.
+      (beginning-of-defun)
+      (setq bof (point))
+      (end-of-defun)
+      (and (> pos bof)
+           (< pos (point))))))
 
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.
@@ -1139,10 +1145,10 @@ At this time doesn't aimed to work for multi class hint:
                         (beginning-of-line )
                         (setq beginning-of-line-pos (point))
                         (re-search-forward ".[ \t]*(" ) ;; func
-                        ( re-search-backward "[a-zA-Z_0-9][ \t]*(" )
+                        ( re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
                         (ac-php--debug "XXXXXX:pos22=[%s]" (buffer-substring-no-properties beginning-of-line-pos (point)  )  )
                       )
-                    (re-search-backward ".[ \t]*;" ) ;;  p
+                    (re-search-backward ".[ \t]*;" nil t) ;;  p
                       )
                   ;;(backward-char 1)
                   (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
@@ -2362,7 +2368,7 @@ considered at this stage as a 'property usage', although in fact they may not be
             (let (key-str-list  pos)
               (save-excursion
                 (re-search-forward "[;]")
-                (re-search-backward "[^ \t]")
+                (re-search-backward "[^ \t]" nil t)
                 (setq pos (point) )
                 )
 

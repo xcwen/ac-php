@@ -299,15 +299,25 @@ left to try and get the path down to MAX-LEN"
   "Return a project path using the TAGS-DATA list."
   (nth 4 tags-data))
 
-(defun ac-php--in-comment-p (pos)
+(defsubst ac-php--in-comment-p (&optional pos)
   "Determine whether POS is inside a comment."
   (let ((state (save-excursion (syntax-ppss pos))))
     (nth 4 state)))
 
-(defsubst ac-php--in-string-or-comment-p (pos)
+(defsubst ac-php--in-string-or-comment-p (&optional pos)
   "Determine whether POS is inside a string or comment."
   (let ((state (save-excursion (syntax-ppss pos))))
     (nth 8 state)))
+
+(defsubst ac-php--in-function-p (&optional pos)
+  "Determine whether POS is inside a function."
+  (unless pos (setq pos (point)))
+  (let ((bof (save-excursion (beginning-of-defun) (point)))
+        (eof (save-excursion (end-of-defun) (point))))
+    (cond
+     ((or (null bof) (null eof)) nil)
+     ((and (> pos bof) (< pos eof)) t)
+     (t nil))))
 
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.

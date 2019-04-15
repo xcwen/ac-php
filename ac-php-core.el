@@ -1145,10 +1145,10 @@ At this time doesn't aimed to work for multi class hint:
                         (beginning-of-line )
                         (setq beginning-of-line-pos (point))
                         (re-search-forward ".[ \t]*(" ) ;; func
-                        ( re-search-backward "[a-zA-Z_0-9][ \t]*(" )
+                        ( re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
                         (ac-php--debug "XXXXXX:pos22=[%s]" (buffer-substring-no-properties beginning-of-line-pos (point)  )  )
                       )
-                    (re-search-backward ".[ \t]*;" ) ;;  p
+                    (re-search-backward ".[ \t]*;" nil t) ;;  p
                       )
                   ;;(backward-char 1)
                   (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
@@ -2368,7 +2368,7 @@ considered at this stage as a 'property usage', although in fact they may not be
             (let (key-str-list  pos)
               (save-excursion
                 (re-search-forward "[;]")
-                (re-search-backward "[^ \t]")
+                (re-search-backward "[^ \t]" nil t)
                 (setq pos (point) )
                 )
 

@@ -244,7 +244,8 @@ Used in function `ac-php-mode-line-project-status'")
 (defconst ac-php-re-beginning-of-defun-pattern
   (concat
    "^\\s-*"
-   "\\(?:\\(?:abstract\\|final\\|private\\|protected\\|public\\|static\\)\\s-+\\)"
+   "\\(?:\\(?:abstract\\|final\\|private\\|protected"
+   "\\|public\\|static\\)\\s-+\\)"
    "*function\\s-+&?\\(\\(?:\\sw\\|\\s_\\)+\\)\\s-*(")
   "Regular expression for a PHP function.")
 
@@ -318,7 +319,7 @@ left to try and get the path down to MAX-LEN"
 
 ;; See: https://github.com/emacs-php/php-mode/issues/503
 (defun ac-php-beginning-of-defun (&optional arg)
-  "Movpe to the beginning of the ARGth PHP function from point.
+  "Move to the beginning of the ARGth PHP function from point.
 A replacemant for PHP's version `php-beginning-of-defun'."
   (interactive "p")
   (let (found-p (arg (or arg 1)))

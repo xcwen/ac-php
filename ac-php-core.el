@@ -241,6 +241,14 @@ Used in function `ac-php-mode-line-project-status'")
    "\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\s-*;")
   "The regular expression for a namespace.")
 
+(defconst ac-php-re-beginning-of-defun-pattern
+  (concat
+   "^\\s-*"
+   "\\(?:\\(?:abstract\\|final\\|private\\|protected"
+   "\\|public\\|static\\)\\s-+\\)"
+   "*function\\s-+&?\\(\\(?:\\sw\\|\\s_\\)+\\)\\s-*(")
+  "Regular expression for a PHP function.")
+
 (defconst ac-php-re-annotated-var-pattern
   (concat
    "@var"
@@ -309,21 +317,48 @@ left to try and get the path down to MAX-LEN"
   (let ((state (save-excursion (syntax-ppss pos))))
     (nth 8 state)))
 
+;; See: https://github.com/emacs-php/php-mode/issues/503
+(defun ac-php-beginning-of-defun (&optional arg)
+  "Move to the beginning of the ARGth PHP function from point.
+A replacemant for PHP's version `php-beginning-of-defun'."
+  (interactive "p")
+  (let (found-p (arg (or arg 1)))
+    (while (> arg 0)
+      (setq found-p (re-search-backward
+                     ac-php-re-beginning-of-defun-pattern
+                     nil 'noerror))
+      (setq arg (1- arg)))
+    (while (< arg 0)
+      (end-of-line 1)
+      (let ((opoint (point)))
+        (ac-php-beginning-of-defun 1)
+        (forward-list 2)
+        (forward-line 1)
+        (if (eq opoint (point))
+            (setq found-p (re-search-forward
+                           ac-php-re-beginning-of-defun-pattern
+                           nil 'noerror)))
+        (setq arg (1+ arg))))
+    (not (null found-p))))
+
+;; See: https://github.com/emacs-php/php-mode/issues/503
+(defun ac-php-end-of-defun (&optional arg)
+  "Move the end of the ARGth PHP function from point.
+A replacemant for PHP's version `php-en-of-defun'.
+
+See `ac-php-beginning-of-defun'."
+  (interactive "p")
+  (ac-php-beginning-of-defun (- (or arg 1))))
+
 (defsubst ac-php--in-function-p (&optional pos)
   "Determine whether POS is inside a function."
   (let (bof (pos (or pos (point))))
     (save-excursion
-      ;; `php-mode' defines `beginning-of-defun-function' in a non
-      ;; standard way and `beginning-of-defun' always return nil.
-      ;; So you can't always rely on this function ¯\_(ツ)_/¯
-      ;; For more see: https://github.com/emacs-php/php-mode/issues/503
-      ;;
-      ;; TODO: Create our own implementation.
-      (beginning-of-defun)
-      (setq bof (point))
-      (end-of-defun)
-      (and (> pos bof)
-           (< pos (point))))))
+      (when (ac-php-beginning-of-defun)
+        (setq bof (point))
+        (ac-php-end-of-defun)
+        (and (> pos bof)
+             (< pos (point)))))))
 
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.

@@ -46,7 +46,7 @@ function foo () {
    (should (eq (ac-php--in-function-p 1) nil))
    (should (eq (ac-php--in-function-p 24) t))
    (goto-char (point-min))
-   (should (eq (ac-php--in-function-p) nil))))
+   (should (eq (ac-php--in-function-p 24) t))))
 
 (provide 'ac-php-utils-test)
 ;;; ac-php-utils-test.el ends here

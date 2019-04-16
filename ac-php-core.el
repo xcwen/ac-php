@@ -354,6 +354,7 @@ See `ac-php-beginning-of-defun'."
   "Determine whether POS is inside a function."
   (let (bof (pos (or pos (point))))
     (save-excursion
+      (goto-char pos)
       (when (ac-php-beginning-of-defun)
         (setq bof (point))
         (ac-php-end-of-defun)

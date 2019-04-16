@@ -835,30 +835,39 @@ been replaced by '."
 
       stack-list)))
 
-(defun ac-php-get-syntax-backward (regexp num &optional in-comment-p bound)
+(defun ac-php-get-syntax-backward (regexp &rest args)
   "Search backward from current point for regular expression REGEXP.
 
-The second argument NUM specifies which parenthesized expression in the REGEXP
-should be returned.  The optional third argument IN-COMMENT-P indicates should
-we search inside a comment or not.  The optional fourth argument BOUND is a
-buffer position that bounds the search.  The match found nust not end after that
-position.  A value of nil means search to the end of the accessible portion of
-the buffer.
+Possible additional ARGS:
 
-Return a propertized string in a format #(\"some string\" 0 11 (pos POINT))
-where POINT is a point position that bounds the search.
+    :sexp       Specifies which parenthesized expression in the REGEXP
+                should be returned.
 
-Return nil in case of unsuccessful search."
-  (ac-php--debug "Search backward from current point up to %s"
-                 (if bound (format "point: %d" bound)
-                   "accessible portion of the buffer"))
-  (ac-php--debug "Used regular expression: \"%s\"" regexp)
+    :comment    Indicates should we search inside a comment or not.
+
+    :bound      A buffer position that bounds the search.  The match found must
+                not end after that position.  A value of nil means search to the
+                end of the accessible portion of the buffer.
+
+Return a propertized string in a format:
+
+  #(\"some string\" 0 11 (pos POINT))
+
+where POINT is a point position that bounds the search.  Return nil in case of
+unsuccessful search."
   (let ((old-cfs case-fold-search)
         (found-p nil)
         line-txt
         ret-str
-        search-pos)
+        search-pos
+        (sexp (plist-get args :sexp))
+        (in-comment-p (plist-get args :comment))
+        (bound (plist-get args :bound)))
     (save-excursion
+      (ac-php--debug "Search backward from current point up to %s"
+                     (if bound (format "point: %d" bound)
+                       "accessible portion of the buffer"))
+      (ac-php--debug "Used regular expression: \"%s\"" regexp)
       (while (not found-p)
         (setq search-pos (re-search-backward regexp bound t 1))
         (if search-pos
@@ -870,7 +879,7 @@ Return nil in case of unsuccessful search."
                                 (line-beginning-position)
                                 (line-end-position)))
                 (when (string-match regexp line-txt)
-                  (setq ret-str (match-string num line-txt))
+                  (setq ret-str (match-string sexp line-txt))
                   (setq ret-str (propertize ret-str 'pos search-pos))
                   (setq found-p t))))
           (setq found-p t))))
@@ -883,7 +892,9 @@ Return nil in case of unsuccessful search."
 
 Tries to retrieve current class name if it is possible.
 Returns the name of the current class as a string or nil if the search failed."
-  (ac-php-get-syntax-backward ac-php-re-classlike-pattern 1))
+  (ac-php-get-syntax-backward
+   ac-php-re-classlike-pattern
+   :sexp 1))
 
 (defun ac-php-get-cur-namespace-name (&optional trim-trailing-backslash-p)
   "Get fully qualified namespace.
@@ -892,7 +903,9 @@ Tries to retrieve current fully qualified namespace if it is possible.
 TRIM-TRAILING-BACKSLASH-P is used to indicate whether we should trim trailng
 backslash or not.  Always returns a string, even if the namespace was not found."
   (let (namespace (not-found ""))
-    (setq namespace (ac-php-get-syntax-backward ac-php-re-namespace-pattern 1))
+    (setq namespace (ac-php-get-syntax-backward
+                     ac-php-re-namespace-pattern
+                     :sexp 1))
     (if namespace
         (progn
           ;; Concatenate leading backslash
@@ -926,15 +939,26 @@ Returns nil if could not find class name in current buffer."
           (concat namespace class-name))
       nil)))
 
-(defun ac-php-get-use-as-name (item-name   )
+(defun ac-php-get-use-as-name (item-name)
   "DOCSTRING"
-  (let ( use-name )
-    (setq item-name (nth 0 (s-split "(" item-name  )) )
-    (setq use-name (or
-                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\\\" item-name "\\)[ \t]*;") 1  nil  )
-                    ( ac-php-get-syntax-backward (concat "^[ \t]*use[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)[ \t]+as[ \t]+" item-name "[ \t]*;" ) 1 nil ) )
-          )
-    ))
+  (let ((item-name (nth 0 (s-split "(" item-name))))
+    (or
+     (ac-php-get-syntax-backward
+      (concat
+       "^[ \t]*use[ \t]+\\("
+       ac-php-re-namespace-unit-pattern
+       "\\\\"
+       item-name
+       "\\)[ \t]*;")
+      :sexp 1)
+     (ac-php-get-syntax-backward
+      (concat
+       "^[ \t]*use[ \t]+\\("
+       ac-php-re-namespace-unit-pattern
+       "\\)[ \t]+as[ \t]+"
+       item-name
+       "[ \t]*;")
+      :sexp 1))))
 
 (defun ac-php--get-all-use-as-name-in-cur-buffer ()
   "Make a regex to match use statements."
@@ -982,8 +1006,9 @@ At this time doesn't aimed to work for multi class hint:
   ;;  /** @var Foo|Bar $baz */
   (ac-php-get-syntax-backward
    (concat ac-php-re-annotated-var-pattern "$" variable)
-   1 t
-   (save-excursion (beginning-of-defun) (beginning-of-line) (point))))
+   :sexp 1
+   :comment t
+   :bound (save-excursion (beginning-of-defun) (beginning-of-line) (point))))
 
 (defun* ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
@@ -1139,8 +1164,8 @@ At this time doesn't aimed to work for multi class hint:
                   (ac-php-get-syntax-backward
                    (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
                            "\\s-+\\(&\\)?$" first-key "\\s-*[),]")
-                   1 nil
-                   (save-excursion (beginning-of-defun) (beginning-of-line)))))
+                   :sexp 1
+                   :bound (save-excursion (beginning-of-defun) (beginning-of-line)))))
 
           ;; Scan for @param annotation like this:
           ;;
@@ -1154,8 +1179,9 @@ At this time doesn't aimed to work for multi class hint:
                   (ac-php-get-syntax-backward
                    (concat "@param\\s-+"  "\\("
                            ac-php-re-namespace-unit-pattern "\\)\\s-+$" first-key)
-                   1 t
-                   (save-excursion (beginning-of-defun) (beginning-of-line)))))
+                   :sexp 1
+                   :comment t
+                   :bound (save-excursion (beginning-of-defun) (beginning-of-line)))))
 
           ;; check $v = new .... or $v = $this->sadfa() ;
           (unless first-class-name
@@ -1163,8 +1189,8 @@ At this time doesn't aimed to work for multi class hint:
               (setq define-str
                     (ac-php-get-syntax-backward
                      (concat "$" first-key "\\s-*=\\([^=]*\\)[;]*")
-                     1 nil
-                     (save-excursion (beginning-of-defun) (beginning-of-line))))
+                     :sexp 1
+                     :bound (save-excursion (beginning-of-defun) (beginning-of-line))))
               (when define-str
                 (save-excursion
                   (goto-char (get-text-property 0 'pos define-str))
@@ -2270,7 +2296,9 @@ considered at this stage as a 'property usage', although in fact they may not be
               (class-map ( ac-php-g--function-map tags-data  )) full-name tmp-ret file-pos  )
 
           (when (string= "" cur-word) ;;new
-            (setq tmp-ret  ( ac-php-get-syntax-backward (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)") 1 ))
+            (setq tmp-ret (ac-php-get-syntax-backward
+                           (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)")
+                           :sexp 1))
             (when tmp-ret (setq cur-word   tmp-ret ))
             )
           ;;check "namespace" "use as"

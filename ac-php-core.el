@@ -165,7 +165,7 @@ ac-php developer only.")
 
 (defvar ac-php-phptags-index-progress 0
   "The re-index progress indicator.
-Used in function `ac-php-mode-line-project-status'")
+Meant for `ac-php-mode-line-project-status'")
 
 ;; The database of the all tags.
 ;;
@@ -845,6 +845,8 @@ Possible additional ARGS:
 
     :comment    Indicates should we search inside a comment or not.
 
+    :defun      Indicates should we search inside a defun or not.
+
     :bound      A buffer position that bounds the search.  The match found must
                 not end after that position.  A value of nil means search to the
                 end of the accessible portion of the buffer.
@@ -860,8 +862,11 @@ unsuccessful search."
         line-txt
         ret-str
         search-pos
+        in-comment-ctx
+        in-defun-ctx
         (sexp (plist-get args :sexp))
         (in-comment-p (plist-get args :comment))
+        (in-defun-p (plist-get args :defun))
         (bound (plist-get args :bound)))
     (save-excursion
       (ac-php--debug "Search backward from current point up to %s"
@@ -872,9 +877,17 @@ unsuccessful search."
         (setq search-pos (re-search-backward regexp bound t 1))
         (if search-pos
             (progn
-              (when (if in-comment-p
-                        (ac-php--in-comment-p (point))
-                      (not (ac-php--in-string-or-comment-p (point))))
+              (setq
+               ;; Determine actual comment context
+               in-comment-ctx (if in-comment-p
+                                  (ac-php--in-comment-p (point))
+                                (not (ac-php--in-string-or-comment-p (point))))
+               ;; Determine actual defun context
+               in-defun-ctx (if in-defun-p
+                               (ac-php--in-function-p (point))
+                             (not (ac-php--in-function-p (point)))))
+
+              (when (and in-comment-ctx in-defun-ctx)
                 (setq line-txt (buffer-substring-no-properties
                                 (line-beginning-position)
                                 (line-end-position)))
@@ -986,29 +999,25 @@ Returns nil if could not find class name in current buffer."
           (end-of-line))))
     ret-list ))
 
-(defun ac-php-get-annotated-var-class (variable)
+(defun ac-php-get-annotated-var-class (variable &optional pos)
   "Get a class name for an annotated VARIABLE.
 
-Tries to retrieve a class name from a variable annotation like this:
+The optional second argument POS specifies current point.  Returns a class
+name as a string or nil if the search failed.  At this time doesn't aimed to
+work for multi class hint:
 
-  /** @var Extension $extension */
-  $extension->...
-
-Aimed to work inside a function.  May return unexpected result if the current
-point is outside of function.  Returns a class name as a string or nil if the
-search failed.
-
-At this time doesn't aimed to work for multi class hint:
-
-  /** @var Foo|Bar $baz */"
+/** @var Foo|Bar $baz */"
   (ac-php--debug "Scan for annotated variable")
   ;; TODO: Doesn't aimed to work for multi class hint:
   ;;  /** @var Foo|Bar $baz */
-  (ac-php-get-syntax-backward
-   (concat ac-php-re-annotated-var-pattern "$" variable)
-   :sexp 1
-   :comment t
-   :bound (save-excursion (beginning-of-defun) (beginning-of-line) (point))))
+  (let ((in-defun-p (ac-php--in-function-p pos)))
+    (ac-php-get-syntax-backward
+     (concat ac-php-re-annotated-var-pattern "$" variable)
+     :sexp 1
+     :comment t
+     :defun in-defun-p
+     :bound (when in-defun-p
+              (save-excursion (beginning-of-defun) (beginning-of-line) (point))))))
 
 (defun* ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
@@ -1146,7 +1155,7 @@ At this time doesn't aimed to work for multi class hint:
           ;;  /** @var Foo|Bar $baz */
           ;;
           (unless first-class-name
-            (setq first-class-name (ac-php-get-annotated-var-class first-key)))
+            (setq first-class-name (ac-php-get-annotated-var-class first-key pos)))
 
           ;; Scan for function like calls or catch statements like:
           ;;

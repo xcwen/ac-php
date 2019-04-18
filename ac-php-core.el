@@ -1911,7 +1911,7 @@ will be loaded and the in-memory storage will be updated."
         (message (concat "ac-php: Reloading the autocompletion "
                          "data from the tags file..."))
         (load tags-file nil t)
-        (setq file-data g-ac-php-tmp-tags)
+        (setq file-data g-ac-php-tmp-tags) ;;// g-ac-php-tmp-tags in tags.el
 
         (assq-delete-all tags-file ac-php-tag-last-data-list)
 
@@ -1928,7 +1928,9 @@ will be loaded and the in-memory storage will be updated."
 
         (mapc
          (lambda (class-item)
-           (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
+           (puthash (format "%s" (car class-item)) (cdr class-item) class-map)
+           )
+
          (aref file-data 0))
 
         (mapc
@@ -2302,7 +2304,7 @@ considered at this stage as a 'property usage', although in fact they may not be
           )
       (progn ;;function
         (let ((function-map (ac-php-g--function-map tags-data  ))
-              (class-map ( ac-php-g--function-map tags-data  )) full-name tmp-ret file-pos  )
+               full-name tmp-ret file-pos  )
 
           (when (string= "" cur-word) ;;new
             (setq tmp-ret (ac-php-get-syntax-backward

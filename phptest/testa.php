@@ -21,7 +21,10 @@ class Testa  {
     const DIR="sss";
     public function &set_v1($v,$v2= -1){
 
+
+
         $this->do_f($v1,$v2,$v3 );
+
         $v=trim($v);
         $this->v1=$v;
         $this->DIR;
@@ -30,7 +33,7 @@ class Testa  {
 
     public function __construct(   ){
         $this->do_f("ss");
-        $this->do_f($v1);
+
     }
 
     public function do_f( $v1 ,$v2=0x1001, $v3 =0777 ){

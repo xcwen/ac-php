@@ -1174,7 +1174,11 @@ work for multi class hint:
                    (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
                            "\\s-+\\(&\\)?$" first-key "\\s-*[),]")
                    :sexp 1
-                   :bound (save-excursion (beginning-of-defun) (beginning-of-line)))))
+                   :defun t
+                   :bound (save-excursion
+                            (beginning-of-defun)
+                            (beginning-of-line)
+                            (point)))))
 
           ;; Scan for @param annotation like this:
           ;;

@@ -233,7 +233,7 @@ function helper() {}"
    "function hello() {
     /** @var Extension $extension */
 }"
-   (goto-char (point-max))
+   (goto-char (1- (point-max)))
    (should (string= (ac-php-get-annotated-var-class "extension")
                     "Extension"))))
 
@@ -243,7 +243,7 @@ function helper() {}"
    "function hello() {
     /** @var \\Symfony\\Component\\Console\\Descriptor\\JsonDescriptor $extension */
 }"
-   (goto-char (point-max))
+   (goto-char (1- (point-max)))
    (should (string= (ac-php-get-annotated-var-class "extension")
                     "\\Symfony\\Component\\Console\\Descriptor\\JsonDescriptor"))))
 
@@ -279,6 +279,24 @@ function hello() {
 function test() {
     /** @var Fake $extension */
 }"
+   (goto-char (point-max))
+   (should (eq (ac-php-get-annotated-var-class "extension") nil))
+   (goto-char (1- (point-max)))
+   (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
+
+(ert-deftest ac-php-search/annotated-var-out-of-defun ()
+  :tags '(re search)
+  (ac-php-test-with-temp-buffer "
+/** @var Fake $extension */
+$extension->bar();
+
+function hello($extension) {
+    /** @var Extension $extension */
+    $extension->foo();
+}
+
+$extension->bar();
+"
    (goto-char (point-max))
    (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
 

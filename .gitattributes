@@ -1,2 +1,3 @@
-commom_php/* linguist-vendored
-phptest/*    linguist-vendored
+commom_php/*     linguist-vendored
+phptest/*        linguist-vendored
+test/fixtures/*  linguist-vendored

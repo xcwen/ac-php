@@ -95,7 +95,8 @@
   :link '(emacs-commentary-link :tag "Commentary" "ac-php"))
 
 (defcustom ac-php-php-executable (executable-find "php")
-  "Set the PHP executable path."
+  "Set PHP command line interpreter executable path.
+For more see URL `http://php.net/manual/en/features.commandline.php'."
   :group 'ac-php
   :type 'string)
 

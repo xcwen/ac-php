@@ -38,6 +38,9 @@
 ;; Make sure the exact Emacs version can be found in the build output
 (message "Running tests on Emacs %s" emacs-version)
 
+(defvar ac-php-test-fixtures-dir nil
+  "Directory containing the `ac-php' test fixtures.")
+
 (when (require 'undercover nil t)
   (progn
     (undercover "ac-php.el")
@@ -47,22 +50,34 @@
 
 (let* ((current-file (if load-in-progress load-file-name (buffer-file-name)))
        (source-directory (locate-dominating-file current-file "Cask"))
+       (test-directory (locate-dominating-file current-file "test-helper.el"))
        ;; Don't load old byte-compiled versions
        (load-prefer-newer t))
+  (setq ac-php-test-fixtures-dir (expand-file-name "fixtures" test-directory))
   ;; Load the file under test
   (load (expand-file-name "ac-php" source-directory) nil t)
   (load (expand-file-name "ac-php-core" source-directory) nil t)
   (load (expand-file-name "company-php" source-directory) nil t)
   (load (expand-file-name "helm-ac-php-apropros" source-directory) nil t))
 
-(defmacro ac-php-test-with-temp-buffer (content &rest body)
+(cl-defmacro with-ac-php-file-test (file &rest body)
+  "Evaluate BODY in a temporary buffer with fixture FILE."
+  (declare (debug t)
+           (indent 1))
+  `(with-temp-buffer
+     (insert-file-contents (expand-file-name ,file ac-php-test-fixtures-dir))
+     (php-mode)
+     (goto-char (point-min))
+     (let ((case-fold-search nil))
+       ,@body)))
+
+(cl-defmacro with-ac-php-buffer-test (content &rest body)
   "Evaluate BODY in a temporary buffer with CONTENT."
   (declare (debug t)
            (indent 1))
   `(with-temp-buffer
      (insert ,content)
      (php-mode)
-     (font-lock-fontify-buffer)
      (goto-char (point-min))
      ,@body))
 

@@ -35,11 +35,7 @@
 
 (ert-deftest ac-php-search/in-function-std-case ()
   :tags '(re search)
-  (ac-php-test-with-temp-buffer
-   "<?php
-function foo () {
-
-}"
+  (with-ac-php-file-test "in-function-std-case.php"
    (goto-char (point-max))
    (should (eq (ac-php--in-function-p) nil))
    (should (eq (ac-php--in-function-p (1- (point))) t))

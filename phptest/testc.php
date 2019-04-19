@@ -1,14 +1,15 @@
 <?php
-
+use \Test\Testa;
 
 abstract class Testc {
 
 
     /**
-     * @var   string 
+     * @var   Testa
      */
     public $v3;
-    
+
+
     const  DIR="sss";
     public function set_v3($v){
         $v=trim($v);

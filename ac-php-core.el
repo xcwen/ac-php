@@ -1204,6 +1204,7 @@ work for multi class hint:
                     (ac-php-get-syntax-backward
                      (concat "$" first-key "\\s-*=\\([^=]*\\)[;]*")
                      :sexp 1
+                     :defun t
                      :bound (save-excursion (beginning-of-defun) (beginning-of-line))))
               (when define-str
                 (save-excursion

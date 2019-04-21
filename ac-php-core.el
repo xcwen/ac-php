@@ -1215,67 +1215,56 @@ work for multi class hint:
                                   (line-beginning-position)
                                   (line-end-position)))
 
-
-                  (if  (string-match "(" line-txt)
-                      (let ( beginning-of-line-pos )
-                        (ac-php--debug "XXXXXX:%s" line-txt)
-                        (beginning-of-line )
+                  (if (string-match "(" line-txt)
+                      (let (beginning-of-line-pos)
+                        (ac-php--debug "XXXXXX: %s" line-txt)
+                        (beginning-of-line)
                         (setq beginning-of-line-pos (point))
-                        (re-search-forward ".[ \t]*(" ) ;; func
-                        ( re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
-                        (ac-php--debug "XXXXXX:pos22=[%s]" (buffer-substring-no-properties beginning-of-line-pos (point)  )  )
-                      )
-                    (re-search-backward ".[ \t]*;" nil t) ;;  p
-                      )
-                  ;;(backward-char 1)
-                  (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"  define-str (get-text-property 0 'pos  define-str) (point) )
+                        ;; Function
+                        (re-search-forward ".[ \t]*(" )
+                        (re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
+                        (ac-php--debug "XXXXXX: pos22=[%s]"
+                                       (buffer-substring-no-properties
+                                        beginning-of-line-pos (point))))
+                    ;; Property
+                    (re-search-backward ".[ \t]*;" nil t))
+
+                  ;; TODO: (backward-char 1)
+                  (ac-php--debug " ===== define-str :%s pos=%d check_pos=%d"
+                                 define-str
+                                 (get-text-property 0 'pos define-str)
+                                 (point))
                   (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
                   (unless symbol-ret
-                    (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t))
-                    )
+                    (setq symbol-ret (ac-php-find-symbol-at-point-pri
+                                      tags-data nil t)))
 
                   (when symbol-ret
                     (setq symbol-type  (car symbol-ret) )
                     (ac-php--debug "XXLLL %s" symbol-type )
-                    (when (or (string= symbol-type "class_member" )
-                            (string= symbol-type "user_function" ) )
-
-                      (setq first-class-name  (nth 2 symbol-ret)  )
-
-                      )
-                    )
-                ))
-            ))
-
+                    (when (or (string= symbol-type "class_member")
+                              (string= symbol-type "user_function"))
+                      (setq first-class-name  (nth 2 symbol-ret))))))))
 
           (unless first-class-name (setq first-class-name first-key)))))
 
-
-    ;;fix use-as-name ,same namespace
+    ;; fix use-as-name, same namespace
     (when ( and first-class-name
-                (= 1 (length  (s-split "\\."  first-class-name ) ) )
-                )
-      (setq first-class-name (ac-php--get-class-full-name-in-cur-buffer
-                              first-class-name
-                              (ac-php-g--function-map tags-data  ) t ) ))
-
-
-
+                (= 1 (length  (s-split "\\." first-class-name))))
+      (setq first-class-name
+            (ac-php--get-class-full-name-in-cur-buffer
+             first-class-name
+             (ac-php-g--function-map tags-data) t)))
 
     (ac-php--debug "22===first-class-name :%s" first-class-name)
 
     (if first-class-name
         (progn
           (setq ret-str  (concat first-class-name ))
-
-          (dolist (field-value (cdr key-list) )
-            ;;(when  (not (string= "." field-value))
-            (setq ret-str  (concat  ret-str  field-value )))
-          ;;)
-          (setq ret-str ( ac-php--as-global-name  ret-str ))
-          )
-      (if (>(length   key-list ) 1) "null" nil) )))
-
+          (dolist (field-value (cdr key-list))
+            (setq ret-str  (concat  ret-str field-value )))
+          (setq ret-str (ac-php--as-global-name ret-str)))
+      (if (>(length key-list) 1) "null" nil))))
 
 
 (defun ac-php-candidate-class ( tags-data key-str-list  )

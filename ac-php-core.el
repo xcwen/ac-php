@@ -12,7 +12,7 @@
 ;; URL: https://github.com/xcwen/ac-php
 ;; Version: 2.0.8
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0") (xscope "1.0"))
+;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0") (xcscope "1.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
 
 ;; This file is NOT part of GNU Emacs.
@@ -72,12 +72,12 @@
 
 ;;; Code:
 
-(require 'json)  ; `json-encode', `json-read-file'
-(require 's)     ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
-(require 'f)     ; `f-write-text', `f-full', `f-join', `f-exists?', ...
+(require 'json)    ; `json-encode', `json-read-file'
+(require 's)       ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
+(require 'f)       ; `f-write-text', `f-full', `f-join', `f-exists?', ...
 
-(require 'xcscope nil t) ; `cscope-find-egrep-pattern', `cscope-prompt-for-symbol'
-(require 'popup) ; `popup-tip'
+(require 'xcscope) ; `cscope-find-egrep-pattern', `cscope-prompt-for-symbol'
+(require 'popup)   ; `popup-tip'
 (require 'dash)
 (require 'eldoc)
 
@@ -2625,21 +2625,17 @@ Return empty string if there is no valid sequence of characters."
 (defun ac-php-cscope-find-egrep-pattern (symbol)
   "Set `cscope-initial-directory' and run egrep over the cscope database."
   (interactive
-   ;; TODO: refactor
    (list
     (let (cscope-no-mouse-prompts)
-      ;; TODO: check for fboundp
       (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))))
   (let ((project-root-dir (ac-php--get-project-root-dir)))
 
     (if (or ac-php-use-cscope-flag
             (ac-php--get-use-cscope-from-config-file project-root-dir))
         (progn
-          (when (boundp 'cscope-initial-directory)
-            (setq cscope-initial-directory
-                  (ac-php--get-tags-save-dir project-root-dir)))
-          (when (fboundp 'cscope-find-egrep-pattern)
-            (cscope-find-egrep-pattern symbol)))
+          (setq cscope-initial-directory
+                (ac-php--get-tags-save-dir project-root-dir))
+          (cscope-find-egrep-pattern symbol))
       (message "need config: %s -> use-cscope:true" ac-php-config-file))))
 
 (defun ac-php-eldoc-documentation-function ()

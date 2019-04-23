@@ -166,7 +166,7 @@ Prerequisite packages are:
   - [f][:melpa-f:]
   - [popup][:melpa-popup:]
   - [dash][:elpa-dash:]
-  - [xcscope][:melpa-xcscope:] (optional)
+  - [xcscope][:melpa-xcscope:]
   - [scope][:sf-cscope:] (optional)
 - **`ac-php.el`**
   - [auto-complete][:gh-ac:]

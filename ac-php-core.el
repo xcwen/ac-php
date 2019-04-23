@@ -81,11 +81,7 @@
 (require 'dash)
 (require 'eldoc)
 
-(eval-and-compile
-  (if (and (= emacs-major-version 24) (>= emacs-minor-version 4))
-      (require 'cl)))
-
-(require 'cl-lib) ; `cl-reduce'
+(require 'cl-lib) ; `cl-reduce', `cl-decf'
 
 ;;; Customization
 
@@ -388,18 +384,18 @@ ac-php developer only."
 
 (defun ac-php-location-stack-push ()
   (let ((bm (ac-php-current-location)))
-    (if  ( functionp  'xref-push-marker-stack)
+    (if  (functionp 'xref-push-marker-stack)
         (xref-push-marker-stack)
-      (ring-insert (with-no-warnings find-tag-marker-ring) (point-marker))
-      )
+      (ring-insert (with-no-warnings find-tag-marker-ring) (point-marker)))
     (while (> ac-php-location-stack-index 0)
-      (decf ac-php-location-stack-index)
+      (cl-decf ac-php-location-stack-index)
       (pop ac-php-location-stack))
     (unless (string= bm (nth 0 ac-php-location-stack))
       (push bm ac-php-location-stack)
-      (if (> (length ac-php-location-stack) ac-php-max-bookmark-count)
-          (nbutlast ac-php-location-stack (- (length ac-php-location-stack) ac-php-max-bookmark-count)))))
-  )
+      (when (> (length ac-php-location-stack) ac-php-max-bookmark-count)
+        (nbutlast ac-php-location-stack
+                  (- (length ac-php-location-stack)
+                     ac-php-max-bookmark-count))))))
 
 ;;function
 (defun ac-php-goto-line-col (line column)

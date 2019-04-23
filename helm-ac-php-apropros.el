@@ -45,6 +45,7 @@
 (require 'pcase)
 (require 'ac-php)
 (require 'helm)
+(require 'cl-lib)    ; `cl-equalp'
 
 (defun helm-ac-php--init ()
   (with-current-buffer (helm-candidate-buffer 'global)
@@ -52,7 +53,7 @@
      (lambda (k v)
        (mapc
         (lambda (v)
-          (when (not (equalp "sys" (aref v 3)))
+          (when (not (cl-equalp "sys" (aref v 3)))
             (insert
              (propertize
               (concat
@@ -69,26 +70,27 @@
      (ac-php-g--class-map (ac-php-get-tags-data)))
     (maphash
      (lambda (k v)
-       (when (not (equalp "sys" (aref v 3)))
+       (when (not (cl-equalp "sys" (aref v 3)))
          (insert
           (propertize
            (pcase (aref v 0)
-             ("d" (concat (if (equalp "void" (aref v 4)) "" (aref v 4)) (aref v 1)))
-             ("f" (concat (if (equalp "void" (aref v 4)) "" (aref v 4)) (substring (aref v 1) 0 (- (string-width (aref v 1)) 1))))
+             ("d" (concat (if (cl-equalp "void" (aref v 4)) "" (aref v 4)) (aref v 1)))
+             ("f" (concat (if (cl-equalp "void" (aref v 4)) "" (aref v 4)) (substring (aref v 1) 0 (- (string-width (aref v 1)) 1))))
              ("c" (aref v 1))
              ("i" (aref v 1)))
            'position (aref v 3)))
           (insert "\n")))
      (ac-php-g--function-map (ac-php-get-tags-data)))))
 
-(defun helm-ac-php--action (-candidate)
+(defun helm-ac-php--action ()
   (let* ((candidate (helm-get-selection nil 'withprop))
         (position (get-text-property 0 'position candidate)))
     (string-match "\\([0-9]+\\):\\([0-9]+\\)" position)
     (let ((file (match-string 1 position))
           (line (match-string 2 position)))
       (find-file (aref (ac-php-g--file-list (ac-php-get-tags-data)) (string-to-number file)))
-      (goto-line (string-to-number line)))))
+      (with-no-warnings
+        (goto-line (string-to-number line))))))
 
 (defvar helm-ac-php--source
   '((name . "Php apropos")

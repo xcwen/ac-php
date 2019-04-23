@@ -85,7 +85,7 @@
   (if (and (= emacs-major-version 24) (>= emacs-minor-version 4))
       (require 'cl)))
 
-(require 'cl-lib) ; `cl-reduce', `cl-defun'
+(require 'cl-lib) ; `cl-reduce'
 
 ;;; Customization
 
@@ -1026,7 +1026,7 @@ work for multi class hint:
      :bound (when in-defun-p
               (save-excursion (beginning-of-defun) (beginning-of-line) (point))))))
 
-(cl-defun ac-php-get-class-at-point (tags-data &optional pos)
+(defun ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
   (let (line-txt
         old-line-txt
@@ -1045,8 +1045,9 @@ work for multi class hint:
                      (line-beginning-position) pos)))
 
     ;; Get out early from function
-    (when (= (length line-txt) 0)
-      (return-from ac-php-get-class-at-point))
+    (catch 'empty-code
+      (when (= (length line-txt) 0)
+        (throw 'empty-code "Got empty string")))
 
     ;; Looking for method chaining like this:
     ;;

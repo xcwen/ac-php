@@ -65,7 +65,9 @@ symbol is preceded by \"->\" or \"::\", ignoring
 
 If `company-begin-commands' is a list, it should include `c-electric-lt-gt'
 and `c-electric-colon', for automatic completion right after \">\" and
-\":\".")
+\":\"."
+  :group 'company-php
+  :type 'boolean)
 
 (defun company-ac-php-annotation (item)
   (let ((doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))
@@ -96,12 +98,11 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
             (cons symbol t)
           symbol)))))
 
-;; TODO it bad for namespace like \App\add\ss
+;; TODO: May not work for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
   (if company-php-begin-after-member-access
-	  (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
-	(company-ac-php--prefix-symbol)))
-
+      (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
+    (company-ac-php--prefix-symbol)))
 
 (defun company-ac-php-candidate (arg)
   (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))

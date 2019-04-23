@@ -60,6 +60,7 @@
 
 (require 'ac-php-core)
 (require 'auto-complete)
+(require 'yasnippet nil t)     ; `yas-expand-snippet'
 
 (defvar ac-php-template-start-point nil)
 (defvar ac-php-template-candidates (list "ok" "no" "yes:)"))
@@ -74,28 +75,24 @@
   "Face for the php selected candidate."
   :group 'ac-php)
 
-
 (defun ac-php-prefix ()
-  (let ((c (char-before)) ret )
-    (when (or
-           ;; ->
-           (and (eq ?> c) (eq ?- (char-before (1- (point)))))
-           ;; ::
-           (and (eq ?: c) (eq ?: (char-before (1- (point))))))
-
+  (let ((c (char-before)) ret)
+    (when
+        (or
+         ;; ->
+         (and (eq ?> c) (eq ?- (char-before (1- (point)))))
+         ;; ::
+         (and (eq ?: c) (eq ?: (char-before (1- (point))))))
       (setq  ret (point)))
     (unless ret
       (save-excursion
         (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
-        (setq ret (point))
-        )
-      )
-    ret
-    ))
+        (setq ret (point))))
+    ret))
 
 (defun ac-php-document (item)
   (if (stringp item)
-      (let (doc  tag-type return-type access from-class)
+      (let (doc tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
         (setq tag-type (get-text-property 0 'ac-php-tag-type item))
         (setq return-type (get-text-property 0 'ac-php-return-type item))
@@ -106,51 +103,51 @@
           (setq doc item))
 
         (cond
-         ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
-           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
+         ((or (string= tag-type "p")
+              (string= tag-type "m")
+              (string= tag-type "d"))
+          (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s"
+                  doc
+                  return-type
+                  access
+                  from-class))
          (return-type
-          (format "%s  %s " return-type doc   ) )
+          (format "%s  %s " return-type doc))
          (t
           doc)))))
 
 (defun ac-php-action ()
   (interactive)
-  (let (
-        (cur-item (cdr ac-last-completion) )
-        (help )
-        (raw-help )
+  (let* ((cur-item (cdr ac-last-completion))
+         (help (ac-php-clean-document
+                (get-text-property 0 'ac-php-help cur-item)))
+         (raw-help (get-text-property 0 'ac-php-help cur-item ))
+         (tag-type (get-text-property 0 'ac-php-tag-type cur-item))
+         (candidates (list)) ss fn args (ret-t "") ret-f)
 
-        (tag-type )
-        (candidates (list)) ss fn args (ret-t "") ret-f)
+    (when (ac-php--tag-name-is-function cur-item)
+        (setq raw-help (concat  cur-item raw-help ")")))
 
-    (setq help (ac-php-clean-document (get-text-property 0 'ac-php-help cur-item )))
-    (setq raw-help (get-text-property 0 'ac-php-help cur-item ))
-    (setq tag-type (get-text-property 0 'ac-php-tag-type cur-item) )
-
-    (if  (ac-php--tag-name-is-function cur-item )
-        (setq raw-help (concat  cur-item raw-help ")"  ) )
-      )
     (ac-php--debug "raw-help:%s " raw-help)
 
     (dolist (item (split-string raw-help "\n"))
       ;;do_f($v1,$v2 =0,$v3 =0)
-      (if (s-matches-p ( concat"^" ac-php-re-namespace-unit-pattern "(" )  item )
+      (if (s-matches-p ( concat"^" ac-php-re-namespace-unit-pattern "(") item)
           (let (match-ret args-list)
             (setq match-ret (s-match
-                             (concat "^\\(" ac-php-re-namespace-unit-pattern  "\\)(\\(.*\\))$"  )
-                             item  ))
+                             (concat "^\\(" ac-php-re-namespace-unit-pattern "\\)(\\(.*\\))$")
+                             item))
 
             (if match-ret
-                (let ((option-start-index 1000000 ) (i 0) find-flag
-                      (item-pre-str (concat (nth 1  match-ret) "(") ) )
-                  (setq args-list (s-split  ","  (nth 2  match-ret ))  )
+                (let ((option-start-index 1000000) (i 0) find-flag
+                      (item-pre-str (concat (nth 1  match-ret) "(")))
+                  (setq args-list (s-split  ","  (nth 2  match-ret)))
                   (dolist (arg args-list   )
-                    (when (and  (not find-flag) (s-matches-p "=" arg ) )
+                    (when (and  (not find-flag) (s-matches-p "=" arg))
                       (setq find-flag t)
-                      (setq option-start-index i )
-                      )
-                    (setf (nth i args-list) ( replace-regexp-in-string "=.*" "" arg ))
-                    (setq i (1+ i ) ))
+                      (setq option-start-index i))
+                    (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
+                    (setq i (1+ i)))
 
                   (ac-php--debug "ac-php-action option-start-index =%d" option-start-index )
                   (setq i 0)
@@ -176,18 +173,17 @@
              )))
 
     (ac-php--debug "ac-php-action candidates=%S " candidates)
-    (cond (candidates
-           (setq candidates (delete-dups candidates))
-           (setq candidates (nreverse candidates))
-           (setq ac-php-template-candidates candidates)
-           (setq ac-php-template-start-point (point))
-           (ac-complete-php-template)
-
-           (unless (cdr candidates) ;; unless length > 1
-             (message (replace-regexp-in-string "\n" "   ;    " help))))
-          (t
-           (message (replace-regexp-in-string "\n" "   ;    " help)))
-          )))
+    (cond
+     (candidates
+      (setq candidates (delete-dups candidates))
+      (setq candidates (nreverse candidates))
+      (setq ac-php-template-candidates candidates)
+      (setq ac-php-template-start-point (point))
+      (ac-complete-php-template)
+      (unless (cdr candidates) ;; unless length > 1
+        (message (replace-regexp-in-string "\n" "   ;    " help))))
+     (t
+      (message (replace-regexp-in-string "\n" "   ;    " help))))))
 
 (defun ac-php-template-candidate ()
   ac-php-template-candidates)
@@ -199,39 +195,30 @@
           (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
 
       ;;remove & in args  "&$item,$v" => "$item,$v"
-      (setq s (s-replace "&" "" s ) )
+      (setq s (s-replace "&" "" s))
 
-      (cond ((featurep 'yasnippet)
-             (setq s (concat "${" s))
-             (setq s (replace-regexp-in-string ")" "})" s))
-             (setq s (replace-regexp-in-string "," "},${" s))
+      (cond
+       ((featurep 'yasnippet)
+        (setq s (concat "${" s))
+        (setq s (replace-regexp-in-string ")" "})" s))
+        (setq s (replace-regexp-in-string "," "},${" s))
 
-             (when (string= "${})" s) (setq s ")"))
-
-             (condition-case nil
-                 (yas-expand-snippet s ac-php-template-start-point pos) ;; 0.6.1c
-               (error
-                ;; try this one:
-                (ignore-errors (yas-expand-snippet ac-php-template-start-point pos s)) ;; work in 0.5.7
-                )))
-
-            (t
-             (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))))
+        (when (string= "${})" s) (setq s ")"))
+        (yas-expand-snippet s ac-php-template-start-point pos))
+       (t
+        (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))))
 
 (defun ac-php-template-prefix ()
   ac-php-template-start-point)
 
 (defun ac-php-template-document (item)
-  (if (stringp item)
+  (when (stringp item)
       (let (doc  tag-type return-type access from-class)
-        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-        )
-  ))
+        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))))
 
-(defun  ac-php-candidate-ac()
-  (setq  ac-php-prefix-str  ac-prefix )
-  (ac-php-candidate )
-    )
+(defun ac-php-candidate-ac ()
+  (setq ac-php-prefix-str ac-prefix)
+  (ac-php-candidate))
 
 (eval  '(ac-define-source php
           '((candidates . ac-php-candidate-ac )

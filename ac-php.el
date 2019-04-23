@@ -123,7 +123,12 @@
                 (get-text-property 0 'ac-php-help cur-item)))
          (raw-help (get-text-property 0 'ac-php-help cur-item ))
          (tag-type (get-text-property 0 'ac-php-tag-type cur-item))
-         (candidates (list)) ss fn args (ret-t "") ret-f)
+         (candidates (list))
+         ss
+         fn
+         args
+         (ret-t "")
+         ret-f)
 
     (when (ac-php--tag-name-is-function cur-item)
         (setq raw-help (concat  cur-item raw-help ")")))

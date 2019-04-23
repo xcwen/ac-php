@@ -61,6 +61,9 @@
 (require 'ac-php-core)
 (require 'auto-complete)
 
+(defvar ac-php-template-start-point nil)
+(defvar ac-php-template-candidates (list "ok" "no" "yes:)"))
+
 (defface ac-php-candidate-face
   '((t (:background "lightgray" :foreground "navy")))
   "Face for php candidate"
@@ -99,11 +102,8 @@
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
         (if ( ac-php--tag-name-is-function item)
-            (setq doc (concat item  doc ")" ) )
-          (setq doc item )
-          )
-
-
+            (setq doc (concat item  doc ")"))
+          (setq doc item))
 
         (cond
          ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
@@ -111,9 +111,7 @@
          (return-type
           (format "%s  %s " return-type doc   ) )
          (t
-          doc))
-        ))
-  )
+          doc)))))
 
 (defun ac-php-action ()
   (interactive)
@@ -167,7 +165,6 @@
         (push item ss)))
     (setq ss (reverse ss) )
 
-
     (dolist (s ss)
       ;;return type
       (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)
@@ -191,10 +188,6 @@
           (t
            (message (replace-regexp-in-string "\n" "   ;    " help)))
           )))
-
-
-(defvar ac-php-template-start-point nil)
-(defvar ac-php-template-candidates (list "ok" "no" "yes:)"))
 
 (defun ac-php-template-candidate ()
   ac-php-template-candidates)
@@ -225,7 +218,6 @@
             (t
              (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))))
 
-
 (defun ac-php-template-prefix ()
   ac-php-template-start-point)
 
@@ -241,7 +233,6 @@
   (ac-php-candidate )
     )
 
-
 (eval  '(ac-define-source php
           '((candidates . ac-php-candidate-ac )
             ;;(candidate-face . ac-php-candidate-face)
@@ -252,7 +243,6 @@
             (action . ac-php-action)
             (cache)
             (symbol . "p"))) )
-
 
 (eval  '(ac-define-source php-template
           '((candidates . ac-php-template-candidate)

@@ -166,6 +166,7 @@ Prerequisite packages are:
   - [f][:melpa-f:]
   - [popup][:melpa-popup:]
   - [dash][:elpa-dash:]
+  - [xcscope][:melpa-xcscope:] (optional)
   - [scope][:sf-cscope:] (optional)
 - **`ac-php.el`**
   - [auto-complete][:gh-ac:]
@@ -533,4 +534,5 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:melpa-f:]: https://melpa.org/#/f
 [:melpa-s:]: https://melpa.org/#/s
 [:melpa-popup:]: https://melpa.org/#/popup
+[:meplpa-xscope:]: https://melpa.org/#/xcscope
 [:sf-cscope:]: http://cscope.sourceforge.net

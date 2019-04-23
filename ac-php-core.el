@@ -12,7 +12,7 @@
 ;; URL: https://github.com/xcwen/ac-php
 ;; Version: 2.0.8
 ;; Keywords: completion, convenience, intellisense
-;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0"))
+;; Package-Requires: ((dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0") (xcscope "1.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
 
 ;; This file is NOT part of GNU Emacs.
@@ -72,14 +72,20 @@
 
 ;;; Code:
 
-(require 'json)  ; `json-encode', `json-read-file'
-(require 's)     ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
-(require 'f)     ; `f-write-text', `f-full', `f-join', `f-exists?', ...
+(require 'json)    ; `json-encode', `json-read-file'
+(require 's)       ; `s-equals', `s-upcase', `s-matches-p', `s-replace', ...
+(require 'f)       ; `f-write-text', `f-full', `f-join', `f-exists?', ...
 
-(require 'popup) ; `popup-tip'
-(require 'cl)    ; `reduce', `defun*'
+(require 'xcscope) ; `cscope-find-egrep-pattern', `cscope-prompt-for-symbol'
+(require 'popup)   ; `popup-tip'
 (require 'dash)
 (require 'eldoc)
+
+(eval-and-compile
+  (if (and (= emacs-major-version 24) (>= emacs-minor-version 4))
+      (require 'cl)))
+
+(require 'cl-lib) ; `cl-reduce'
 
 ;;; Customization
 
@@ -293,7 +299,7 @@ This function replaces some components with single characters starting from the
 left to try and get the path down to MAX-LEN"
   (let* ((components (split-string (abbreviate-file-name path) "/"))
          (len (+ (1- (length components))
-                 (reduce '+ components :key 'length)))
+                 (cl-reduce '+ components :key 'length)))
          (str ""))
     (while (and (> len max-len)
                 (cdr components))
@@ -302,7 +308,7 @@ left to try and get the path down to MAX-LEN"
                               (string (elt (car components) 0) ?/)))
             len (- len (1- (length (car components))))
             components (cdr components)))
-    (concat str (reduce (lambda (a b) (concat a "/" b)) components))))
+    (concat str (cl-reduce (lambda (a b) (concat a "/" b)) components))))
 
 (defun ac-php-g--project-root-dir (tags-data)
   "Return a project path using the TAGS-DATA list."
@@ -1020,7 +1026,7 @@ work for multi class hint:
      :bound (when in-defun-p
               (save-excursion (beginning-of-defun) (beginning-of-line) (point))))))
 
-(defun* ac-php-get-class-at-point (tags-data &optional pos)
+(defun ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring."
   (let (line-txt
         old-line-txt
@@ -1039,8 +1045,9 @@ work for multi class hint:
                      (line-beginning-position) pos)))
 
     ;; Get out early from function
-    (when (= (length line-txt) 0)
-      (return-from ac-php-get-class-at-point))
+    (catch 'empty-code
+      (when (= (length line-txt) 0)
+        (throw 'empty-code "Got empty string")))
 
     ;; Looking for method chaining like this:
     ;;
@@ -1055,7 +1062,7 @@ work for multi class hint:
     (save-excursion
       (ac-php--debug "Looking for method chaining...")
       (while (and (> (length line-txt) 0) (= (aref line-txt 0) ?-))
-        (previous-line)
+        (forward-line -1)
         (let ((no-comment-code "")
               (line-start-pos (line-beginning-position))
               (line-end-pos (line-end-position)))
@@ -1313,10 +1320,15 @@ work for multi class hint:
    (gethash key-word function-map )
     )
 
-
 (defun ac-php-candidate-other ( tags-data)
-
-  (let (ret-list ( cur-word  (ac-php-get-cur-word-without-clean )) cur-word-len  cmp-value  start-word-pos (function-map (ac-php-g--function-map tags-data  )  ) key-word func-name  )
+  (let (ret-list
+        (cur-word (ac-php-get-cur-word-without-clean))
+        cur-word-len
+        cmp-value
+        start-word-pos
+        (function-map (ac-php-g--function-map tags-data))
+        key-word func-name
+        function-item-len)
 
     (setq cur-word-len (length cur-word ))
     (setq start-word-pos (- cur-word-len (length ac-php-prefix-str) ) )
@@ -1672,7 +1684,7 @@ This function is used internally by the function `ac-php--remake-tags'."
                ac-php-php-executable))
 
     (unless project-root-dir
-      (massge "ac-php: The per-project configuration file '%s' doesn't exist at %s"
+      (message "ac-php: The per-project configuration file '%s' doesn't exist at %s"
               ac-php-config-file
               (file-name-directory (buffer-file-name))))
 
@@ -1706,7 +1718,7 @@ be created."
           tag-dir (cdr (assoc-string "tag-dir" conf-list)))
 
     (if tag-dir
-        (prog
+        (progn
          (ac-php--debug "Found tags directory")
          (setq old-default-directory default-directory
                default-directory project-root-dir
@@ -1774,8 +1786,9 @@ If it is outdated, a re-index process will be performed."
 
 
 (defun ac-php--get-config (project-root-dir)
-  "Read the configuration loacated at PROJECT-ROOT-DIR and return it.
+  "Get configuration related to a project.
 
+Reads the configuration located at PROJECT-ROOT-DIR and returns it.
 This function tries to recreate and / or populate configuration
 file in case of its absence, or if it is empty."
   (ac-php--debug "Lookup for per-project configuration file...")
@@ -1895,7 +1908,8 @@ will be loaded and the in-memory storage will be updated."
         tags-new-mtime
         class-map
         function-map
-        inherit-map)
+        inherit-map
+        g-ac-php-tmp-tags)
     (when file-attr
       (setq tags-new-mtime (ac-php--get-timestamp (nth 5 file-attr))
             tags-old-mtime (nth 1 (assoc-string
@@ -1906,7 +1920,9 @@ will be loaded and the in-memory storage will be updated."
         (message (concat "ac-php: Reloading the autocompletion "
                          "data from the tags file..."))
         (load tags-file nil t)
-        (setq file-data g-ac-php-tmp-tags) ;;// g-ac-php-tmp-tags in tags.el
+
+        ;; `g-ac-php-tmp-tags' will be populated from tags.el file
+        (setq file-data g-ac-php-tmp-tags)
 
         (assq-delete-all tags-file ac-php-tag-last-data-list)
 
@@ -2386,48 +2402,42 @@ considered at this stage as a 'property usage', although in fact they may not be
                 )
               )
           (cond
-           ((or (string= type "class_member")  (string= type "user_function") )
-            (let ((file-pos (nth 1 symbol-ret) ) tmp-arr  )
-              (setq tmp-arr  (s-split ":" file-pos ) )
-              (ac-php--debug " tmp-arr %S"  tmp-arr )
+           ((or (string= type "class_member") (string= type "user_function") )
+            (let ((file-pos (nth 1 symbol-ret)) tmp-arr)
+              (setq tmp-arr  (s-split ":" file-pos))
+              (ac-php--debug " tmp-arr %S"  tmp-arr)
               (cond
-               ((s-matches-p "sys" (nth 0 tmp-arr) )
-                (let( (sys-item-name (aref  (nth 3 symbol-ret ) 1 )) ) ;;system function
+               ((s-matches-p "sys" (nth 0 tmp-arr))
+                (let( (sys-item-name (aref (nth 3 symbol-ret) 1))) ;;system function
                   ;; \trim( => trim
                   (if (string= type "user_function")
-                      (setq sys-item-name (substring-no-properties
-                                           sys-item-name 1
-                                           (if (string=  "(" ( substring  sys-item-name -1 )) -1 nil  )
-                                           )         )
-                    (setq sys-item-name  (nth 2 symbol-ret ) ) ;; class name
-                    )
-
-                  (php-search-documentation sys-item-name )
-                  ))
+                      (setq sys-item-name
+                            (substring-no-properties
+                             sys-item-name 1
+                             (if (string= "(" (substring  sys-item-name -1))
+                                 -1 nil)))
+                    ;; class name
+                    (setq sys-item-name (nth 2 symbol-ret)))
+                  (if (fboundp 'php-search-documentation)
+                      (php-search-documentation sys-item-name)
+                    (message "Unable to find php-search-documentation function"))))
                (t
-                (let ( (file-list (ac-php-g--file-list tags-data  ) )  )
+                (let ((file-list (ac-php-g--file-list tags-data)))
                   ;; from  get index
                   (setq jump-pos
                         (concat
-                         (aref file-list (string-to-number (nth 0 tmp-arr)  )  )
-                         ":" (nth 1 tmp-arr)
-                         ))
+                         (aref file-list (string-to-number (nth 0 tmp-arr)))
+                         ":" (nth 1 tmp-arr)))
                   (ac-php-location-stack-push)
-                  (ac-php-goto-location jump-pos )
-                  )
-                ))
-              )
-            )
-           )))
-      (when local-var-flag ( ac-php--goto-local-var-def local-var  ) )
-      )
-    ))
-
+                  (ac-php-goto-location jump-pos)))))))))
+      (when local-var-flag (ac-php--goto-local-var-def local-var)))))
 
 (defun ac-php-gen-def ()
   "DOCSTRING"
   (interactive)
-  (let ( (tags-data (ac-php-get-tags-data ) )  line-txt (cur-word  (ac-php--get-cur-word ) ) )
+  (let ((tags-data (ac-php-get-tags-data))
+        line-txt
+        (cur-word (ac-php--get-cur-word)))
     (setq line-txt (buffer-substring-no-properties
                     (line-beginning-position)
                     (line-end-position )))
@@ -2613,21 +2623,20 @@ Return empty string if there is no valid sequence of characters."
         )) )))
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
-  "auto set  cscope-initial-directory and  Run egrep over the cscope database."
-  (interactive (list
-                (let (cscope-no-mouse-prompts)
-                  (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))
-                ))
-  (let ((project-root-dir ( ac-php--get-project-root-dir )))
+  "Set `cscope-initial-directory' and run egrep over the cscope database."
+  (interactive
+   (list
+    (let (cscope-no-mouse-prompts)
+      (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))))
+  (let ((project-root-dir (ac-php--get-project-root-dir)))
 
     (if (or ac-php-use-cscope-flag
-            (ac-php--get-use-cscope-from-config-file project-root-dir   ))
+            (ac-php--get-use-cscope-from-config-file project-root-dir))
         (progn
-          (setq cscope-initial-directory  (ac-php--get-tags-save-dir  project-root-dir  )  )
-          (cscope-find-egrep-pattern symbol)
-          )
-      (message "need  config: %s -> use-cscope:true" ac-php-config-file)
-    )))
+          (setq cscope-initial-directory
+                (ac-php--get-tags-save-dir project-root-dir))
+          (cscope-find-egrep-pattern symbol))
+      (message "need config: %s -> use-cscope:true" ac-php-config-file))))
 
 (defun ac-php-eldoc-documentation-function ()
   "A function to provide ElDoc support.

@@ -166,6 +166,7 @@ Prerequisite packages are:
   - [f][:melpa-f:]
   - [popup][:melpa-popup:]
   - [dash][:elpa-dash:]
+  - [xscope][:gh-xscope:] (optional)
   - [scope][:sf-cscope:] (optional)
 - **`ac-php.el`**
   - [auto-complete][:gh-ac:]
@@ -524,6 +525,7 @@ ac-php is open source software licensed under the GNU General Public Licence ver
 [:gh-helm:]: https://github.com/emacs-helm/helm
 [:gh-php-mode:]: https://github.com/emacs-php/php-mode
 [:gh-yasnippet:]: https://github.com/joaotavora/yasnippet
+[:gh-xscope:]: https://github.com/dkogan/xcscope.el
 [:melpa-gs:]: https://melpa.org/#/getting-started
 [:phpstorm-stubs:]: https://github.com/JetBrains/phpstorm-stubs
 [:issue-example:]: https://github.com/xcwen/ac-php/issues/51

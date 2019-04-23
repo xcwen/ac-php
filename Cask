@@ -14,7 +14,6 @@
 (depends-on "f" "0.17.0")
 (depends-on "popup" "0.5.0")
 (depends-on "dash" "1")
-(depends-on "xscope" "1.0")
 
 ;; ac-php.el
 (depends-on "auto-complete" "1.4.0")

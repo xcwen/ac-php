@@ -321,10 +321,9 @@ left to try and get the path down to MAX-LEN"
     (nth 8 state)))
 
 ;; See: https://github.com/emacs-php/php-mode/issues/503
-(defun ac-php-beginning-of-defun (&optional arg)
+(defun ac-php--beginning-of-defun (&optional arg)
   "Move to the beginning of the ARGth PHP function from point.
 A replacemant for PHP's version `php-beginning-of-defun'."
-  (interactive "p")
   (let (found-p (arg (or arg 1)))
     (while (> arg 0)
       (setq found-p (re-search-backward
@@ -334,7 +333,7 @@ A replacemant for PHP's version `php-beginning-of-defun'."
     (while (< arg 0)
       (end-of-line 1)
       (let ((opoint (point)))
-        (ac-php-beginning-of-defun 1)
+        (ac-php--beginning-of-defun 1)
         (forward-list 2)
         (forward-line 1)
         (if (eq opoint (point))
@@ -345,22 +344,21 @@ A replacemant for PHP's version `php-beginning-of-defun'."
     (not (null found-p))))
 
 ;; See: https://github.com/emacs-php/php-mode/issues/503
-(defun ac-php-end-of-defun (&optional arg)
+(defun ac-php--end-of-defun (&optional arg)
   "Move the end of the ARGth PHP function from point.
 A replacemant for PHP's version `php-en-of-defun'.
 
-See `ac-php-beginning-of-defun'."
-  (interactive "p")
-  (ac-php-beginning-of-defun (- (or arg 1))))
+See `ac-php--beginning-of-defun'."
+  (ac-php--beginning-of-defun (- (or arg 1))))
 
 (defsubst ac-php--in-function-p (&optional pos)
   "Determine whether POS is inside a function."
   (let (bof (pos (or pos (point))))
     (save-excursion
       (goto-char pos)
-      (when (ac-php-beginning-of-defun)
+      (when (ac-php--beginning-of-defun)
         (setq bof (point))
-        (ac-php-end-of-defun)
+        (ac-php--end-of-defun)
         (and (> pos bof)
              (< pos (point)))))))
 

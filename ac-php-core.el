@@ -1124,8 +1124,10 @@ work for multi class hint:
 
     (when key-list
       (setq first-key-str (nth 0 (ac-php--get-item-info (nth 0 key-list))))
-      (if (and (string-match "::" first-key-str)
-               (not (string-match "\\/\\*" line-txt)))
+      (when (and (string-match "::" first-key-str)
+               (not (string-match "\\/\\*" line-txt))
+               (not (string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt) )
+               )
           (progn
             (ac-php--debug "Detected a static method call")
             (setq first-key (substring-no-properties first-key-str 0 -2)
@@ -1137,10 +1139,13 @@ work for multi class hint:
              ((or (string= first-key "self")
                   (string= first-key "static"))
               (setq first-class-name (concat (ac-php-get-cur-full-class-name))))
-             ((string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt)
-              (setq first-class-name nil))))
+             )))
+      (when (not first-class-name )
         (progn
-          (setq first-key first-key-str)
+
+          (if(string-match ".*::" first-key-str)
+              (setq first-key (substring-no-properties first-key-str 0 -2))
+            (setq first-key first-key-str))
 
           (when (and (not first-class-name) (string= first-key "this"))
             (ac-php--debug "Detected call on $this")

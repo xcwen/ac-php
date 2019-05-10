@@ -1187,6 +1187,24 @@ work for multi class hint:
                             (beginning-of-line)
                             (point)))))
 
+          ;; Scan for  instanceof :
+          ;;
+          ;;   -  ( $e instanceof \Exception )
+          ;;
+          (unless first-class-name
+            (ac-php--debug "Scan for funcation like call or a catch statement")
+            (setq first-class-name
+                  (ac-php-get-syntax-backward
+                   (concat "$\\(" first-key   "\\)"
+                           "\\s-+instanceof\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\s-*[),]")
+                   :sexp 2
+                   :defun t
+                   :bound (save-excursion
+                            (beginning-of-defun)
+                            (beginning-of-line)
+                            (point)))))
+
+
           ;; Scan for @param annotation like this:
           ;;
           ;;   @param \Phalcon\Http\Request $request

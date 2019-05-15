@@ -1067,6 +1067,12 @@ work for multi class hint:
                             (buffer-substring-no-properties
                              line-start-pos (1+ line-start-pos)))))
             (setq line-start-pos (1+ line-start-pos)))
+          ;;  xx #  => xx , xx/* => xx ,fix comment
+          (setq no-comment-code (s-replace-all
+                                 '(("#" . "")
+                                   ("/*" . ""))
+                                 no-comment-code ))
+
           (setq line-txt (concat (s-trim no-comment-code) line-txt)))))
 
     (ac-php--debug "Current working string: \"%s\"" line-txt)

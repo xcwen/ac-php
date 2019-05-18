@@ -564,7 +564,7 @@ been replaced by '."
     (if (and (listp first-key) first-key)
         (setq ret (ac-php--get-clean-node
                    (ac-php--get-key-list-from-parser-data first-key)))
-      (if (and (> parser-data-len 1) (not (nth 1 parser-data)))
+      (if (and (> parser-data-len 1) (listp (nth 1 parser-data)))
           (setq ret (list (concat first-key "(")))
         (setq ret (list first-key))))
     (while (< i parser-data-len)

@@ -137,7 +137,7 @@
 (ert-deftest ac-php-test-parse-line-19 ()
   (let (line-txt ret)
     (setq line-txt "(yii\\web\\Application(config))->ru")
-    (setq ret '("yii\\web\\Application" "." "ru"))
+    (setq ret '("yii\\web\\Application(" "." "ru"))
     (ac-php-test-parse-equal line-txt ret)))
 
 (provide 'ac-php-parser-test)

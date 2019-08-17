@@ -7,7 +7,7 @@
 
 (files "*.el" "ac-php-comm-tags-data.json" "phpctags")
 
-(depends-on "emacs" "24.4")
+(depends-on "emacs" "25.1")
 
 ;; ac-php-core.el
 (depends-on "s" "1")

@@ -267,7 +267,7 @@ Meant for `ac-php-mode-line-project-status'")
 (defvar ac-php--php-key-list '("public"
  "class" "namespace" "protected"
  "private" "function" "while"
- "extends" "return" "static" "global"))
+ "extends" "return" "static" "global" "continue" "abstract" "finally" "instanceof"))
 
 (defvar ac-php-rebuild-tmp-error-msg nil)
 

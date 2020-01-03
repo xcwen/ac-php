@@ -1189,7 +1189,7 @@ work for multi class hint:
                    (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
                            "\\s-+\\(&\\)?$" first-key "\\s-*[),]")
                    :sexp 1
-                   :defun t
+                   :defun  (ac-php--in-function-p pos)
                    :bound (save-excursion
                             (beginning-of-defun)
                             (beginning-of-line)
@@ -1206,7 +1206,7 @@ work for multi class hint:
                    (concat "$\\(" first-key   "\\)"
                            "\\s-+instanceof\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\s-*[),]")
                    :sexp 2
-                   :defun t
+                   :defun  (ac-php--in-function-p pos)
                    :bound (save-excursion
                             (beginning-of-defun)
                             (beginning-of-line)
@@ -1236,7 +1236,7 @@ work for multi class hint:
                     (ac-php-get-syntax-backward
                      (concat "$" first-key "\\s-*=\\([^=]*\\)[;]*")
                      :sexp 1
-                     :defun t
+                     :defun  (ac-php--in-function-p pos)
                      :bound (save-excursion (beginning-of-defun) (beginning-of-line))))
               (when define-str
                 (save-excursion

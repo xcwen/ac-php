@@ -1248,12 +1248,22 @@ work for multi class hint:
                                   (line-end-position)))
 
                   (if (string-match "(" line-txt)
-                      (let (beginning-of-line-pos)
+                      (let (beginning-of-line-pos temp-key-list)
                         (ac-php--debug "XXXXXX: %s" line-txt)
                         (beginning-of-line)
                         (setq beginning-of-line-pos (point))
                         ;; Function
-                        (re-search-forward ".[ \t]*(" )
+
+                        ;; fix : $builder=$this->user->as("tt")->get_sql_builder();
+                        (setq temp-key-list (ac-php-remove-unnecessary-items-4-complete-method
+                                        (ac-php-split-line-4-complete-method
+                                         (replace-regexp-in-string ";[^;]*$" ""  line-txt ))
+                                        ))
+
+                        ;;(re-search-forward ".[ \t]*(" )
+                        (re-search-forward (s-replace "(" "[ \t]*("
+                                                      (nth (- (length temp-key-list  ) 1)  temp-key-list )))
+
                         (re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
                         (ac-php--debug "XXXXXX: pos22=[%s]"
                                        (buffer-substring-no-properties

@@ -41,6 +41,8 @@ matrix:
 git:
   depth: 1
 
+dist: trusty
+
 env:
   matrix:
     - EMACS_VERSION=25.1

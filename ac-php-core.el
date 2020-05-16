@@ -1247,8 +1247,8 @@ work for multi class hint:
                                   (line-beginning-position)
                                   (line-end-position)))
 
-                  (if (string-match "(" line-txt)
-                      (let (beginning-of-line-pos temp-key-list)
+                  (if (string-match "(" line-txt )
+                      (let (beginning-of-line-pos temp-key-list search-key)
                         (ac-php--debug "XXXXXX: %s" line-txt)
                         (beginning-of-line)
                         (setq beginning-of-line-pos (point))
@@ -1261,8 +1261,10 @@ work for multi class hint:
                                         ))
 
                         ;;(re-search-forward ".[ \t]*(" )
-                        (re-search-forward (s-replace "(" "[ \t]*("
-                                                      (nth (- (length temp-key-list  ) 1)  temp-key-list )))
+                        (setq search-key (s-replace "\\" "\\\\" (s-replace "(" "[ \t]*("
+                                                          (nth (- (length temp-key-list  ) 1)  temp-key-list ))))
+                        (ac-php--debug "FFFFFFFF: %S"  search-key )
+                        (re-search-forward  search-key )
 
                         (re-search-backward "[a-zA-Z_0-9][ \t]*(" nil t)
                         (ac-php--debug "XXXXXX: pos22=[%s]"

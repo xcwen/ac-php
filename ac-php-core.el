@@ -1330,8 +1330,13 @@ work for multi class hint:
                       )
                   (progn
                     (setq  item-list (append  (list key-word nil) item-list))
-
                     (setq arr-len  (length x ) )
+                    (when (and 
+                           (string=   (ac-php--get-array-string x arr-len   0 ) "p" )
+                           (string=   (ac-php--get-array-string x arr-len   7 ) "1" ))
+                       (setq key-word (concat "$" key-word ))
+                      )
+
                     (ac-php--debug "ITEM:%S" x )
                     (ac-php--debug "2:%s" (ac-php--get-array-string x arr-len  2 ) )
                     (setq key-word (propertize key-word 'ac-php-help   (ac-php--get-array-string x arr-len  2 ) ))
@@ -1339,6 +1344,7 @@ work for multi class hint:
                     (setq key-word (propertize key-word 'ac-php-return-type ( ac-php--get-array-string x arr-len   4 ) ))
                     (setq key-word (propertize key-word 'ac-php-tag-type ( ac-php--get-array-string x arr-len   0 ) ))
                     (setq key-word (propertize key-word 'ac-php-access (  ac-php--get-array-string x arr-len   6 ) ))
+                    (setq key-word (propertize key-word 'ac-php-static (  ac-php--get-array-string x arr-len   7 ) ))
                     (setq key-word (propertize key-word 'ac-php-from ( ac-php--get-array-string x arr-len   5 ) ))
                     (setq key-word (propertize key-word 'summary  ( ac-php--get-array-string x arr-len   4 )  ))
                     (push key-word ret-list  )))

@@ -168,7 +168,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
         (cond
          ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
-           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
+          (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
          (return-type
           (format "%s %s" return-type doc))
          (t

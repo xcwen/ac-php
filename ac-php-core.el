@@ -1513,10 +1513,10 @@ work for multi class hint:
           (setq results (list (list file-name file-change-unixtime)))))
 
       (when (and file-dir-flag
-                   ;; (not (string= "." (file-name-base file-name)))
-                   ;; (not (string= ".." (file-name-base file-name)))
-                   (not (string= "." (substring (file-name-base file-name) 0 1))) ;; not start with "."
-                   )
+                 ;; (not (string= "." (file-name-base file-name)))
+                 ;; (not (string= ".." (file-name-base file-name)))
+                 (not (string= "." (substring (file-name-base file-name) 0 1))) ;; not start with "."
+                 )
         (when (and also-find-subdir
                    ;; no find in vendor tests
                    (not (s-matches-p "/vendor/.*/tests/" file-name)))
@@ -1924,7 +1924,7 @@ will be loaded and the in-memory storage will be updated."
         (mapc
          (lambda (inherit-item)
            (puthash (format "%s" (car inherit-item))
-                     (cdr inherit-item) inherit-map))
+                    (cdr inherit-item) inherit-map))
          (aref file-data 2))
 
         (push (list tags-file
@@ -2085,8 +2085,8 @@ considered at this stage as a 'property usage', although in fact they may not be
                ;; (ac-php--debug "member %s class=%s, %S" member opt-class class-member-list)
                (cl-loop for member-info in class-member-list do
                         (when (and (ac-php--string=-ignore-care (nth 1 member-info) member)
-                                    (string= (nth 0 member-info) "m")
-                                    (nth 4 member-info))
+                                   (string= (nth 0 member-info) "m")
+                                   (nth 4 member-info))
                           (setq ret (nth 4 member-info))
 
                           (setq find-flag t)
@@ -2577,10 +2577,10 @@ supposed to do."
           (setq tag-name (aref member-info 1))
           (if (string= (aref member-info 0) "m")
               (setq doc (concat
-                            (propertize tag-name 'face 'font-lock-function-name-face)
-                            (aref member-info 2) ")"))
+                         (propertize tag-name 'face 'font-lock-function-name-face)
+                         (aref member-info 2) ")"))
             (setq doc
-                   (propertize tag-name 'face 'font-lock-variable-name-face)))
+                  (propertize tag-name 'face 'font-lock-variable-name-face)))
 
           (setq class-name (ac-php--get-array-string member-info member-info-len 5))
           (setq return-type (aref member-info 4))
@@ -2592,10 +2592,10 @@ supposed to do."
           (setq tag-name (aref function-item 1))
           (if (ac-php--tag-name-is-function tag-name)
               (setq doc (concat
-                            (propertize (substring tag-name 0 -1) 'face 'font-lock-function-name-face)
-                            "(" (aref function-item 2) ")"))
+                         (propertize (substring tag-name 0 -1) 'face 'font-lock-function-name-face)
+                         "(" (aref function-item 2) ")"))
             (setq doc
-                   (propertize (aref function-item 2) 'face 'font-lock-variable-name-face)))
+                  (propertize (aref function-item 2) 'face 'font-lock-variable-name-face)))
 
           (setq file-pos (aref function-item 3))
 

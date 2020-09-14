@@ -34,7 +34,7 @@
 ;;           '(lambda ()
 ;;             (require 'company-php)
 ;;             (company-mode t)
-;;             (add-to-list 'company-backends 'company-ac-php-backend )))
+;;             (add-to-list 'company-backends 'company-ac-php-backend)))
 ;;
 ;; Many options available under Help:Customize
 ;; Options specific to ac-php are in
@@ -164,18 +164,18 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
-        (if ( ac-php--tag-name-is-function item)
-            (setq doc (concat item  doc ")" ) )
-          (setq doc item )
+        (if (ac-php--tag-name-is-function item)
+            (setq doc (concat item  doc ")"))
+          (setq doc item)
           )
 
 
 
         (cond
-         ( (or (string= tag-type "p") ( string= tag-type "m") ( string= tag-type "d")  )
-           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class  ) )
+         ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
+           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class))
          (return-type
-          (format "%s  %s " return-type doc   ) )
+          (format "%s  %s " return-type doc))
          (t
           doc))
         ))
@@ -184,7 +184,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 (defun company-ac-php--doc-buffer (candidate)
   (let ((doc (company-ac-php-document candidate)))
-    (message "llllllllll" )
+    (message "llllllllll")
     (when (s-present? doc)
       (company-doc-buffer doc))))
 

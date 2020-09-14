@@ -72,7 +72,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
 (defun company-ac-php-annotation (item)
   (let ((doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))
     (if (ac-php--tag-name-is-function item)
-	(concat doc ")")
+        (concat doc ")")
       "")))
 
 (defun company-ac-php-fuzzy-match (prefix candidate)
@@ -106,11 +106,11 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 (defun company-ac-php-candidate (arg)
   (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))
-	 (ac-php-prefix-str-len (length ac-php-prefix-str))
-	 (find-count 0)
-	 raw-help
-	 candidate-list
-	 ac-php-company-list)
+         (ac-php-prefix-str-len (length ac-php-prefix-str))
+         (find-count 0)
+         raw-help
+         candidate-list
+         ac-php-company-list)
 
     (ac-php--debug "company-ac-php-candidate :%s " ac-php-prefix-str)
     (setq candidate-list (ac-php-candidate))
@@ -119,34 +119,34 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
       (setq raw-help (or (get-text-property 0 'ac-php-help candidate-item) ""))
 
       (when (ac-php--string=-ignore-care ac-php-prefix-str (s-left ac-php-prefix-str-len candidate-item))
-	(setq find-count (1+ find-count))
+        (setq find-count (1+ find-count))
 
-	(if (ac-php--tag-name-is-function candidate-item)
-	    (dolist (item (split-string raw-help "\n"))
-	      (let ((option-start-index 1000000)
-		    (i 0)
-		    (item-pre-str "")
-		    (args-list (s-split "," item))
-		    find-flag)
+        (if (ac-php--tag-name-is-function candidate-item)
+            (dolist (item (split-string raw-help "\n"))
+              (let ((option-start-index 1000000)
+                    (i 0)
+                    (item-pre-str "")
+                    (args-list (s-split "," item))
+                    find-flag)
 
-		(dolist (arg args-list)
-		  (when (and (not find-flag) (s-matches-p "=" arg))
-		    (setq find-flag t)
-		    (setq option-start-index i))
-		  (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
-		  (setq i (1+ i)))
+                (dolist (arg args-list)
+                  (when (and (not find-flag) (s-matches-p "=" arg))
+                    (setq find-flag t)
+                    (setq option-start-index i))
+                  (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
+                  (setq i (1+ i)))
 
-		(setq i 0)
+                (setq i 0)
 
-		(dolist (arg args-list)
-		  (when (>= i option-start-index)
-		    (push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list))
-		  (setq item-pre-str (concat item-pre-str (if (= i 0) "" ",") arg))
-		  (setq i (1+ i)))
+                (dolist (arg args-list)
+                  (when (>= i option-start-index)
+                    (push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list))
+                  (setq item-pre-str (concat item-pre-str (if (= i 0) "" ",") arg))
+                  (setq i (1+ i)))
 
-		(push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list)))
+                (push (propertize candidate-item 'ac-php-help (concat item-pre-str)) ac-php-company-list)))
 
-	  (push candidate-item ac-php-company-list))))
+          (push candidate-item ac-php-company-list))))
 
     ;; fix one function bug
     (when (and (= find-count 1) (> (length ac-php-company-list) 1))
@@ -198,7 +198,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
       (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
       (insert (concat doc ")"))
       (when (bound-and-true-p smartparens-mode)
-	(delete-char 1))
+        (delete-char 1))
       (company-template-c-like-templatify (concat arg doc ")")))))
 
 (provide 'company-php)

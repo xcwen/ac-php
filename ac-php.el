@@ -131,7 +131,7 @@
          ret-f)
 
     (when (ac-php--tag-name-is-function cur-item)
-        (setq raw-help (concat  cur-item raw-help ")")))
+      (setq raw-help (concat  cur-item raw-help ")")))
 
     (ac-php--debug "raw-help:%s " raw-help)
 
@@ -218,32 +218,32 @@
 
 (defun ac-php-template-document (item)
   (when (stringp item)
-      (let (doc  tag-type return-type access from-class)
-        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))))
+    (let (doc  tag-type return-type access from-class)
+      (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))))
 
 (defun ac-php-candidate-ac ()
   (setq ac-php-prefix-str ac-prefix)
   (ac-php-candidate))
 
 (eval  '(ac-define-source php
-          '((candidates . ac-php-candidate-ac )
-            ;;(candidate-face . ac-php-candidate-face)
-            ;;(selection-face . ac-php-selection-face)
-            (prefix . ac-php-prefix)
-            (requires . 0)
-            (document . ac-php-document)
-            (action . ac-php-action)
-            (cache)
-            (symbol . "p"))) )
+                          '((candidates . ac-php-candidate-ac )
+                            ;;(candidate-face . ac-php-candidate-face)
+                            ;;(selection-face . ac-php-selection-face)
+                            (prefix . ac-php-prefix)
+                            (requires . 0)
+                            (document . ac-php-document)
+                            (action . ac-php-action)
+                            (cache)
+                            (symbol . "p"))) )
 
 (eval  '(ac-define-source php-template
-          '((candidates . ac-php-template-candidate)
-            (prefix . ac-php-template-prefix)
-            (requires . 0)
-            (action .  ac-php-template-action)
-            (document . ac-php-template-document )
-            (cache)
-            (symbol . "t"))))
+                          '((candidates . ac-php-template-candidate)
+                            (prefix . ac-php-template-prefix)
+                            (requires . 0)
+                            (action .  ac-php-template-action)
+                            (document . ac-php-template-document )
+                            (cache)
+                            (symbol . "t"))))
 
 (provide 'ac-php)
 ;;; ac-php.el ends here

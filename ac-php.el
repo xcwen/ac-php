@@ -136,7 +136,7 @@
     (ac-php--debug "raw-help:%s" raw-help)
 
     (dolist (item (split-string raw-help "\n"))
-      ;;do_f($v1,$v2 =0,$v3 =0)
+      ;; do_f($v1,$v2 =0,$v3 =0)
       (if (s-matches-p (concat "^" ac-php-re-namespace-unit-pattern "(") item)
           (let (match-ret args-list)
             (setq match-ret (s-match
@@ -168,7 +168,7 @@
     (setq ss (reverse ss))
 
     (dolist (s ss)
-      ;;return type
+      ;; return type
       (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)
              (ac-php--debug "do function")
              (setq fn (match-string 1 s)
@@ -198,7 +198,7 @@
     (let ((pos (point)) sl (snp "")
           (s (get-text-property 0 'raw-args (cdr ac-last-completion))))
 
-      ;;remove & in args "&$item,$v" => "$item,$v"
+      ;; remove & in args "&$item,$v" => "$item,$v"
       (setq s (s-replace "&" "" s))
 
       (cond
@@ -226,8 +226,8 @@
 
 (eval '(ac-define-source php
                           '((candidates . ac-php-candidate-ac)
-                            ;;(candidate-face . ac-php-candidate-face)
-                            ;;(selection-face . ac-php-selection-face)
+                            ;; (candidate-face . ac-php-candidate-face)
+                            ;; (selection-face . ac-php-selection-face)
                             (prefix . ac-php-prefix)
                             (requires . 0)
                             (document . ac-php-document)

@@ -395,7 +395,7 @@ ac-php developer only."
                   (- (length ac-php-location-stack)
                      ac-php-max-bookmark-count))))))
 
-;;function
+;; function
 (defun ac-php-goto-line-col (line column)
   (goto-char (point-min))
   (forward-line (1- line))
@@ -407,7 +407,7 @@ ac-php developer only."
           (line-number-at-pos offset) (1+ (- (or offset (point)) (point-at-bol)))))
 (defun ac-php--string=-ignore-care(str1 str2)
   (s-equals?(s-upcase str1) (s-upcase str2))
-  ;;(not (integer-or-marker-p (compare-strings str1 0 nil str2 0 nil t)))
+  ;; (not (integer-or-marker-p (compare-strings str1 0 nil str2 0 nil t)))
   )
 
 (defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
@@ -416,7 +416,7 @@ ac-php developer only."
           (find-file-other-window file-or-buffer)
         (find-file file-or-buffer))
     (let ((buf (get-buffer file-or-buffer)))
-      (cond ((not buf) (message "No buffer named %s ;you can M-x: ac-php-remake-tags-all fix it" file-or-buffer))
+      (cond ((not buf) (message "No buffer named %s; you can M-x: ac-php-remake-tags-all fix it" file-or-buffer))
             (other-window (switch-to-buffer-other-window file-or-buffer))
             (t (switch-to-buffer file-or-buffer))))))
 
@@ -429,27 +429,27 @@ ac-php developer only."
            (let ((line (string-to-number (match-string-no-properties 2 location)))
                  (column (string-to-number (match-string-no-properties 3 location))))
              (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;;(run-hooks ac-php-after-find-file-hook)
+             ;; (run-hooks ac-php-after-find-file-hook)
              (ac-php-goto-line-col line column)
              t))
           ((string-match "\\(.*\\):\\([0-9]+\\)" location)
            (let ((line (string-to-number (match-string-no-properties 2 location))))
              (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;;(run-hooks ac-php-after-find-file-hook)
+             ;; (run-hooks ac-php-after-find-file-hook)
              (goto-char (point-min))
              (forward-line (1- line))
              t))
           ((string-match "\\(.*\\),\\([0-9]+\\)" location)
            (let ((offset (string-to-number (match-string-no-properties 2 location))))
              (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;;(run-hooks ac-php-after-find-file-hook)
+             ;; (run-hooks ac-php-after-find-file-hook)
              (goto-char (1+ offset))
              t))
           (t
            (if (string-match "^ +\\(.*\\)$" location)
                (setq location (match-string-no-properties 1 location)))
            (ac-php-find-file-or-buffer location other-window)))
-    ;;(ac-php-location-stack-push)
+    ;; (ac-php-location-stack-push)
     ))
 
 (defsubst ac-php-clean-document (s)
@@ -657,7 +657,7 @@ been replaced by '."
           (setq split-arr (s-split-up-to "\\\\" first-key 1))
           (ac-php--debug " split-arr 22 len:%d " (length split-arr))
 
-          ;;check for use
+          ;; check for use
           (cond
            ((= 2 (length split-arr))
 
@@ -670,7 +670,7 @@ been replaced by '."
               (setq tmp-name first-key)))
 
            ((= 1 (length split-arr))
-            ;;check use as
+            ;; check use as
             (setq cur-class-name (nth 0 split-arr))
             (setq tmp-name (ac-php-get-use-as-name cur-class-name))
             (unless tmp-name (setq tmp-name first-key))
@@ -1236,12 +1236,12 @@ work for multi class hint:
                         (setq beginning-of-line-pos (point))
                         ;; Function
 
-                        ;; fix : $builder=$this->user->as("tt")->get_sql_builder();
+                        ;; fix: $builder=$this->user->as("tt")->get_sql_builder();
                         (setq temp-key-list (ac-php-remove-unnecessary-items-4-complete-method
                                              (ac-php-split-line-4-complete-method
                                               (replace-regexp-in-string ";[^;]*$" "" line-txt))))
 
-                        ;;(re-search-forward ".[ \t]*(")
+                        ;; (re-search-forward ".[ \t]*(")
                         (setq search-key (s-replace "\\" "\\\\" (s-replace "(" "[ \t]*("
                                                                            (nth (- (length temp-key-list) 1) temp-key-list))))
                         (ac-php--debug "FFFFFFFF: %S" search-key)
@@ -1293,7 +1293,7 @@ work for multi class hint:
 
 
 (defun ac-php-candidate-class (tags-data key-str-list)
-  ;;得到变量
+  ;; 得到变量
   (let (ret-list key-word output-list class-name
                  (class-map (ac-php-g--class-map tags-data))
                  (inherit-map (ac-php-g--inherit-map tags-data))
@@ -1353,7 +1353,7 @@ work for multi class hint:
     (setq cur-word-len (length cur-word))
     (setq start-word-pos (- cur-word-len (length ac-php-prefix-str)))
     (when (>=  cur-word-len 1)
-      ;;user func + class
+      ;; user func + class
       (if (string= (substring-no-properties cur-word 0 1) "\\")
           (progn
             (maphash
@@ -1371,7 +1371,7 @@ work for multi class hint:
         (let (start-word (word-arr (s-split "\\\\" cur-word)))
 
           (setq start-word (nth 0 word-arr))
-          ;;use as
+          ;; use as
           (dolist (use-item (ac-php--get-all-use-as-name-in-cur-buffer))
             (ac-php--debug "XXX use-item %s cur-word=%s" use-item cur-word)
             (if (string= start-word cur-word)
@@ -1392,7 +1392,7 @@ work for multi class hint:
 
                   (ac-php--debug "XXX use namespace ... %s %d " find-now-word find-now-word-len)
 
-                  ;;XXXXXXX
+                  ;; XXXXXXX
 
                   (maphash
                    (lambda (_k function-item)
@@ -1422,7 +1422,7 @@ work for multi class hint:
               (setq key-word (propertize key-word 'summary ""))
               (push key-word ret-list)))
 
-          ;;cur namespace
+          ;; cur namespace
           (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix start-word-pos-with-namespace)
             (ac-php--debug "XX check cur-namespace === %s" cur-namespace)
             (setq cur-full-fix (concat cur-namespace cur-word))
@@ -1440,7 +1440,7 @@ work for multi class hint:
                  (setq key-word (propertize key-word 'summary (aref function-item 4)))
                  (push key-word ret-list))) function-map))
 
-          ;;system : trim
+          ;; system : trim
           (let ((cur-namespace "\\") cur-full-fix start-word-pos-with-namespace)
             (ac-php--debug "XX check cur-namespace === %s" cur-namespace)
             (setq cur-full-fix (concat cur-namespace cur-word))
@@ -1500,11 +1500,11 @@ work for multi class hint:
       (setq file-dir-flag (nth 1 file-item))
       (setq file-change-time (nth 6 file-item))
 
-      (if (stringp file-dir-flag);;link
+      (if (stringp file-dir-flag);; link
           (setq file-dir-flag (file-directory-p file-dir-flag)))
 
 
-      (when (and (not file-dir-flag) ;;file
+      (when (and (not file-dir-flag) ;; file
                  (string-match regex file-name))
 
         (setq file-change-unixtime (+ (* (nth 0 file-change-time) 65536) (nth 1 file-change-time)))
@@ -1513,12 +1513,12 @@ work for multi class hint:
           (setq results (list (list file-name file-change-unixtime)))))
 
       (when (and file-dir-flag
-                   ;;(not (string= "." (file-name-base file-name)))
-                   ;;(not (string= ".." (file-name-base file-name)))
+                   ;; (not (string= "." (file-name-base file-name)))
+                   ;; (not (string= ".." (file-name-base file-name)))
                    (not (string= "." (substring (file-name-base file-name) 0 1))) ;; not start with "."
                    )
         (when (and also-find-subdir
-                   ;;no find in vendor tests
+                   ;; no find in vendor tests
                    (not (s-matches-p "/vendor/.*/tests/" file-name)))
           (setq sub-results (ac-php-find-php-files file-name regex also-find-subdir))
 
@@ -1824,7 +1824,7 @@ file in case of its absence, or if it is empty."
       (ac-php--debug "ac-php--remake-cscope %d" (length all-file-list))
       (message "rebuild cscope data file ")
       (setq tags-dir-len (length project-root-dir))
-      ;;write cscope.files
+      ;; write cscope.files
       (setq save-dir (ac-php--get-tags-save-dir project-root-dir))
       (let ((file-name-list) cscope-file-name)
         (dolist (file-item all-file-list)
@@ -1849,7 +1849,7 @@ file in case of its absence, or if it is empty."
 
 (defun ac-php-save-data (file data)
   (message "save to %s ..." file)
-  ;;(f-write (format "%S" data) 'utf-8 file)
+  ;; (f-write (format "%S" data) 'utf-8 file)
   (with-temp-file file
     (let ((standard-output (current-buffer))
           (print-circle t) ; Allow circular data
@@ -2082,7 +2082,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     (let (class-member-list)
       (cl-loop for opt-class in check-class-list do
                (setq class-member-list (nth 1 (assoc-string opt-class class-map t)))
-               ;;(ac-php--debug "member %s class=%s, %S" member opt-class class-member-list)
+               ;; (ac-php--debug "member %s class=%s, %S" member opt-class class-member-list)
                (cl-loop for member-info in class-member-list do
                         (when (and (ac-php--string=-ignore-care (nth 1 member-info) member)
                                     (string= (nth 0 member-info) "m")
@@ -2230,7 +2230,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     (if key-str-list
         (progn
           (let (class-name member-info)
-            ;;(setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word) key-str-list))
+            ;; (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word) key-str-list))
             (when (string= cur-word "")
               (let ((key-arr (s-split "\\." key-str-list)))
                 (ac-php--debug "key-arr %S " key-arr)
@@ -2248,25 +2248,25 @@ considered at this stage as a 'property usage', although in fact they may not be
                       (setq ret (list "class_member" (aref member-info 3) (aref member-info 4) member-info))
                     (progn
                       (message "no find %s.%s " class-name cur-word))))
-              ;;(message "no find class from key-list %s " key-str-list)
+              ;; (message "no find class from key-list %s " key-str-list)
               )))
-      (progn ;;function
+      (progn ;; function
         (let ((function-map (ac-php-g--function-map tags-data))
               full-name tmp-ret file-pos)
 
-          (when (string= "" cur-word) ;;new
+          (when (string= "" cur-word) ;; new
             (setq tmp-ret (ac-php-get-syntax-backward
                            (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)")
                            :sexp 1))
             (when tmp-ret (setq cur-word tmp-ret)))
-          ;;check "namespace" "use as"
+          ;; check "namespace" "use as"
           (setq full-name (ac-php--get-class-full-name-in-cur-buffer
                            cur-word
                            function-map nil))
 
           (when full-name (setq cur-word full-name))
 
-          ;;TODO FIX namespace function like Test\ff()
+          ;; TODO FIX namespace function like Test\ff()
           (ac-php--debug "check user function===%s" cur-word)
           (when (string=  cur-word "self")
             (setq cur-word (concat (ac-php-get-cur-class-name))))
@@ -2290,12 +2290,12 @@ considered at this stage as a 'property usage', although in fact they may not be
     (while (ac-php--in-string-or-comment-p (point))
       (re-search-forward (concat "\\" local-var "\\b")) ; => \\$var\\b
       )
-    ;;(ac-php-location-stack-push)
+    ;; (ac-php-location-stack-push)
     ))
 
 (defun ac-php-find-symbol-at-point (&optional prefix)
   (interactive "P")
-  ;;检查是类还是 符号
+  ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
         symbol-ret type jump-pos local-var local-var-flag)
     (setq local-var (ac-php-get-cur-word-with-dollar))
@@ -2322,7 +2322,7 @@ considered at this stage as a 'property usage', although in fact they may not be
                       (setq jump-pos (nth 1 symbol-ret))
                       (ac-php-location-stack-push)
                       (ac-php-goto-location jump-pos)
-                      ;;(ac-php-location-stack-push)
+                      ;; (ac-php-location-stack-push)
                       )
                   (ac-php--goto-local-var-def local-var)))
             (cond
@@ -2332,7 +2332,7 @@ considered at this stage as a 'property usage', although in fact they may not be
                 (ac-php--debug "tmp-arr %S" tmp-arr)
                 (cond
                  ((s-matches-p "sys" (nth 0 tmp-arr))
-                  (let((sys-item-name (aref (nth 3 symbol-ret) 1))) ;;system function
+                  (let((sys-item-name (aref (nth 3 symbol-ret) 1))) ;; system function
                     ;; \trim(=> trim
                     (if (string= type "user_function")
                         (setq sys-item-name
@@ -2368,7 +2368,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     (if (string-match (concat "$" cur-word) line-txt)
         (let ((class-name "<...>"))
           (when (string-match (concat cur-word"[\t ]*=[^(]*[(;]") line-txt)
-            ;;call function
+            ;; call function
             (let (key-str-list pos)
               (save-excursion
                 (re-search-forward "[;]")
@@ -2377,9 +2377,9 @@ considered at this stage as a 'property usage', although in fact they may not be
 
               (when pos (setq key-str-list (ac-php-get-class-at-point pos)))
 
-              (if key-str-list ;;class-name
+              (if key-str-list ;; class-name
                   (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
-                (progn ;;function TODO
+                (progn ;; function TODO
                   ))))
 
           (kill-new (concat "\n\t/**  @var " class-name " $" cur-word " */\n")))
@@ -2498,7 +2498,7 @@ Return empty string if there is no valid sequence of characters."
 
 (defun ac-php-show-tip(&optional prefix)
   (interactive "P")
-  ;;检查是类还是 符号
+  ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
         symbol-ret
         type doc class-name access return-type member-info tag-name function-item file-pos)

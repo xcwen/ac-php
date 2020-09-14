@@ -148,7 +148,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 	  (push candidate-item ac-php-company-list))))
 
-    ;;fix one function bug
+    ;; fix one function bug
     (when (and (= find-count 1) (> (length ac-php-company-list) 1))
       (push (propertize ac-php-prefix-str 'ac-php-help "") ac-php-company-list))
 

@@ -58,7 +58,7 @@
   "Completion backend for PHP."
   :group 'company)
 
-(defcustom company-php-begin-after-member-access  t
+(defcustom company-php-begin-after-member-access t
   "When non-nil, automatic completion will start whenever the current
 symbol is preceded by \"->\" or \"::\", ignoring
 `company-minimum-prefix-length'.
@@ -88,7 +88,7 @@ and `c-electric-colon', for automatic completion right after \">\" and
   "Return a string SYMBOL or a cons (SYMBOL . t).
 SYMBOL is as returned by `company-grab-symbol'.  If the text before point
 matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
-  (let ((symbol  (company-ac-php--prefix-symbol)))
+  (let ((symbol (company-ac-php--prefix-symbol)))
     (when symbol
       (save-excursion
         (forward-char (- (length symbol)))
@@ -158,23 +158,23 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 (defun company-ac-php-document (item)
   (if (stringp item)
-      (let (doc  tag-type return-type access from-class)
+      (let (doc tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
         (setq tag-type (get-text-property 0 'ac-php-tag-type item))
         (setq return-type (get-text-property 0 'ac-php-return-type item))
         (setq access (get-text-property 0 'ac-php-access item))
         (setq from-class (get-text-property 0 'ac-php-from item))
         (if (ac-php--tag-name-is-function item)
-            (setq doc (concat item  doc ")"))
+            (setq doc (concat item doc ")"))
           (setq doc item))
 
 
 
         (cond
          ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
-           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc  return-type access  from-class))
+           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
          (return-type
-          (format "%s  %s " return-type doc))
+          (format "%s %s" return-type doc))
          (t
           doc)))))
 
@@ -201,7 +201,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
   (let ((doc))
     (when (ac-php--tag-name-is-function arg)
       (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
-      (insert (concat  doc ")"))
+      (insert (concat doc ")"))
       (when (bound-and-true-p smartparens-mode)
 	(delete-char 1))
       (company-template-c-like-templatify (concat arg doc ")")))))

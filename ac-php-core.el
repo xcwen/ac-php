@@ -458,8 +458,7 @@ ac-php developer only."
     (setq s (replace-regexp-in-string "#\\]" " " s)))
   s)
 (defun  ac-php--tag-name-is-function (tag-name)
-  (s-matches-p "(" tag-name)
-  )
+  (s-matches-p "(" tag-name))
 
 (defun ac-php-split-string-with-separator (str regexp &optional replacement omit-nulls)
   "Split STR into substrings bounded by  REGEXP.
@@ -667,32 +666,23 @@ been replaced by '."
             (ac-php--debug "tmp-name 22 %s" tmp-name)
             (if tmp-name
                 (setq tmp-name (concat tmp-name "\\" cur-class-name))
-              (setq tmp-name  first-key)
-              )
-            )
+              (setq tmp-name  first-key)))
 
            ((= 1 (length split-arr))
             ;;check use as
             (setq cur-class-name (nth 0 split-arr))
             (setq  tmp-name (ac-php-get-use-as-name  cur-class-name))
             (unless tmp-name (setq tmp-name  first-key))
-            (ac-php--debug "XXXX %s " tmp-name)
-
-            ))
+            (ac-php--debug "XXXX %s " tmp-name)))
           (unless (ac-php--check-global-name  tmp-name)
             (let ((tmp-name-as-global  (concat "\\" tmp-name))
-                   (cur-namepace-tmp-name  (concat  (ac-php-get-cur-namespace-name)   tmp-name)
-                                           ))
+                  (cur-namepace-tmp-name  (concat  (ac-php-get-cur-namespace-name)   tmp-name)))
               (ac-php--debug " check as cur namespace %s " tmp-name)
               (if (ac-php--get-item-from-funtion-map  cur-namepace-tmp-name  function-map)
                   (setq tmp-name cur-namepace-tmp-name)
-                (setq tmp-name tmp-name-as-global))
-              ))
+                (setq tmp-name tmp-name-as-global))))
 
-          (ac-php--debug " 22222 %s " tmp-name)
-
-          )
-        ))
+          (ac-php--debug " 22222 %s " tmp-name))))
 
 
     (when tmp-name
@@ -702,9 +692,7 @@ been replaced by '."
       (if tmp-ret
           (if get-return-type-flag
               (setq ret-name  (aref tmp-ret  4))
-            (setq ret-name  (aref  tmp-ret 1))
-            )
-        ))
+            (setq ret-name  (aref  tmp-ret 1)))))
 
     (unless ret-name
       (setq tmp-name  (if (ac-php--check-global-name  first-key)  first-key   (concat "\\"  first-key)))
@@ -714,12 +702,9 @@ been replaced by '."
       (if tmp-ret
           (if get-return-type-flag
               (setq ret-name  (aref  tmp-ret 4))
-            (setq ret-name  (aref tmp-ret 1))
-            )
-        ))
+            (setq ret-name  (aref tmp-ret 1)))))
     (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer ret-name %s" ret-name)
-    ret-name
-    ))
+    ret-name))
 
 (defun ac-php-split-line-4-complete-method (line-string)
   "This function is used to tokinize PHP string.
@@ -1071,8 +1056,7 @@ work for multi class hint:
           (setq no-comment-code (s-replace-all
                                  '(("#" . "")
                                    ("/*" . "")
-                                   ("//" . "")
-                                   )
+                                   ("//" . ""))
                                  no-comment-code))
 
           (setq line-txt (concat (s-trim no-comment-code) line-txt)))))
@@ -1134,8 +1118,7 @@ work for multi class hint:
       (setq first-key-str (nth 0 (ac-php--get-item-info (nth 0 key-list))))
       (when (and (string-match "::" first-key-str)
                  (not (string-match "\\/\\*" line-txt))
-                 (not (string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt))
-                 )
+                 (not (string-match "\$[a-zA-Z0-9_]*[\t ]*::" old-line-txt)))
         (progn
           (ac-php--debug "Detected a static method call")
           (setq first-key (substring-no-properties first-key-str 0 -2)
@@ -1146,8 +1129,7 @@ work for multi class hint:
                                            ".__parent__")))
            ((or (string= first-key "self")
                 (string= first-key "static"))
-            (setq first-class-name (concat (ac-php-get-cur-full-class-name))))
-           )))
+            (setq first-class-name (concat (ac-php-get-cur-full-class-name)))))))
       (when (not first-class-name)
         (progn
 
@@ -1257,8 +1239,7 @@ work for multi class hint:
                         ;; fix : $builder=$this->user->as("tt")->get_sql_builder();
                         (setq temp-key-list (ac-php-remove-unnecessary-items-4-complete-method
                                              (ac-php-split-line-4-complete-method
-                                              (replace-regexp-in-string ";[^;]*$" ""  line-txt))
-                                             ))
+                                              (replace-regexp-in-string ";[^;]*$" ""  line-txt))))
 
                         ;;(re-search-forward ".[ \t]*(")
                         (setq search-key (s-replace "\\" "\\\\" (s-replace "(" "[ \t]*("
@@ -1294,7 +1275,7 @@ work for multi class hint:
 
     ;; fix use-as-name, same namespace
     (when (and first-class-name
-                (= 1 (length  (s-split "\\." first-class-name))))
+               (= 1 (length  (s-split "\\." first-class-name))))
       (setq first-class-name
             (ac-php--get-class-full-name-in-cur-buffer
              first-class-name
@@ -1314,9 +1295,9 @@ work for multi class hint:
 (defun ac-php-candidate-class (tags-data key-str-list)
   ;;得到变量
   (let (ret-list key-word output-list  class-name
-                  (class-map (ac-php-g--class-map tags-data))
-                  (inherit-map (ac-php-g--inherit-map tags-data))
-                  item-list check-item  arr-len)
+                 (class-map (ac-php-g--class-map tags-data))
+                 (inherit-map (ac-php-g--inherit-map tags-data))
+                 item-list check-item  arr-len)
     (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list))
     (setq class-name (ac-php-get-class-name-by-key-list  tags-data key-str-list))
 
@@ -1328,16 +1309,14 @@ work for multi class hint:
               (setq key-word   (aref  x  1))
               (setq check-item  (concat  (aref  x 0) "_" key-word))
               (if (assoc-string  check-item item-list t)
-                  (progn
-                    )
+                  (progn)
                 (progn
                   (setq  item-list (append  (list key-word nil) item-list))
                   (setq arr-len  (length x))
                   (when (and
                          (string=   (ac-php--get-array-string x arr-len   0) "p")
                          (string=   (ac-php--get-array-string x arr-len   7) "1"))
-                    (setq key-word (concat "$" key-word))
-                    )
+                    (setq key-word (concat "$" key-word)))
 
                   (ac-php--debug "ITEM:%S" x)
                   (ac-php--debug "2:%s" (ac-php--get-array-string x arr-len  2))
@@ -1352,16 +1331,13 @@ work for multi class hint:
                   (push key-word ret-list)))
 
 
-              nil
-              ) output-list)
-      )
+              nil) output-list))
 
     (ac-php--debug " ret-list  = %S" ret-list)
     ret-list))
 (defun ac-php--get-item-from-funtion-map (key-word function-map)
   "DOCSTRING"
-  (gethash key-word function-map)
-  )
+  (gethash key-word function-map))
 
 (defun ac-php-candidate-other (tags-data)
   (let (ret-list
@@ -1385,18 +1361,12 @@ work for multi class hint:
                (when (s-prefix-p  cur-word (aref function-item 1)  t)
                  (setq key-word (substring-no-properties (aref  function-item  1)))
                  (setq key-word (propertize key-word 'ac-php-help
-                                            (ac-php--get-array-string  function-item function-item-len  2)
-                                            ))
+                                            (ac-php--get-array-string  function-item function-item-len  2)))
                  (setq key-word (propertize key-word 'ac-php-return-type
-                                            (ac-php--get-array-string  function-item function-item-len  4)
-                                            ))
+                                            (ac-php--get-array-string  function-item function-item-len  4)))
                  (setq key-word (propertize key-word 'summary
-                                            (ac-php--get-array-string  function-item function-item-len  4)
-                                            ))
-                 (push key-word ret-list)
-                 )
-               ) function-map)
-            )
+                                            (ac-php--get-array-string  function-item function-item-len  4)))
+                 (push key-word ret-list))) function-map))
         (let (start-word  (word-arr (s-split "\\\\" cur-word)))
 
           (setq start-word (nth 0 word-arr))
@@ -1410,8 +1380,7 @@ work for multi class hint:
                   (setq key-word (propertize key-word 'ac-php-help  (nth 1  use-item)))
                   (setq key-word (propertize key-word 'ac-php-return-type   (nth 0  use-item)))
                   (setq key-word (propertize key-word 'summary   (nth 0  use-item)))
-                  (push key-word ret-list)
-                  )
+                  (push key-word ret-list))
               (let (find-now-word find-now-word-len)
 
                 (when (string= start-word (nth 1 use-item))
@@ -1440,13 +1409,7 @@ work for multi class hint:
                        (setq key-word (propertize key-word 'ac-php-tag-type (aref  function-item 0)))
                        (setq key-word (propertize key-word 'summary
                                                   (ac-php--get-array-string  function-item function-item-len   4)))
-                       (push key-word ret-list)
-
-                       )
-                     ) function-map)
-
-                  )
-                )))
+                       (push key-word ret-list))) function-map)))))
 
           ;;; key word
           (dolist  (k ac-php--php-key-list)
@@ -1456,8 +1419,7 @@ work for multi class hint:
               (setq key-word (propertize key-word 'ac-php-return-type   ""))
               (setq key-word (propertize key-word 'ac-php-tag-type ""))
               (setq key-word (propertize key-word 'summary   ""))
-              (push key-word ret-list)
-              ))
+              (push key-word ret-list)))
 
           ;;cur namespace
           (let ((cur-namespace (ac-php-get-cur-namespace-name)) cur-full-fix   start-word-pos-with-namespace)
@@ -1475,11 +1437,7 @@ work for multi class hint:
                  (setq key-word (propertize key-word 'ac-php-return-type   (aref  function-item 4)))
                  (setq key-word (propertize key-word 'ac-php-tag-type (aref  function-item 0)))
                  (setq key-word (propertize key-word 'summary   (aref  function-item 4)))
-                 (push key-word ret-list)
-
-                 )
-               )  function-map)
-            )
+                 (push key-word ret-list)))  function-map))
 
           ;;system : trim
           (let ((cur-namespace "\\") cur-full-fix   start-word-pos-with-namespace)
@@ -1497,11 +1455,7 @@ work for multi class hint:
                  (setq key-word (propertize key-word 'ac-php-return-type   (aref  function-item 4)))
                  (setq key-word (propertize key-word 'ac-php-tag-type (aref  function-item 0)))
                  (setq key-word (propertize key-word 'summary   (aref  function-item 4)))
-                 (push key-word ret-list)
-
-                 )
-               )  function-map)
-            )
+                 (push key-word ret-list)))  function-map))
           ;;; cur function vars
           (maphash
            (lambda (k _v)
@@ -1512,12 +1466,8 @@ work for multi class hint:
                (setq key-word (propertize key-word 'ac-php-return-type   ""))
                (setq key-word (propertize key-word 'ac-php-tag-type ""))
                (setq key-word (propertize key-word 'summary   ""))
-               (push key-word ret-list)
-               ))
-           (ac-php--get-cur-function-vars)
-           )
-
-          )))
+               (push key-word ret-list)))
+           (ac-php--get-cur-function-vars)))))
     (ac-php--debug "ret-list:%S" ret-list)
     ret-list))
 (defun  ac-php--get-cur-function-vars()
@@ -1533,13 +1483,10 @@ work for multi class hint:
         (setq var-name   (nth 0 item))
         (setq first-char  (aref var-name 0))
         (when (or  (= first-char ?\") (= first-char ?'))
-          (setq var-name   (substring  var-name 1))
-          )
+          (setq var-name   (substring  var-name 1)))
 
-        (puthash var-name  nil   ret-map)
-        )
-      ret-map
-      )))
+        (puthash var-name  nil   ret-map))
+      ret-map)))
 ;;; ==============BEGIN
 (defun ac-php-find-php-files (project-root-dir regex also-find-subdir)
   "get all php file list"
@@ -1555,8 +1502,7 @@ work for multi class hint:
 
 
       (when (and (not file-dir-flag) ;;file
-                 (string-match  regex file-name)
-                 )
+                 (string-match  regex file-name))
 
         (setq file-change-unixtime (+ (* (nth 0 file-change-time)  65536) (nth 1 file-change-time)))
         (if results
@@ -1564,10 +1510,10 @@ work for multi class hint:
           (setq results  (list (list file-name  file-change-unixtime)))))
 
       (when (and   file-dir-flag
-                    ;;(not (string= "."   (file-name-base file-name)))
-                    ;;(not (string= ".."   (file-name-base file-name)))
-                    (not (string= "."  (substring (file-name-base file-name)  0 1))) ;; not start with "."
-                    )
+                   ;;(not (string= "."   (file-name-base file-name)))
+                   ;;(not (string= ".."   (file-name-base file-name)))
+                   (not (string= "."  (substring (file-name-base file-name)  0 1))) ;; not start with "."
+                   )
         (when (and also-find-subdir
                    ;;no find in vendor tests
                    (not (s-matches-p "/vendor/.*/tests/"  file-name)))
@@ -1575,14 +1521,11 @@ work for multi class hint:
 
           (if results
               (nconc results sub-results)
-            (setq results sub-results)))
-        ))
-    results
-    ))
+            (setq results sub-results)))))
+    results))
 (defun ac-php--clean-return-type (return-type)
   (when return-type
-    (s-trim (replace-regexp-in-string "|.*" "" return-type)))
-  )
+    (s-trim (replace-regexp-in-string "|.*" "" return-type))))
 
 (defun ac-php--json-save-data (conf-file data-list)
   "Creating configuration by populating CONF-FILE using DATA-LIST."
@@ -1596,8 +1539,7 @@ work for multi class hint:
     (setq json-encoding-pretty-print old-pp-value)))
 
 (defun ac-php--cache-files-save  (file-path cache1-files)
-  (ac-php--json-save-data file-path (list :cache1-files   cache1-files))
-  )
+  (ac-php--json-save-data file-path (list :cache1-files   cache1-files)))
 
 (defun ac-php--ctags-opts (project-root-dir rebuild)
   "Create phpctags command options.
@@ -1744,10 +1686,8 @@ This function is used internally by the function `ac-php--remake-tags'."
         (progn
           (setq func-str (s-trim (match-string 1 doc)))
           (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "," func-str))
-          (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str))
-          )
-      ""
-      )))
+          (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str)))
+      "")))
 
 (defun ac-php--get-tags-save-dir (project-root-dir)
   "Get an absolute path to directory where tags should be saved.
@@ -1860,32 +1800,27 @@ file in case of its absence, or if it is empty."
 (defun  ac-php--get-use-cscope-from-config-file (project-root-dir)
   (let (conf-list)
     (setq conf-list  (ac-php--get-config project-root-dir))
-    (cdr (assoc-string "use-cscope" conf-list))
-    )
-  )
+    (cdr (assoc-string "use-cscope" conf-list))))
 
 
 (defun ac-php-remake-tags ()
   " reset tags , if  php source  is changed  "
   (interactive)
-  (ac-php--remake-tags  (ac-php--get-project-root-dir) nil)
-  )
+  (ac-php--remake-tags  (ac-php--get-project-root-dir) nil))
 
 
 
 (defun ac-php-remake-tags-all ()
   "  remake tags without check modify time "
   (interactive)
-  (ac-php--remake-tags  (ac-php--get-project-root-dir) t)
-  )
+  (ac-php--remake-tags  (ac-php--get-project-root-dir) t))
 
 (defun ac-php--remake-cscope (project-root-dir all-file-list)
   "DOCSTRING"
   (let (tags-dir-len save-dir)
     (when (and ac-php-cscope
                (or (ac-php--get-use-cscope-from-config-file  project-root-dir)
-                   ac-php-use-cscope-flag)
-               )
+                   ac-php-use-cscope-flag))
       (ac-php--debug "ac-php--remake-cscope  %d"  (length  all-file-list))
       (message "rebuild cscope  data file ")
       (setq tags-dir-len (length project-root-dir))
@@ -1900,8 +1835,7 @@ file in case of its absence, or if it is empty."
          'utf-8
          (concat  save-dir  "cscope.files")))
       (shell-command-to-string
-       (concat " cd " save-dir "  &&  cscope -bkq -i cscope.files  ")))
-    ))
+       (concat " cd " save-dir "  &&  cscope -bkq -i cscope.files  ")))))
 
 
 
@@ -1913,8 +1847,7 @@ file in case of its absence, or if it is empty."
   (let ((obj-tags-dir (ac-php--get-obj-tags-dir save-tags-dir)))
     (if (not (file-directory-p obj-tags-dir))
         (mkdir obj-tags-dir t))
-    (ac-php-find-php-files obj-tags-dir  "\\.el$" t)
-    ))
+    (ac-php-find-php-files obj-tags-dir  "\\.el$" t)))
 
 (defun ac-php-save-data (file data)
   (message "save to  %s ..." file)
@@ -1923,8 +1856,7 @@ file in case of its absence, or if it is empty."
     (let ((standard-output (current-buffer))
           (print-circle t) ; Allow circular data
           )
-      (prin1 data)))
-  )
+      (prin1 data))))
 (defun case-fold-string= (a b)
   (eq t (compare-strings a nil nil b nil nil t)))
 (defun case-fold-string-hash (a)
@@ -1982,8 +1914,7 @@ will be loaded and the in-memory storage will be updated."
 
         (mapc
          (lambda (class-item)
-           (puthash (format "%s" (car class-item)) (cdr class-item) class-map)
-           )
+           (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
 
          (aref file-data 0))
 
@@ -2074,19 +2005,16 @@ will be loaded and the in-memory storage will be updated."
   (let (ret)
     (setq ret  (nreverse (ac-php--get-check-class-list-ex class-name  (ac-php-get-cur-namespace-name t)  inherit-map class-map nil)))
     (ac-php--debug "XXXX check-class list:%S"  ret)
-    ret
-    ))
+    ret))
 
 (defun  ac-php--check-global-name(name)
-  (s-prefix-p  "\\"  name)
-  )
+  (s-prefix-p  "\\"  name))
 
 
 (defun  ac-php--as-global-name(name)
   (if (ac-php--check-global-name name)
       name
-    (concat   "\\" name)
-    ))
+    (concat   "\\" name)))
 
 (defun ac-php--get-check-class-list-ex (class-name parent-namespace inherit-map class-map cur-list)
   "DOCSTRING"
@@ -2102,11 +2030,8 @@ will be loaded and the in-memory storage will be updated."
         (ac-php--debug " 222 check-class-name=%s"  check-class-name)
         (unless (gethash check-class-name  class-map)
           (ac-php--debug " 222 00 check-class-name= nil")
-          (setq check-class-name nil)
-          )
-        )
-      (setq class-name  check-class-name)
-      )
+          (setq check-class-name nil)))
+      (setq class-name  check-class-name))
 
     (when  class-name
       (setq inherit-item (gethash class-name inherit-map))
@@ -2125,14 +2050,10 @@ will be loaded and the in-memory storage will be updated."
                                      (ac-php--get-namespace-from-classname class-name)
                                      inherit-map
                                      class-map
-                                     cur-list
-                                     )
+                                     cur-list)
                                     check-class-list))
-            (setq i (1+ i))
-            ))
-        )
-      check-class-list
-      )))
+            (setq i (1+ i)))))
+      check-class-list)))
 
 (defun ac-php--get-item-info (member)
   "Recognize current MEMBER type.
@@ -2168,14 +2089,12 @@ considered at this stage as a 'property usage', although in fact they may not be
                (cl-loop for member-info in class-member-list do
                         (when (and  (ac-php--string=-ignore-care (nth 1 member-info) member)
                                     (string= (nth 0 member-info)  "m")
-                                    (nth 4 member-info)
-                                    )
+                                    (nth 4 member-info))
                           (setq ret (nth 4 member-info))
 
                           (setq find-flag t)
                           (cl-return)))
-               (if find-flag (cl-return))
-               ))
+               (if find-flag (cl-return))))
     (ac-php--debug "return-type ac-php-get-class-member-info  ret=%S" ret)
     ret))
 
@@ -2200,12 +2119,9 @@ considered at this stage as a 'property usage', although in fact they may not be
                  (while (and (< i list-length) (not ret))
                    (setq member-info (aref class-member-list i))
                    (when(ac-php--string=-ignore-care (aref member-info 1) member)
-                     (setq  ret member-info)
-                     )
-                   (setq i (1+ i))
-                   ))
-               (if ret (cl-return))
-               ))
+                     (setq  ret member-info))
+                   (setq i (1+ i))))
+               (if ret (cl-return))))
 
     (ac-php--debug "ac-php-get-class-member-info  ret=%S" ret)
     ret))
@@ -2230,19 +2146,13 @@ considered at this stage as a 'property usage', although in fact they may not be
             (setq member-name  (aref member-info 1))
             (unless (assoc-string  member-name   unique-list  t)
               (push member-info ret)
-              (push member-name unique-list)
-              )
-            (setq i (1+ i))
-            ))
-
-        ))
-    ret
-    ))
+              (push member-name unique-list))
+            (setq i (1+ i))))))
+    ret))
 
 (defun  ac-php--get-class-name-from-parent-define(parent-list-str)
   " '\\Class1,interface1' => Class1  "
-  (s-trim (aref (s-split ","  parent-list-str) 1))
-  )
+  (s-trim (aref (s-split ","  parent-list-str) 1)))
 
 (defun ac-php-get-class-name-by-key-list(tags-data key-list-str)
   (let (temp-class (cur-class "")
@@ -2266,8 +2176,7 @@ considered at this stage as a 'property usage', although in fact they may not be
 
                        (if parent-list
                            (setq cur-class (aref parent-list 0))
-                         (setq cur-class "")
-                         ))
+                         (setq cur-class "")))
 
                    (let (member-info)
                      (setq member-info (ac-php-get-class-member-info class-map inherit-map cur-class  item))
@@ -2285,21 +2194,13 @@ considered at this stage as a 'property usage', although in fact they may not be
                                                  (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
                                                  (setq relative-classname (concat cur-namespace "\\" tmp-class))
                                                  (ac-php--debug " 2 relative-classname %s " relative-classname)
-                                                 relative-classname
-                                                 ))
-                                             ))
-                                       ""))
-
-                     ))
+                                                 relative-classname))))
+                                       ""))))
 
                  (when (string= cur-class "")
                    (message (concat " class[" temp-class "]'s member[" item "] not define type "))
-                   (cl-return))
-
-                 ))
-             )
-    cur-class
-    ))
+                   (cl-return)))))
+    cur-class))
 (defun ac-php--get-namespace-from-classname (classname)
   (nth 1 (s-match  "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname)))
 
@@ -2350,12 +2251,9 @@ considered at this stage as a 'property usage', although in fact they may not be
                   (if member-info
                       (setq ret (list "class_member"  (aref member-info 3)  (aref member-info 4) member-info))
                     (progn
-                      (message "no find %s.%s " class-name cur-word)
-                      )))
+                      (message "no find %s.%s " class-name cur-word))))
               ;;(message "no find class  from key-list %s " key-str-list)
-              )
-            )
-          )
+              )))
       (progn ;;function
         (let ((function-map (ac-php-g--function-map tags-data))
               full-name tmp-ret file-pos)
@@ -2364,8 +2262,7 @@ considered at this stage as a 'property usage', although in fact they may not be
             (setq tmp-ret (ac-php-get-syntax-backward
                            (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)")
                            :sexp 1))
-            (when tmp-ret (setq cur-word   tmp-ret))
-            )
+            (when tmp-ret (setq cur-word   tmp-ret)))
           ;;check "namespace" "use as"
           (setq full-name (ac-php--get-class-full-name-in-cur-buffer
                            cur-word
@@ -2376,21 +2273,15 @@ considered at this stage as a 'property usage', although in fact they may not be
           ;;TODO FIX namespace function like Test\ff()
           (ac-php--debug "check user function===%s" cur-word)
           (when (string=  cur-word "self")
-            (setq cur-word (concat (ac-php-get-cur-class-name)))
-            )
+            (setq cur-word (concat (ac-php-get-cur-class-name))))
 
           (let  (function-item)
             (setq  function-item (ac-php--get-item-from-funtion-map  cur-word function-map))
             (when  function-item
-              (setq ret (list "user_function" (aref  function-item 3)  (aref  function-item 4)   function-item))
-              )
-            )
-          )
-        ))
+              (setq ret (list "user_function" (aref  function-item 3)  (aref  function-item 4)   function-item)))))))
 
     (ac-php--debug  "ac-php-find-symbol-at-point-pri :%S "  ret)
-    ret
-    ))
+    ret))
 
 (defun ac-php--goto-local-var-def (local-var)
   "goto local-var like vim - gd"
@@ -2410,7 +2301,7 @@ considered at this stage as a 'property usage', although in fact they may not be
   (interactive "P")
   ;;检查是类还是 符号
   (let ((tags-data  (ac-php-get-tags-data))
-         symbol-ret  type jump-pos  local-var  local-var-flag)
+        symbol-ret  type jump-pos  local-var  local-var-flag)
     (setq local-var (ac-php-get-cur-word-with-dollar))
     (setq local-var-flag  (s-matches-p "^\\$"  local-var))
 
@@ -2419,12 +2310,10 @@ considered at this stage as a 'property usage', although in fact they may not be
 
     (ac-php--debug "11goto  %s"  symbol-ret)
     (unless symbol-ret
-      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data t))
-      )
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data t)))
     (ac-php--debug "22goto  %s"  symbol-ret)
     (unless symbol-ret
-      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t))
-      )
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t)))
     (ac-php--debug "33goto  %s %s"  symbol-ret local-var-flag)
 
 
@@ -2441,9 +2330,7 @@ considered at this stage as a 'property usage', although in fact they may not be
                       (ac-php-goto-location jump-pos)
                       ;;(ac-php-location-stack-push)
                       )
-                  (ac-php--goto-local-var-def local-var)
-                  )
-                )
+                  (ac-php--goto-local-var-def local-var)))
             (cond
              ((or (string= type "class_member") (string= type "user_function"))
               (let ((file-pos (nth 1 symbol-ret)) tmp-arr)
@@ -2492,8 +2379,7 @@ considered at this stage as a 'property usage', although in fact they may not be
               (save-excursion
                 (re-search-forward "[;]")
                 (re-search-backward "[^ \t]" nil t)
-                (setq pos (point))
-                )
+                (setq pos (point)))
 
               (when pos (setq key-str-list (ac-php-get-class-at-point pos)))
 
@@ -2531,10 +2417,8 @@ considered at this stage as a 'property usage', although in fact they may not be
     (if (< index arr-len)
         (progn
           (setq v  (aref arr index))
-          (if  v  v "")
-          )
-      "")
-    ))
+          (if  v  v ""))
+      "")))
 
 (defun ac-php-candidate ()
   (let (key-str-list  tags-data)
@@ -2544,8 +2428,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     (ac-php--debug "GET key-str-list  :%s" key-str-list)
     (if key-str-list
         (ac-php-candidate-class tags-data key-str-list)
-      (ac-php-candidate-other tags-data))
-    ))
+      (ac-php-candidate-other tags-data))))
 
 (defun ac-php--get-cur-word ()
   "Return a 'word' before current point.
@@ -2612,19 +2495,15 @@ Return empty string if there is no valid sequence of characters."
       (skip-chars-backward "\\$a-z0-9A-Z_")
       (setq start-pos (point))
       (skip-chars-forward "\\$a-z0-9A-Z_")
-      (buffer-substring-no-properties start-pos (point))
-      )
-    ))
+      (buffer-substring-no-properties start-pos (point)))))
 
 (defun ac-php-get-cur-word-without-clean ()
   (let (start-pos cur-word)
     (save-excursion
       (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
       (setq start-pos (point))
-      (skip-chars-forward "\\$a-z0-9A-Z_\\\\")
-      )
-    (buffer-substring-no-properties start-pos (point))
-    ))
+      (skip-chars-forward "\\$a-z0-9A-Z_\\\\"))
+    (buffer-substring-no-properties start-pos (point))))
 
 (defun ac-php-show-tip(&optional prefix)
   (interactive "P")
@@ -2648,9 +2527,7 @@ Return empty string if there is no valid sequence of characters."
         (setq  class-name    (aref member-info 5))
         (setq  return-type   (aref member-info 4))
         (setq  access   (aref member-info 6))
-        (popup-tip (concat  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   class-name))
-
-        )
+        (popup-tip (concat  (ac-php-clean-document doc)  "\n\t[  type]:"  return-type  "\n\t[access]:" access  "\n\t[  from]:"   class-name)))
        ((string= type "user_function")
         (setq function-item (nth 3 symbol-ret))
         (setq tag-name  (aref function-item 1))
@@ -2661,9 +2538,7 @@ Return empty string if there is no valid sequence of characters."
         (setq file-pos (aref function-item 3))
 
         (setq  return-type (aref function-item 4))
-        (popup-tip (concat "[" (if (string= "S" file-pos) "system" "  user")  "]:"  (ac-php-clean-document doc) "\n[  type]:"  return-type))
-
-        )))))
+        (popup-tip (concat "[" (if (string= "S" file-pos) "system" "  user")  "]:"  (ac-php-clean-document doc) "\n[  type]:"  return-type)))))))
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
   "Set `cscope-initial-directory' and run egrep over the cscope database."
@@ -2717,16 +2592,13 @@ supposed to do."
                             (propertize  tag-name  'face 'font-lock-function-name-face)
                             (aref  member-info 2) ")"))
             (setq  doc
-                   (propertize  tag-name  'face 'font-lock-variable-name-face)
-                   ))
+                   (propertize  tag-name  'face 'font-lock-variable-name-face)))
 
           (setq  class-name    (ac-php--get-array-string member-info  member-info-len 5))
           (setq  return-type   (aref member-info 4))
           (setq  access   (ac-php--get-array-string member-info  member-info-len 6))
           (concat
-           (propertize  access 'face 'font-lock-keyword-face) "  " class-name "::" doc   ":" return-type)
-
-          )
+           (propertize  access 'face 'font-lock-keyword-face) "  " class-name "::" doc   ":" return-type))
          ((string= type "user_function")
           (setq function-item (nth 3 symbol-ret))
           (setq tag-name  (aref  function-item 1))
@@ -2741,12 +2613,7 @@ supposed to do."
 
           (setq  return-type (aref function-item 4))
 
-          (concat  doc ":"  return-type)
-
-          )))
-
-      )
-    ))
+          (concat  doc ":"  return-type)))))))
 
 (defun ac-php-show-cur-project-info ()
   "show current project ac-php info "
@@ -2755,14 +2622,11 @@ supposed to do."
     (if tags-arr
         (progn
           (setq tags-file   (nth 1 tags-arr))
-          (setq project-root-dir (nth 0 tags-arr))
-          )
-      (setq tags-file   ac-php-common-json-file)
-      )
+          (setq project-root-dir (nth 0 tags-arr)))
+      (setq tags-file   ac-php-common-json-file))
     (when  tags-file
       (setq file-attr   (file-attributes   tags-file))
-      (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr)))
-      )
+      (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr))))
     (message (concat "root dir          : %s\n"
                      "config file       : %s%s\n"
                      "tags file         : %s\n"

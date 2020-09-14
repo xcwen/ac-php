@@ -174,8 +174,7 @@
              (setq fn (match-string 1 s)
                    args (match-string 2 s))
              (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)
-                               'raw-args args) candidates)
-             )))
+                               'raw-args args) candidates))))
 
     (ac-php--debug "ac-php-action candidates=%S " candidates)
     (cond

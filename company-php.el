@@ -166,8 +166,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
         (setq from-class (get-text-property 0 'ac-php-from item))
         (if (ac-php--tag-name-is-function item)
             (setq doc (concat item  doc ")"))
-          (setq doc item)
-          )
+          (setq doc item))
 
 
 
@@ -177,9 +176,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
          (return-type
           (format "%s  %s " return-type doc))
          (t
-          doc))
-        ))
-  )
+          doc)))))
 
 
 (defun company-ac-php--doc-buffer (candidate)
@@ -198,8 +195,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
     (doc-buffer (company-ac-php--doc-buffer arg))
-    (post-completion (company-ac-php-backend-post-completion arg))
-    ))
+    (post-completion (company-ac-php-backend-post-completion arg))))
 
 (defun company-ac-php-backend-post-completion (arg)
   (let ((doc))

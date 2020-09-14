@@ -154,8 +154,6 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
     (nreverse ac-php-company-list)))
 
-
-
 (defun company-ac-php-document (item)
   (if (stringp item)
       (let (doc tag-type return-type access from-class)
@@ -168,8 +166,6 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
             (setq doc (concat item doc ")"))
           (setq doc item))
 
-
-
         (cond
          ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
            (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
@@ -177,7 +173,6 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
           (format "%s %s" return-type doc))
          (t
           doc)))))
-
 
 (defun company-ac-php--doc-buffer (candidate)
   (let ((doc (company-ac-php-document candidate)))

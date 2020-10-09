@@ -176,7 +176,6 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 (defun company-ac-php--doc-buffer (candidate)
   (let ((doc (company-ac-php-document candidate)))
-    (message "llllllllll")
     (when (s-present? doc)
       (company-doc-buffer doc))))
 

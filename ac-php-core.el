@@ -1169,7 +1169,7 @@ work for multi class hint:
             (setq first-class-name
                   (ac-php-get-syntax-backward
                    (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
-                           "\\s-+\\(&\\)?$" first-key "\\s-*[),]")
+                           "\\s-+\\(&\\)?$" first-key "\\s-*")
                    :sexp 1
                    :defun (ac-php--in-function-p pos)
                    :bound (save-excursion

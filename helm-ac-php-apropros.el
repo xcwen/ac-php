@@ -43,7 +43,7 @@
 ;;; Code:
 
 (require 'pcase)
-(require 'ac-php)
+(require 'ac-php-core)
 (require 'helm)
 (require 'cl-lib)    ; `cl-equalp'
 

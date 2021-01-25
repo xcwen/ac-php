@@ -743,8 +743,8 @@ been replaced by '."
 
       ;; class->method => class.method
       (setq line-string (replace-regexp-in-string
-                         "[ \t]*->[ \t]*" "."
-                         line-string))
+                         "[ \t]*\\??->[ \t]*" "."
+                         line-string) )
 
       ;; :: => ::.
       (setq line-string (replace-regexp-in-string
@@ -2435,6 +2435,7 @@ Examples:
   | $someVariable           | someWariable       |
   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
   | foo()->bar              | bar                |
+  | foo()?->bar             | bar                |
   | foo()                   |                    |
   | 'some string'           |                    |
   :-------------------------:--------------------:
@@ -2464,7 +2465,7 @@ Examples:
   | function foo()#         |                    |
   | function foo(#          |                    |
   | function foo#()         | foo(               |
-  | foo()->bar# ();         | bar(               |
+  | foo()?->bar# ();         | bar(               |
   | fo#o()->bar ();         | foo(               |
   :-------------------------:--------------------:
 

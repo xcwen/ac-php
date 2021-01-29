@@ -649,6 +649,8 @@ been replaced by '."
   (let (cur-namespace tmp-name ret-name tmp-ret)
     (let (split-arr cur-class-name)
       (ac-php--debug "ac-php--get-class-full-name-in-cur-buffer first-key:%s" first-key)
+      (when (string= "this" first-key)
+        (setq  first-key  (ac-php-get-cur-full-class-name)))
 
 
       (if (ac-php--check-global-name first-key)
@@ -1138,10 +1140,10 @@ work for multi class hint:
             (setq first-key first-key-str))
 
           (when (and (not first-class-name) (string= first-key "this"))
-            (ac-php--debug "Detected call on $this")
+            (ac-php--debug "1Detected call on $this")
             (setq first-class-name (ac-php-get-cur-full-class-name)))
 
-          (ac-php--debug "Class name is: %s" first-class-name)
+          (ac-php--debug "1Class name is: %s" first-class-name)
 
           ;; Scan for annotated variable like:
           ;;
@@ -2070,30 +2072,6 @@ considered at this stage as a 'property usage', although in fact they may not be
       (setq type-str "p"))
     (list member type-str)))
 
-(defun ac-php-get-class-member-return-type (class-map inherit-map class-name member)
-  "get class member return type from super classes "
-  (let ((check-class-list) (ret) find-flag type-str tmp-ret tag-type)
-    (setq check-class-list (ac-php--get-check-class-list class-name inherit-map class-map))
-
-    (setq tmp-ret (ac-php--get-item-info member))
-    (setq member (nth 0 tmp-ret))
-    (setq type-str (nth 1 tmp-ret))
-
-    (let (class-member-list)
-      (cl-loop for opt-class in check-class-list do
-               (setq class-member-list (nth 1 (assoc-string opt-class class-map t)))
-               ;; (ac-php--debug "member %s class=%s, %S" member opt-class class-member-list)
-               (cl-loop for member-info in class-member-list do
-                        (when (and (ac-php--string=-ignore-care (nth 1 member-info) member)
-                                   (string= (nth 0 member-info) "m")
-                                   (nth 4 member-info))
-                          (setq ret (nth 4 member-info))
-
-                          (setq find-flag t)
-                          (cl-return)))
-               (if find-flag (cl-return))))
-    (ac-php--debug "return-type ac-php-get-class-member-info ret=%S" ret)
-    ret))
 
 (defun ac-php-get-class-member-info (class-map inherit-map class-name member)
   "DOCSTRING"

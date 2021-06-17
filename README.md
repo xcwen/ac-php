@@ -406,7 +406,7 @@ for example:
     ],
     "ignore-ruleset": [
       "# like .gitignore file ",
-      "dir2/",
+      "dir2/*.php",
       "dir3/**/*1.php"
     ]
 

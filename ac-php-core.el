@@ -1796,9 +1796,22 @@ file in case of its absence, or if it is empty."
        config-file-name
        '(:use-cscope nil
                      :tag-dir nil
-                     :filter (:php-file-ext-list ("php")
-                                                 :php-path-list (".")
-                                                 :php-path-list-without-subdir []))))
+                     :filter (
+                              :php-file-ext-list ("php")
+                              :php-path-list (".")
+                              :ignore-ruleset (
+                                               "# like .gitignore file "
+                                               "/vendor/**/[tT]ests/**/*.php"
+                                               "/vendor/**/[Ee]xamples/**/*.php"
+                                               "/vendor/composer/*.php"
+                                               "/vendor/*.php"
+
+                                               "# not need php_codesniffer"
+                                               "/vendor/squizlabs/php_codesniffer/**/*.php"
+
+                                               "#  -- end -- "
+
+                                               )))))
     (json-read-file config-file-name)))
 
 (defun ac-php--get-use-cscope-from-config-file (project-root-dir)

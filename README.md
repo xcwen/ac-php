@@ -363,14 +363,18 @@ the necessary configuration file (`.ac-php-conf.json`) will be created automatic
     "php-path-list": [
       "."
     ],
-    "php-path-list-without-subdir": []
+    "ignore-ruleset": [
+      "# like .gitignore file ",
+      "/vendor/**/[tT]ests/**/*.php"
+    ]
+
   }
 }
 ```
 
 - `php-file-ext-list`: file extern name list
 - `php-path-list`:  base path for *recursive* file search to collect tags
-- `php-path-list-without-subdir`:  path for *non-recursive* file search to collect tags
+- `ignore-ruleset`:  exclude files config, like '.gitignore'  in git as lines 
 
 for example:
 
@@ -398,13 +402,14 @@ for example:
       "php"
     ],
     "php-path-list": [
-      "./dir1",
-      "./dir2",
-      "./dir3/dir32/"
+      "."
     ],
-    "php-path-list-without-subdir": [
-      "./dir3"
-     ]
+    "ignore-ruleset": [
+      "# like .gitignore file ",
+      "dir2/",
+      "dir3/**/*1.php"
+    ]
+
   }
 }
 ```
@@ -416,15 +421,16 @@ filter result is:
 │   ├── 1.php
 │   └── dir11
 │       └── 11.php
-├── dir2
-│   └── 2.php
 └── dir3
     ├── 3.php
     ├── dir32
     │   └── 32.php
+    └── dir33
+        └── 33.php
+
 ```
 
-`31.php` `33.php` will be ignored during tag generation;
+`2.php` `31.php` will be ignored during tag generation;
 
 Laravel example:
 
@@ -438,8 +444,7 @@ Laravel example:
         "./app",
         "./database",
         "./vendor/laravel/framework/src/Illuminate"
-    ],
-    "php-path-list-without-subdir": []
+    ]
   }
 }
 ```
@@ -454,9 +459,9 @@ Assuming you cloned this repo into `/usr/local/src/phpstorm-stubs` you base conf
       "php"
     ],
     "php-path-list": [
+        ".",
         "/usr/local/src/phpstorm-stubs"
-    ],
-    "php-path-list-without-subdir": []
+    ]
   }
 }
 ```

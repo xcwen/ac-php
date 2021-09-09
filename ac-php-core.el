@@ -1,4 +1,4 @@
-;;; ac-php-core.el --- The core library of the ac-php.
+;;; ac-php-core.el --- The core library of the ac-php
 
 ;; Copyright (C) 2019 Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>

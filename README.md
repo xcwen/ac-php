@@ -312,22 +312,6 @@ For example, if the real path of the project is `/home/jim/ac-php/phptest`, then
 
 And you can redefine the base path (`~/.ac-php`) using `ac-php-tags-path` variable.
 
-The tags directory structure looks like this:
-
-```bash
-$ tree ~/.ac-php/tags-home-jim-ac-php-phptest
-tags-home-jim-ac-php-phptest/
-├── cache-files.json
-├── tags-data-cache2.el
-├── tags-data.el
-└── tags_dir_jim
-    ├── a.el
-    ├── dir1-sss.el
-    ├── testa.el
-    ├── testb.el
-    └── testc.el
-1 directory, 8 files
-```
 
 ### Using configuration file
 

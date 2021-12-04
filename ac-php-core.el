@@ -1598,7 +1598,7 @@ processed even though they were recently processed (so-called force rebuild)."
 
     (set-process-sentinel
      process
-     '(lambda (process event)
+     #'(lambda (process event)
         (ac-php-mode 0)
         (cond
          ((string-match "finished" event)

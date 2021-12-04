@@ -185,8 +185,8 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
   (cl-case command
     (interactive (company-begin-backend 'company-ac-php-backend))
     (prefix (when (or (equal major-mode 'phps-mode)
-		                  (equal major-mode 'php-mode))
-	            (company-ac-php--prefix)))
+                      (equal major-mode 'php-mode))
+              (company-ac-php--prefix)))
     (candidates (company-ac-php-candidate arg))
     (annotation (company-ac-php-annotation arg))
     (duplicates t)
@@ -195,8 +195,6 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
     (post-completion (company-ac-php-backend-post-completion arg))))
 (defun company-php--get-kind( tag-type )
   (cond
-   ( (string= tag-type "type" )
-     'array)
    ( (string= tag-type "m" )
      'method)
    ( (string= tag-type "p" )

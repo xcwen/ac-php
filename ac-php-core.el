@@ -1363,6 +1363,10 @@ work for multi class hint:
                (setq function-item-len (length function-item))
                (when (s-prefix-p cur-word (aref function-item 1) t)
                  (setq key-word (substring-no-properties (aref function-item 1)))
+
+                 (setq key-word (propertize key-word 'ac-php-tag-type
+                                            (ac-php--get-array-string function-item function-item-len 0)
+                                            ))
                  (setq key-word (propertize key-word 'ac-php-help
                                             (ac-php--get-array-string function-item function-item-len 2)))
                  (setq key-word (propertize key-word 'ac-php-return-type
@@ -1420,7 +1424,7 @@ work for multi class hint:
               (setq key-word k)
               (setq key-word (propertize key-word 'ac-php-help ""))
               (setq key-word (propertize key-word 'ac-php-return-type ""))
-              (setq key-word (propertize key-word 'ac-php-tag-type ""))
+              (setq key-word (propertize key-word 'ac-php-tag-type "k"))
               (setq key-word (propertize key-word 'summary ""))
               (push key-word ret-list)))
 
@@ -1467,7 +1471,7 @@ work for multi class hint:
                (setq key-word k)
                (setq key-word (propertize key-word 'ac-php-help ""))
                (setq key-word (propertize key-word 'ac-php-return-type ""))
-               (setq key-word (propertize key-word 'ac-php-tag-type ""))
+               (setq key-word (propertize key-word 'ac-php-tag-type "v"))
                (setq key-word (propertize key-word 'summary ""))
                (push key-word ret-list)))
            (ac-php--get-cur-function-vars)))))

@@ -1177,7 +1177,11 @@ work for multi class hint:
                    :bound (save-excursion
                             (beginning-of-defun)
                             (beginning-of-line)
-                            (point)))))
+                            (point))))
+
+            ;; not  match return $e->xx;
+            (when (string= first-class-name "return" )
+              (setq  first-class-name nil)))
 
           ;; Scan for instanceof :
           ;;

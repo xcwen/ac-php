@@ -1000,7 +1000,7 @@ work for multi class hint:
   ;;  /** @var Foo|Bar $baz */
   (let ((in-defun-p (ac-php--in-function-p pos)))
     (ac-php-get-syntax-backward
-     (concat ac-php-re-annotated-var-pattern "$" variable)
+     (concat ac-php-re-annotated-var-pattern "$" variable "\\b")
      :sexp 1
      :comment t
      :defun in-defun-p

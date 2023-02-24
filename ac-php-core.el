@@ -214,7 +214,7 @@ Meant for `ac-php-mode-line-project-status'")
    ;; Then see if 'abstract' or 'final' appear
    "\\s-*\\(?:\\(?:abstract\\|final\\)\\s-+\\)?"
    ;; The classlike type
-   "\\(?:class\\|trait\\)"
+   "\\(?:class\\|trait\\|enum\\)"
    ;; Its name, which is the first captured group in the regexp.
    ;; See URL `https://www.php.net/manual/en/language.oop5.basic.php'
    "\\s-+\\([a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*\\)")

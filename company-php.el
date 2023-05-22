@@ -59,8 +59,8 @@
   :group 'company)
 
 (defcustom company-php-begin-after-member-access t
-  "When non-nil, automatic completion will start whenever the current
-symbol is preceded by \"->\" or \"::\", ignoring
+  "When non-nil, automatic completion will start.
+whenever the current symbol is preceded by \"->\" or \"::\", ignoring
 `company-minimum-prefix-length'.
 
 If `company-begin-commands' is a list, it should include `c-electric-lt-gt'
@@ -70,15 +70,18 @@ and `c-electric-colon', for automatic completion right after \">\" and
   :type 'boolean)
 
 (defun company-ac-php-annotation (item)
+  "Doc ITEM."
   (let ((doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))
     (if (ac-php--tag-name-is-function item)
         (concat doc ")")
       "")))
 
 (defun company-ac-php-fuzzy-match (prefix candidate)
+  "Doc PREFIX CANDIDATE."
   (cl-subsetp (string-to-list prefix) (string-to-list candidate)))
 
 (defun company-ac-php--prefix-symbol ()
+  "D."
   (buffer-substring
    (point)
    (save-excursion
@@ -86,8 +89,9 @@ and `c-electric-colon', for automatic completion right after \">\" and
 
 (defun company-ac-php-company-grab-symbol-cons (idle-begin-after-re &optional max-len)
   "Return a string SYMBOL or a cons (SYMBOL . t).
-SYMBOL is as returned by `company-grab-symbol'.  If the text before point
-matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
+SYMBOL is as returned by `company-grab-symbol'.
+If the text before point
+matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
   (let ((symbol (company-ac-php--prefix-symbol)))
     (when symbol
       (save-excursion
@@ -100,11 +104,13 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
 
 ;; TODO: May not work for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
+  "D."
   (if company-php-begin-after-member-access
       (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
     (company-ac-php--prefix-symbol)))
 
 (defun company-ac-php-candidate (arg)
+  "D ARG."
   (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))
          (ac-php-prefix-str-len (length ac-php-prefix-str))
          (find-count 0)
@@ -155,6 +161,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
     (nreverse ac-php-company-list)))
 
 (defun company-ac-php-document (item)
+  "D ITEM."
   (if (stringp item)
       (let (doc tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
@@ -175,12 +182,14 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
           doc)))))
 
 (defun company-ac-php--doc-buffer (candidate)
+  "D CANDIDATE."
   (let ((doc (company-ac-php-document candidate)))
     (when (s-present? doc)
       (company-doc-buffer doc))))
 
 ;;;###autoload
 (defun company-ac-php-backend (command &optional arg &rest ignored)
+  "D COMMAND ARG IGNORED."
   (interactive (list 'interactive))
   (cl-case command
     (interactive (company-begin-backend 'company-ac-php-backend))
@@ -194,6 +203,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
     (kind  (company-php--get-kind (get-text-property 0 'ac-php-tag-type arg)))
     (post-completion (company-ac-php-backend-post-completion arg))))
 (defun company-php--get-kind( tag-type )
+  "D TAG-TYPE."
   (cond
    ( (string= tag-type "m" )
      'method)
@@ -214,6 +224,7 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
     'keyword)))
 
 (defun company-ac-php-backend-post-completion (arg)
+  "D ARG."
   (let ((doc))
     (when (ac-php--tag-name-is-function arg)
       (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
@@ -221,6 +232,10 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
       (when (bound-and-true-p smartparens-mode)
         (delete-char 1))
       (company-template-c-like-templatify (concat arg doc ")")))))
+
+;; Local Variables:
+;;  flycheck-disabled-checkers: (emacs-lisp-package)
+;; End:
 
 (provide 'company-php)
 

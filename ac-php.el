@@ -67,7 +67,7 @@
 
 (defface ac-php-candidate-face
   '((t (:background "lightgray" :foreground "navy")))
-  "Face for php candidate"
+  "Face for php candidate."
   :group 'ac-php)
 
 (defface ac-php-selection-face
@@ -76,6 +76,7 @@
   :group 'ac-php)
 
 (defun ac-php-prefix ()
+  "D."
   (let ((c (char-before)) ret)
     (when
         (or
@@ -91,6 +92,7 @@
     ret))
 
 (defun ac-php-document (item)
+  "D ITEM."
   (if (stringp item)
       (let (doc tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
@@ -117,6 +119,7 @@
           doc)))))
 
 (defun ac-php-action ()
+  "D."
   (interactive)
   (let* ((cur-item (cdr ac-last-completion))
          (help (ac-php-clean-document
@@ -190,9 +193,11 @@
       (message (replace-regexp-in-string "\n" " ;    " help))))))
 
 (defun ac-php-template-candidate ()
+  "D."
   ac-php-template-candidates)
 
 (defun ac-php-template-action ()
+  "D."
   (interactive)
   (unless (null ac-php-template-start-point)
     (let ((pos (point)) sl (snp "")
@@ -213,14 +218,17 @@
         (message "Dude! You are too out! Please install a yasnippet or a snippet script:)"))))))
 
 (defun ac-php-template-prefix ()
+  "D."
   ac-php-template-start-point)
 
 (defun ac-php-template-document (item)
+  "D ITEM."
   (when (stringp item)
     (let (doc tag-type return-type access from-class)
       (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item))))))
 
 (defun ac-php-candidate-ac ()
+  "D."
   (setq ac-php-prefix-str ac-prefix)
   (ac-php-candidate))
 

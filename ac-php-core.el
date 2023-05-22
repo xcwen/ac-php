@@ -70,6 +70,7 @@
 ;; Bugs: Bug tracking is currently handled using the GitHub issue tracker
 ;; (see URL `https://github.com/xcwen/ac-php/issues')
 
+
 ;;; Code:
 
 (require 'json)    ; `json-encode', `json-read-file'
@@ -381,6 +382,7 @@ ac-php developer only."
   (format ":%02d%%%%" ac-php-phptags-index-progress))
 
 (defun ac-php-location-stack-push ()
+  "Doc."
   (let ((bm (ac-php-current-location)))
     (if (functionp 'xref-push-marker-stack)
         (xref-push-marker-stack)
@@ -397,20 +399,24 @@ ac-php developer only."
 
 ;; function
 (defun ac-php-goto-line-col (line column)
+  "Doc LINE COLUMN."
   (goto-char (point-min))
   (forward-line (1- line))
   (beginning-of-line)
   (forward-char (1- column)))
 
 (defun ac-php-current-location (&optional offset)
+  "Doc OFFSET."
   (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
           (line-number-at-pos offset) (1+ (- (or offset (point)) (point-at-bol)))))
 (defun ac-php--string=-ignore-care(str1 str2)
+  "Doc STR2 STR1."
   (s-equals?(s-upcase str1) (s-upcase str2))
   ;; (not (integer-or-marker-p (compare-strings str1 0 nil str2 0 nil t)))
   )
 
 (defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
+  "Doc FILE-OR-BUFFER OTHER-WINDOW."
   (if (file-exists-p file-or-buffer)
       (if other-window
           (find-file-other-window file-or-buffer)
@@ -422,7 +428,8 @@ ac-php developer only."
 
 
 (defun ac-php-goto-location (location &optional other-window)
-  "Go to a location passed in. It can be either: file,12 or file:13:14 or plain file"
+  "Go to a location passed in.
+It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
   ;; (message (format "ac-php-goto-location \"%s\"" location))
   (when (> (length location) 0)
     (cond ((string-match "\\(.*\\):\\([0-9]+\\):\\([0-9]+\\)" location)
@@ -453,12 +460,14 @@ ac-php developer only."
     ))
 
 (defsubst ac-php-clean-document (s)
+  "Doc S."
   (when s
     (setq s (replace-regexp-in-string "<#\\|#>\\|\\[#" "" s))
     (setq s (replace-regexp-in-string "#\\]" " " s)))
   s)
 
 (defun ac-php--tag-name-is-function (tag-name)
+  "Doc TAG-NAME."
   (s-matches-p "(" tag-name))
 
 (defun ac-php-split-string-with-separator (str regexp &optional replacement omit-nulls)
@@ -645,7 +654,7 @@ been replaced by '."
     ret))
 
 (defun ac-php--get-class-full-name-in-cur-buffer (first-key function-map get-return-type-flag)
-  "DOCSTRING"
+  "DOCSTRING FIRST-KEY FUNCTION-MAP GET-RETURN-TYPE-FLAG."
   (let (cur-namespace tmp-name ret-name tmp-ret)
     (let (split-arr cur-class-name)
       (ac-php--debug "ac-php--get-class-full-name-in-cur-buffer first-key:%s" first-key)
@@ -788,7 +797,7 @@ been replaced by '."
                         line-string "[ \t]*\\.[ \t]*" "." t))
 
       (let ((ele)(tmp-list))
-        (dolist (ele stack-list)
+        (cl-dolist (ele stack-list)
           (setq tmp-list
                 (append tmp-list
                         (ac-php-split-string-with-separator ele "[{}]" ";" t))))
@@ -921,6 +930,7 @@ backslash or not.  Always returns a string, even if the namespace was not found.
       not-found)))
 
 (defun ac-php-clean-namespace-name (namespace-name)
+  "Doc NAMESPACE-NAME."
   (if (and (stringp namespace-name)
            (> (length namespace-name) 1)
            (string=  (substring-no-properties namespace-name 0 1) "\\"))
@@ -941,7 +951,7 @@ Returns nil if could not find class name in current buffer."
       nil)))
 
 (defun ac-php-get-use-as-name (item-name)
-  "DOCSTRING"
+  "DOCSTRING ITEM-NAME."
   (let ((item-name (nth 0 (s-split "(" item-name))))
     (or
      (ac-php-get-syntax-backward
@@ -1008,7 +1018,7 @@ work for multi class hint:
               (save-excursion (beginning-of-defun) (beginning-of-line) (point))))))
 
 (defun ac-php-get-class-at-point (tags-data &optional pos)
-  "Docstring."
+  "Docstring TAGS-DATA POS."
   (let (line-txt
         old-line-txt
         key-line-txt
@@ -1299,6 +1309,7 @@ work for multi class hint:
 
 
 (defun ac-php-candidate-class (tags-data key-str-list)
+  "Doc TAGS-DATA KEY-STR-LIST."
   ;; 得到变量
   (let (ret-list key-word output-list class-name
                  (class-map (ac-php-g--class-map tags-data))
@@ -1343,10 +1354,11 @@ work for multi class hint:
     ret-list))
 
 (defun ac-php--get-item-from-funtion-map (key-word function-map)
-  "DOCSTRING"
+  "DOCSTRING KEY-WORD, FUNCTION-MAP."
   (gethash key-word function-map))
 
 (defun ac-php-candidate-other (tags-data)
+  "Doc TAGS-DATA."
   (let (ret-list
         (cur-word (ac-php-get-cur-word-without-clean))
         cur-word-len
@@ -1483,6 +1495,7 @@ work for multi class hint:
     ret-list))
 
 (defun ac-php--get-cur-function-vars()
+  "Doc ."
   (let (txt start-pos end-pos var-list ret-map var-name first-char)
     (save-excursion
       (setq end-pos (- (point) 1))
@@ -1502,7 +1515,7 @@ work for multi class hint:
 
 ;;; ==============BEGIN
 (defun ac-php-find-php-files (project-root-dir regex also-find-subdir)
-  "get all php file list"
+  "Doc PROJECT-ROOT-DIR. REGEX, ALSO-FIND-SUBDIR get all php file list."
   (let (results sub-results files file-name file-dir-flag file-change-time file-change-unixtime)
     (setq files (directory-files-and-attributes project-root-dir t))
     (dolist (file-item files)
@@ -1538,6 +1551,7 @@ work for multi class hint:
     results))
 
 (defun ac-php--clean-return-type (return-type)
+  "Doc RETURN-TYPE."
   (when return-type
     (s-trim (replace-regexp-in-string "|.*" "" return-type))))
 
@@ -1553,6 +1567,7 @@ work for multi class hint:
     (setq json-encoding-pretty-print old-pp-value)))
 
 (defun ac-php--cache-files-save (file-path cache1-files)
+  "Doc FILE-PATH CACHE1-FILES."
   (ac-php--json-save-data file-path (list :cache1-files cache1-files)))
 
 (defun ac-php--ctags-opts (project-root-dir rebuild)
@@ -1694,7 +1709,7 @@ This function is used internally by the function `ac-php--remake-tags'."
       (setq ac-php-gen-tags-flag nil))))
 
 (defun ac-php-gen-el-func (doc)
-  "example doc 'xxx($x1,$x2)' => $x1 , $x2 "
+  "Example doc 'xxx($x1,$x2)' => $x1 , $x2 DOC."
   (let (func-str)
     (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
         (progn
@@ -1777,6 +1792,7 @@ If it is outdated, a re-index process will be performed."
       nil)))
 
 (defun ac-php--get-config-path-noti-str (project-root-dir path-str)
+  "Doc PATH-STR PROJECT-ROOT-DIR."
   (if (s-ends-with? "*.php" path-str)
       (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) project-root-dir))
     (format "php-path-list->%s" (f-relative path-str project-root-dir))))
@@ -1823,23 +1839,24 @@ file in case of its absence, or if it is empty."
     (json-read-file config-file-name)))
 
 (defun ac-php--get-use-cscope-from-config-file (project-root-dir)
+  "Doc PROJECT-ROOT-DIR."
   (let (conf-list)
     (setq conf-list (ac-php--get-config project-root-dir))
     (cdr (assoc-string "use-cscope" conf-list))))
 
 
 (defun ac-php-remake-tags ()
-  "reset tags, if php source is changed "
+  "Reset tags, if php source is changed."
   (interactive)
   (ac-php--remake-tags (ac-php--get-project-root-dir) nil))
 
 (defun ac-php-remake-tags-all ()
-  "remake tags without check modify time "
+  "Remake tags without check modify time."
   (interactive)
   (ac-php--remake-tags (ac-php--get-project-root-dir) t))
 
 (defun ac-php--remake-cscope (project-root-dir all-file-list)
-  "DOCSTRING"
+  "DOCSTRING, PROJECT-ROOT-DIR, ALL-FILE-LIST."
   (let (tags-dir-len save-dir)
     (when (and ac-php-cscope
                (or (ac-php--get-use-cscope-from-config-file project-root-dir)
@@ -1861,16 +1878,18 @@ file in case of its absence, or if it is empty."
        (concat " cd " save-dir " &&  cscope -bkq -i cscope.files ")))))
 
 (defun ac-php--get-obj-tags-dir(save-tags-dir)
+  "Doc SAVE-TAGS-DIR."
   (concat save-tags-dir "/tags_dir_" (getenv "USER") "/"))
 
 (defun ac-php--get-obj-tags-file-list(save-tags-dir)
-  "DOCSTRING"
+  "DOCSTRING SAVE-TAGS-DIR."
   (let ((obj-tags-dir (ac-php--get-obj-tags-dir save-tags-dir)))
     (if (not (file-directory-p obj-tags-dir))
         (mkdir obj-tags-dir t))
     (ac-php-find-php-files obj-tags-dir "\\.el$" t)))
 
 (defun ac-php-save-data (file data)
+  "Doc FILE. DATA."
   (message "save to %s ..." file)
   ;; (f-write (format "%S" data) 'utf-8 file)
   (with-temp-file file
@@ -1879,8 +1898,10 @@ file in case of its absence, or if it is empty."
           )
       (prin1 data))))
 (defun case-fold-string= (a b)
+  "Doc A B."
   (eq t (compare-strings a nil nil b nil nil t)))
 (defun case-fold-string-hash (a)
+  "Doc A."
   (sxhash (upcase a)))
 
 (define-hash-table-test 'case-fold
@@ -1964,10 +1985,18 @@ will be loaded and the in-memory storage will be updated."
 
     (nth 2 (assoc-string tags-file ac-php-tag-last-data-list))))
 
-(defun ac-php-g--class-map (tags-data) (nth 0 tags-data))
-(defun ac-php-g--function-map (tags-data) (nth 1 tags-data))
-(defun ac-php-g--inherit-map (tags-data) (nth 2 tags-data))
-(defun ac-php-g--file-list (tags-data) (nth 3 tags-data))
+(defun ac-php-g--class-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 0 tags-data))
+(defun ac-php-g--function-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 1 tags-data))
+(defun ac-php-g--inherit-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 2 tags-data))
+(defun ac-php-g--file-list (tags-data)
+  "Doc TAGS-DATA."
+  (nth 3 tags-data))
 
 (defun ac-php-get-tags-data ()
   "Load a tags data for the particular project."
@@ -2023,22 +2052,25 @@ will be loaded and the in-memory storage will be updated."
     project-root-dir))
 
 (defun ac-php--get-check-class-list (class-name inherit-map class-map)
+  "Doc CLASS-NAME INHERIT-MAP CLASS-MAP."
   (let (ret)
     (setq ret (nreverse (ac-php--get-check-class-list-ex class-name (ac-php-get-cur-namespace-name t) inherit-map class-map nil)))
     (ac-php--debug "XXXX check-class list:%S" ret)
     ret))
 
 (defun ac-php--check-global-name(name)
+  "Doc NAME."
   (s-prefix-p "\\" name))
 
 
 (defun ac-php--as-global-name(name)
+  "Doc NAME."
   (if (ac-php--check-global-name name)
       name
     (concat "\\" name)))
 
 (defun ac-php--get-check-class-list-ex (class-name parent-namespace inherit-map class-map cur-list)
-  "DOCSTRING"
+  "DOCSTRING CUR-LIST CLASS-MAP CLASS-NAME PARENT-NAMESPACE INHERIT-MAP."
 
   (let ((check-class-list nil) inherit-item check-class-name)
     (ac-php--debug "00 class-name=%s" class-name)
@@ -2084,7 +2116,8 @@ property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
 
 Note that this function does not perform in-depth analysis and its main task is
 to determine whether the current MEMBER is a 'method call'.  All other cases are
-considered at this stage as a 'property usage', although in fact they may not be."
+considered at this stage as a 'property usage',
+although in fact they may not be."
   (ac-php--debug "Recognize current member type")
   (let (type-str)
     (if (and (> (length member) 1) (string= "(" (substring member -1)))
@@ -2095,7 +2128,7 @@ considered at this stage as a 'property usage', although in fact they may not be
 
 
 (defun ac-php-get-class-member-info (class-map inherit-map class-name member)
-  "DOCSTRING"
+  "DOCSTRING CLASS-NAME CLASS-MAP INHERIT-MAP MEMBER."
   (let ((check-class-list) (ret) find-flag type-str tmp-ret tag-type)
     (setq check-class-list (ac-php--get-check-class-list class-name inherit-map class-map))
 
@@ -2122,7 +2155,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     ret))
 
 (defun ac-php-get-class-member-list (class-map inherit-map class-name)
-  "DOCSTRING"
+  "DOCSTRING CLASS-NAME CLASS-MAP INHERIT-MAP."
   (let ((check-class-list) (ret) find-flag)
     (setq check-class-list (ac-php--get-check-class-list class-name inherit-map class-map))
     (ac-php--debug "KKKK check-class-list %s = %S" class-name check-class-list)
@@ -2145,10 +2178,11 @@ considered at this stage as a 'property usage', although in fact they may not be
     ret))
 
 (defun ac-php--get-class-name-from-parent-define(parent-list-str)
-  " '\\Class1,interface1' => Class1 "
+  "D '\\Class1,interface1' => Class1 PARENT-LIST-STR."
   (s-trim (aref (s-split "," parent-list-str) 1)))
 
 (defun ac-php-get-class-name-by-key-list(tags-data key-list-str)
+  "D TAGS-DATA KEY-LIST-STR."
   (let (temp-class (cur-class "")
                    (class-map (ac-php-g--class-map tags-data))
                    (inherit-map (ac-php-g--inherit-map tags-data))
@@ -2197,10 +2231,11 @@ considered at this stage as a 'property usage', although in fact they may not be
     cur-class))
 
 (defun ac-php--get-namespace-from-classname (classname)
+  "D CLASSNAME."
   (nth 1 (s-match "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname)))
 
 (defun ac-php-find-symbol-at-point-pri (tags-data &optional as-fn-p as-id-p)
-  "Docstring."
+  "Docstring. TAGS-DATA AS-FN-P AS-ID-P."
   (let (key-str-list
         cur-word
         val-name
@@ -2279,7 +2314,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     ret))
 
 (defun ac-php--goto-local-var-def (local-var)
-  "goto local-var like vim - gd"
+  "D goto LOCAL-VAR like vim - gd."
   (let ()
     (ac-php--debug "local-var %s " local-var)
     (ac-php-location-stack-push)
@@ -2293,6 +2328,7 @@ considered at this stage as a 'property usage', although in fact they may not be
     ))
 
 (defun ac-php-find-symbol-at-point (&optional prefix)
+  "D PREFIX."
   (interactive "P")
   ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
@@ -2356,7 +2392,7 @@ considered at this stage as a 'property usage', although in fact they may not be
       (when local-var-flag (ac-php--goto-local-var-def local-var)))))
 
 (defun ac-php-gen-def ()
-  "DOCSTRING"
+  "DOCSTRING."
   (interactive)
   (let ((tags-data (ac-php-get-tags-data))
         line-txt
@@ -2385,14 +2421,17 @@ considered at this stage as a 'property usage', although in fact they may not be
       (kill-new (concat "\n * @property " cur-word " $" cur-word "\n")))))
 
 (defun ac-php-location-stack-forward ()
+  "DEFUN."
   (interactive)
   (ac-php-location-stack-jump -1))
 
 (defun ac-php-location-stack-back ()
+  "DEFUN."
   (interactive)
   (ac-php-location-stack-jump 1))
 
 (defun ac-php-location-stack-jump (by)
+  "D BY."
   (let ((instack (nth ac-php-location-stack-index ac-php-location-stack))
         (cur (ac-php-current-location)))
     (if (not (string= instack cur))
@@ -2403,6 +2442,7 @@ considered at this stage as a 'property usage', although in fact they may not be
           (ac-php-goto-location (nth ac-php-location-stack-index ac-php-location-stack)))))))
 
 (defun ac-php--get-array-string(arr arr-len index)
+  "Doc ARR-LEN ARR INDEX."
   (let (v)
     (if (< index arr-len)
         (progn
@@ -2411,6 +2451,7 @@ considered at this stage as a 'property usage', although in fact they may not be
       "")))
 
 (defun ac-php-candidate ()
+  "Doc."
   (let (key-str-list tags-data)
     (ac-php--debug "=== 1ac-php-candidate")
     (setq tags-data (ac-php-get-tags-data))
@@ -2481,6 +2522,7 @@ Return empty string if there is no valid sequence of characters."
                      (buffer-substring-no-properties start-pos (point))))))
 
 (defun ac-php-get-cur-word-with-dollar ()
+  "Doc."
   (let (start-pos cur-word)
     (save-excursion
       (skip-chars-backward "\\$a-z0-9A-Z_")
@@ -2489,6 +2531,7 @@ Return empty string if there is no valid sequence of characters."
       (buffer-substring-no-properties start-pos (point)))))
 
 (defun ac-php-get-cur-word-without-clean ()
+  "Doc."
   (let (start-pos cur-word)
     (save-excursion
       (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
@@ -2497,6 +2540,7 @@ Return empty string if there is no valid sequence of characters."
     (buffer-substring-no-properties start-pos (point))))
 
 (defun ac-php-show-tip(&optional prefix)
+  "Doc PREFIX."
   (interactive "P")
   ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
@@ -2530,7 +2574,7 @@ Return empty string if there is no valid sequence of characters."
         (popup-tip (concat "[" (if (string= "S" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
-  "Set `cscope-initial-directory' and run egrep over the cscope database."
+  "Set `cscope-initial-directory' and run egrep over the cscope database SYMBOL."
   (interactive
    (list
     (let (cscope-no-mouse-prompts)
@@ -2604,7 +2648,7 @@ supposed to do."
           (concat doc ":" return-type)))))))
 
 (defun ac-php-show-cur-project-info ()
-  "show current project ac-php info "
+  "Show current project ac-php info ."
   (interactive)
   (let ((tags-arr (ac-php-get-tags-file)) tags-file project-root-dir file-attr file-last-time)
     (if tags-arr
@@ -2666,5 +2710,10 @@ call the command `eldoc-mode'."
               #'ac-php-eldoc-documentation-function)
   (eldoc-mode +1))
 
+;; Local Variables:
+;;  flycheck-disabled-checkers: (emacs-lisp-package)
+;; End:
+
 (provide 'ac-php-core)
+
 ;;; ac-php-core.el ends here

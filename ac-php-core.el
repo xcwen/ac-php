@@ -2212,17 +2212,21 @@ although in fact they may not be."
                                          (let (tmp-class cur-namespace relative-classname member-local-class-name)
                                            (setq tmp-class (aref member-info 4))
                                            (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info)
-                                           (when (stringp tmp-class)
-                                             (if (ac-php--check-global-name tmp-class)
-                                                 ;;  global name, like \test\ss
-                                                 tmp-class
-                                               (progn;; tmp-class like test\ss
-                                                 ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
-                                                 (setq member-local-class-name (aref member-info 5))
-                                                 (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
-                                                 (setq relative-classname (concat cur-namespace "\\" tmp-class))
-                                                 (ac-php--debug " 2 relative-classname %s " relative-classname)
-                                                 relative-classname))))
+                                           (if (string= "self" tmp-class )
+                                               (progn
+                                                 cur-class
+                                                 )
+                                             (when (stringp tmp-class)
+                                               (if (ac-php--check-global-name tmp-class)
+                                                   ;;  global name, like \test\ss
+                                                   tmp-class
+                                                 (progn;; tmp-class like test\ss
+                                                   ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
+                                                   (setq member-local-class-name (aref member-info 5))
+                                                   (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
+                                                   (setq relative-classname (concat cur-namespace "\\" tmp-class))
+                                                   (ac-php--debug " 2 relative-classname %s " relative-classname)
+                                                   relative-classname)))))
                                        ""))))
 
                  (when (string= cur-class "")

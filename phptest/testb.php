@@ -1,9 +1,10 @@
 <?php
 namespace Test;
+
 require "testa.php";
-use  Test  as T ;
-use  Test\Testa as Ta ;
-use  Test\Testb;
+use Test  as T ;
+use Test\Testa as Ta ;
+use Test\Testb;
 
 /**
 
@@ -15,16 +16,17 @@ use  Test\Testb;
 
 
  */
-class Testb  extends Testa {
+class Testb extends Testa
+{
 
 
     /**
      * @return $this
      */
-    public function get_v8( $a=[] ){
+    public function get_v8($a = [])
+    {
         //$this->v1
         //$this->get_moth( )
-
     }
     use Instance;
 
@@ -46,18 +48,19 @@ class Testb  extends Testa {
      * @return   T\Testa
      */
 
-    public function get_v2(){
+    public function get_v2()
+    {
 
         return $this->v1;
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
         parent::set_v1("s");
 
-        $q=new SplQueue ();
+        $q=new SplQueue();
     }
 
-    public function get_v1() :self {
-
+    public function get_v1() :self
+    {
     }
 
     /**
@@ -67,14 +70,15 @@ class Testb  extends Testa {
      */
     public $get_v2;
 
-    static public $static_v;
-    static public $static_v2;
+    public static $static_v;
+    public static $static_v2;
 
 
 
 
 
-    public function get_tt(){
+    public function get_tt()
+    {
 
         $testv = $this->get_v2($this->texx);
         $this->get_v1() ;
@@ -82,19 +86,18 @@ class Testb  extends Testa {
         /** @var   \Test\Testa  $v */
 
         $this->v8->do_f("s");
-        $this->do_f(sdfa,"ss");
-        $this->set_v1($v,$v2);
+        $this->do_f(sdfa, "ss");
+        $this->set_v1($v, $v2);
 
 
-        if ($testv->set_v1("s") && $testv->set_v1() ){
-
+        if ($testv->set_v1("s") && $testv->set_v1()) {
         }
         $f=array($this->v8, "do_f" );
 
         $f();
 
 
-        $this->get_v2( )->set_v1("s");
+        $this->get_v2()->set_v1("s");
 
         $a=Test\CON_NAME;
 
@@ -106,14 +109,15 @@ class Testb  extends Testa {
  * @return   T\Testa
  */
 
-function ff() {
+function ff()
+{
     return 0;
 }
 
 
 
 
-split("dsfa","ad");
+split("dsfa", "ad");
 /**
    @var Ta
  */
@@ -121,10 +125,10 @@ $t=new Ta();
 
 echo $t->get_v1()."\n" ;
 echo Ta::DIR."\n";
-(new Ta())->set_v1   ($v);
-trim("ss","s");
+(new Ta())->set_v1($v);
+trim("ss", "s");
 
-$s=new \Test\Testb($v1,$v2);
+$s=new \Test\Testb($v1, $v2);
 $s->get_v1();
 
 (new Ta())->set_v1("s");

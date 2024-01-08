@@ -1052,7 +1052,9 @@ work for multi class hint:
     ;;
     (save-excursion
       (ac-php--debug "Looking for method chaining...")
-      (while (and (> (length line-txt) 0) (s-match (substring-no-properties line-txt 0 1  ) "-\"'0123456789)[](" ))
+      (while (and (> (length line-txt) 0) (s-match  "[-()0-9\"'\[]"
+                                                    (substring-no-properties line-txt 0 1  )
+                                                    ))
         (forward-line -1)
         (let ((no-comment-code "")
               (line-start-pos (line-beginning-position))

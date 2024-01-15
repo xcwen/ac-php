@@ -408,7 +408,7 @@ ac-php developer only."
 (defun ac-php-current-location (&optional offset)
   "Doc OFFSET."
   (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
-          (line-number-at-pos offset) (1+ (- (or offset (point)) (point-at-bol)))))
+          (line-number-at-pos offset) (1+ (- (or offset (point)) (line-beginning-position)))))
 (defun ac-php--string=-ignore-care(str1 str2)
   "Doc STR2 STR1."
   (s-equals?(s-upcase str1) (s-upcase str2))
@@ -628,8 +628,10 @@ been replaced by '."
         (setq elisp-str (concat elisp-str "("))
         (setq need-add-right-count (1+ need-add-right-count)))
        ((string= ")" item)
-        (setq elisp-str (concat elisp-str ")"))
-        (setq need-add-right-count (1- need-add-right-count)))
+        (when (> need-add-right-count 0)
+          (setq elisp-str (concat elisp-str ")"))
+          (setq need-add-right-count (1- need-add-right-count)))
+        )
        (t
         (setq elisp-str (concat
                          elisp-str "\""
@@ -646,7 +648,11 @@ been replaced by '."
       (setq elisp-str "()"))
 
     (ac-php--debug "Prepared Elisp string to read: %s" elisp-str)
+
     (setq parser-data (read elisp-str))
+    (unless parser-data
+      (setq parser-data (read (concat "(" elisp-str ")")  ))
+      )
     (setq parser-data (ac-php--get-node-parser-data parser-data))
     (setq ret (ac-php--get-key-list-from-parser-data parser-data))
 

@@ -193,8 +193,7 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
   (interactive (list 'interactive))
   (cl-case command
     (interactive (company-begin-backend 'company-ac-php-backend))
-    (prefix (when (or (equal major-mode 'phps-mode)
-                      (equal major-mode 'php-mode))
+    (prefix (when (memq major-mode '(phps-mode php-mode php-ts-mode))
               (company-ac-php--prefix)))
     (candidates (company-ac-php-candidate arg))
     (annotation (company-ac-php-annotation arg))

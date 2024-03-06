@@ -88,6 +88,8 @@ public $hello;
 ```php
 /**
  * @property \Acme\Services\HelloService $hello
+ * @property-read \Acme\Services\HelloService $hello_r
+ * @property-write \Acme\Services\HelloService $hello_w
  */
 class Test
 {
@@ -150,6 +152,16 @@ public function hello(): \Acme\Services\HelloService
     // ...
 }
 ```
+**PHP 8 type**
+
+```php
+class Test
+{
+    public  \Acme\Services\HelloService $hello;
+}
+
+```
+
 
 ## Installation
 

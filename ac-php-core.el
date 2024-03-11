@@ -2330,7 +2330,9 @@ although in fact they may not be."
   (let ()
     (ac-php--debug "local-var %s " local-var)
     (ac-php-location-stack-push)
-    (beginning-of-defun)
+    (if (functionp 'php-beginning-of-defun )
+        (php-beginning-of-defun)
+      (beginning-of-defun))
 
     (re-search-forward (concat "\\" local-var "\\b")) ; => \\$var\\b
     (while (ac-php--in-string-or-comment-p (point))

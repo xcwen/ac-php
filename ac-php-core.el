@@ -1021,7 +1021,7 @@ work for multi class hint:
      :comment t
      :defun in-defun-p
      :bound (when in-defun-p
-              (save-excursion (beginning-of-defun) (beginning-of-line) (point))))))
+              (save-excursion (ac-php--beginning-of-defun) (beginning-of-line) (point))))))
 
 (defun ac-php-get-class-at-point (tags-data &optional pos)
   "Docstring TAGS-DATA POS."
@@ -1193,7 +1193,7 @@ work for multi class hint:
                    :sexp 1
                    :defun (ac-php--in-function-p pos)
                    :bound (save-excursion
-                            (beginning-of-defun)
+                            (ac-php--beginning-of-defun)
                             (beginning-of-line)
                             (point))))
 
@@ -1214,7 +1214,7 @@ work for multi class hint:
                    :sexp 2
                    :defun (ac-php--in-function-p pos)
                    :bound (save-excursion
-                            (beginning-of-defun)
+                            (ac-php--beginning-of-defun)
                             (beginning-of-line)
                             (point)))))
 
@@ -1233,7 +1233,7 @@ work for multi class hint:
                            ac-php-re-namespace-unit-pattern "\\)\\s-+$" first-key)
                    :sexp 1
                    :comment t
-                   :bound (save-excursion (beginning-of-defun) (beginning-of-line)))))
+                   :bound (save-excursion (ac-php--beginning-of-defun) (beginning-of-line)))))
 
           ;; check $v = new .... or $v = $this->sadfa() ;
           (unless first-class-name
@@ -1243,7 +1243,7 @@ work for multi class hint:
                      (concat "$" first-key "\\s-*=\\([^=]*\\)[;]*")
                      :sexp 1
                      :defun (ac-php--in-function-p pos)
-                     :bound (save-excursion (beginning-of-defun) (beginning-of-line))))
+                     :bound (save-excursion (ac-php--beginning-of-defun) (beginning-of-line))))
               (when define-str
                 (save-excursion
                   (goto-char (get-text-property 0 'pos define-str))
@@ -1507,7 +1507,7 @@ work for multi class hint:
   (let (txt start-pos end-pos var-list ret-map var-name first-char)
     (save-excursion
       (setq end-pos (- (point) 1))
-      (beginning-of-defun)
+      (ac-php--beginning-of-defun)
       (setq start-pos (point))
       (setq txt (buffer-substring-no-properties start-pos end-pos))
       (setq var-list (s-match-strings-all "[$\"'][0-9_a-z]*" txt))
@@ -2330,9 +2330,7 @@ although in fact they may not be."
   (let ()
     (ac-php--debug "local-var %s " local-var)
     (ac-php-location-stack-push)
-    (if (functionp 'php-beginning-of-defun )
-        (php-beginning-of-defun)
-      (beginning-of-defun))
+    (ac-php--beginning-of-defun)
 
     (re-search-forward (concat "\\" local-var "\\b")) ; => \\$var\\b
     (while (ac-php--in-string-or-comment-p (point))

@@ -134,7 +134,7 @@ Set this variable to nil to disable the lighter."
   :type 'sexp
   :risky t)
 
-(defcustom ac-php-tags-path (concat (getenv "HOME") "/.ac-php")
+(defcustom ac-php-tags-path (concat (getenv "HOME") "/.cache/ac-php")
   "Use this directory as a base path for the per-projects tags directories..
 
 The idea is to have a common local directory for the all projects.  This path

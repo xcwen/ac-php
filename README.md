@@ -318,11 +318,11 @@ https://github.com/syl20bnr/spacemacs/tree/develop/layers/%2Blang/php
 
 ### Working with tags
 
-ac-php uses its own tags format. By default all tags located at `~/.ac-php/tags-<project-directory>`.
+ac-php uses its own tags format. By default all tags located at `~/.cache/ac-php/tags-<project-directory>`.
 For example, if the real path of the project is `/home/jim/ac-php/phptest`, then tags will be placed at
-`~/.ac-php/tags-home-jim-ac-php-phptest/`.
+`~/.cache/ac-php/tags-home-jim-ac-php-phptest/`.
 
-And you can redefine the base path (`~/.ac-php`) using `ac-php-tags-path` variable.
+And you can redefine the base path (`~/.cache/ac-php`) using `ac-php-tags-path` variable.
 
 
 ### Using configuration file

@@ -470,18 +470,25 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
   "Doc TAG-NAME."
   (s-matches-p "(" tag-name))
 
+;; "Split STR into substrings bounded by REGEXP.
+
+;; This function is a tool like `split-string', but it treat separator as an
+;; element of returned list for example:
+
+;;   \(ac-php-split-string-with-separator 'abc.def.g' '\\.' '.')
+
+;; will return:
+
+;;   '('abc' '.' 'def' '.' 'g')
+
+;; The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
+;; refer to original `split-string' function.
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php-split-string-with-separator (str regexp &optional replacement omit-nulls)
   "Split STR into substrings bounded by REGEXP.
-
-This function is a tool like `split-string', but it treat separator as an
-element of returned list for example:
-
-  \(ac-php-split-string-with-separator 'abc.def.g' '\\.' '.')
-
-will return:
-
-  '('abc' '.' 'def' '.' 'g')
-
 The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
 refer to original `split-string' function.
 
@@ -503,27 +510,30 @@ been replaced by '."
         (setq split-list (list str)))
       split-list)))
 
+;; "Clean PARSER-DATA from unnecessary elements.
+
+;; This function is used to drop all elements before ';'.  For example:
+
+;;   \(ac-php--get-clean-node '('A' ';' 'B'))
+
+;; will return:
+
+;;   \('B')
+
+;; The CHECK-LEN may be passed to indicate the limit to analyze items:
+
+;;   \(ac-php--get-clean-node '('A' 'B' 'C' 'D') 2)
+
+;; will return:
+
+;;   \('A' 'B')
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php--get-clean-node (parser-data &optional check-len)
   "Clean PARSER-DATA from unnecessary elements.
-
-This function is used to drop all elements before ';'.  For example:
-
-  \(ac-php--get-clean-node '('A' ';' 'B'))
-
-will return:
-
-  \('B')
-
-The CHECK-LEN may be passed to indicate the limit to analyze items:
-
-  \(ac-php--get-clean-node '('A' 'B' 'C' 'D') 2)
-
-will return:
-
-  \('A' 'B')
-
-Note: To conveniently describe in the documentation, double quotes (\") have
-been replaced by '."
+The CHECK-LEN may be passed to indicate the limit to analyze items."
   (ac-php--debug "Going to clean parser data: %S" parser-data)
   (let ((i 0) ret-data item)
     (unless check-len
@@ -592,21 +602,32 @@ been replaced by '."
        (t (setq i (1+ i)))))
     ret))
 
+;; "Remove unnecessary items in the SPLITED-LINE-ITEMS.
+
+;; Used to sanitize auto completion data.  Below are some examples for possible
+;; return values:
+
+;;   :-------------------------------:------------------------:
+;;   | SPLITED-LINE-ITEMS            | Will return            |
+;;   :-------------------------------------------:------------:
+;;   | ('foo' '.' 'bar' '(' ')' '.') | ('foo' '.' 'bar(' '.') |
+;;   | ('foo' '.' 'bar' '(' 'a')     | ('a')                  |
+;;   | ('foo' '.' 'bar')             | ('foo' '.' 'bar')      |
+;;   | ('foo' '.')                   | ('foo' '.')            |
+;;   | ('foo')                       | ('foo')                |
+;;   :-------------------------------:------------------------:
+
+;; Meant for `ac-php-get-class-at-point' .
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
   "Remove unnecessary items in the SPLITED-LINE-ITEMS.
 
 Used to sanitize auto completion data.  Below are some examples for possible
 return values:
 
-  :-------------------------------:------------------------:
-  | SPLITED-LINE-ITEMS            | Will return            |
-  :-------------------------------------------:------------:
-  | ('foo' '.' 'bar' '(' ')' '.') | ('foo' '.' 'bar(' '.') |
-  | ('foo' '.' 'bar' '(' 'a')     | ('a')                  |
-  | ('foo' '.' 'bar')             | ('foo' '.' 'bar')      |
-  | ('foo' '.')                   | ('foo' '.')            |
-  | ('foo')                       | ('foo')                |
-  :-------------------------------:------------------------:
 
 Meant for `ac-php-get-class-at-point' .
 
@@ -722,6 +743,20 @@ been replaced by '."
             (setq ret-name (aref tmp-ret 1)))))
     (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer ret-name %s" ret-name)
     ret-name))
+;; "This function is used to tokinize PHP string.
+
+;; First this function will split LINE-STRING to small items.
+
+;; For example, suppose LINE-STRING is:
+
+;;   '$class->method($parameter)'
+
+;; then this function split it to:
+
+;;   'class' '.' 'method' '(' 'parameter' ')'
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
 
 (defun ac-php-split-line-4-complete-method (line-string)
   "This function is used to tokinize PHP string.
@@ -729,12 +764,6 @@ been replaced by '."
 First this function will split LINE-STRING to small items.
 
 For example, suppose LINE-STRING is:
-
-  '$class->method($parameter)'
-
-then this function split it to:
-
-  'class' '.' 'method' '(' 'parameter' ')'
 
 Note: To conveniently describe in the documentation, double quotes (\") have
 been replaced by '."
@@ -1717,7 +1746,7 @@ This function is used internally by the function `ac-php--remake-tags'."
       (setq ac-php-gen-tags-flag nil))))
 
 (defun ac-php-gen-el-func (doc)
-  "Example doc 'xxx($x1,$x2)' => $x1 , $x2 DOC."
+  "Example doc \"xxx($x1,$x2)\" => $x1 , $x2 DOC."
   (let (func-str)
     (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
         (progn
@@ -2123,8 +2152,8 @@ property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
 \"m\" (method) or \"p\" (property).
 
 Note that this function does not perform in-depth analysis and its main task is
-to determine whether the current MEMBER is a 'method call'.  All other cases are
-considered at this stage as a 'property usage',
+to determine whether the current MEMBER is a \"method call\".
+All other cases are considered at this stage as a \"property usage\",
 although in fact they may not be."
   (ac-php--debug "Recognize current member type")
   (let (type-str)
@@ -2473,24 +2502,36 @@ although in fact they may not be."
         (ac-php-candidate-class tags-data key-str-list)
       (ac-php-candidate-other tags-data))))
 
-(defun ac-php--get-cur-word ()
-  "Return a 'word' before current point.
+;; "Return a 'word' before current point.
 
-The word 'word' means a combination of characters that forms a valid identifier
+;; The word 'word' means a combination of characters that forms a valid identifier
+;; in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+;; Examples:
+
+;;   :-------------------------:--------------------:
+;;   | If the point at the end | Will return        |
+;;   :-------------------------:--------------------:
+;;   | $someVariable           | someWariable       |
+;;   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
+;;   | foo()->bar              | bar                |
+;;   | foo()?->bar             | bar                |
+;;   | foo()                   |                    |
+;;   | 'some string'           |                    |
+;;   :-------------------------:--------------------:
+
+;; Return empty string if there is no valid sequence of characters.
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
+(defun ac-php--get-cur-word ()
+  "Return a `word' before current point.
+
+The word `word' means a combination of characters that forms a valid identifier
 in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
-
-  :-------------------------:--------------------:
-  | If the point at the end | Will return        |
-  :-------------------------:--------------------:
-  | $someVariable           | someWariable       |
-  | Acme\\Service\\Foo      | Acme\\Service\\Foo |
-  | foo()->bar              | bar                |
-  | foo()?->bar             | bar                |
-  | foo()                   |                    |
-  | 'some string'           |                    |
-  :-------------------------:--------------------:
 
 Return empty string if there is no valid sequence of characters.
 
@@ -2503,10 +2544,13 @@ been replaced by '."
       (skip-chars-forward "a-z0-9A-Z_\\\\")
       (buffer-substring-no-properties start-pos (point)))))
 
-(defun ac-php--get-cur-word-with-function-flag ()
-  "Return a 'function' name before current point.
 
-The word 'function' means a combination of characters that forms a valid
+;; Return empty string if there is no valid sequence of characters."
+
+(defun ac-php--get-cur-word-with-function-flag ()
+  "Return a `function' name before current point.
+
+The word `function' means a combination of characters that forms a valid
 function name.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
@@ -2517,7 +2561,7 @@ Examples:
   | function foo()#         |                    |
   | function foo(#          |                    |
   | function foo#()         | foo(               |
-  | foo()?->bar# ();         | bar(               |
+  | foo()?->bar# ();         | bar(              |
   | fo#o()->bar ();         | foo(               |
   :-------------------------:--------------------:
 

@@ -716,7 +716,7 @@ been replaced by '."
           (unless (ac-php--check-global-name tmp-name)
             (let ((tmp-name-as-global (concat "\\" tmp-name))
                   (cur-namepace-tmp-name (concat (ac-php-get-cur-namespace-name) tmp-name)))
-              (ac-php--debug " check as cur namespace %s " tmp-name)
+              (ac-php--debug " check as cur namespace %s "  cur-namepace-tmp-name )
               (if (ac-php--get-item-from-funtion-map cur-namepace-tmp-name function-map)
                   (setq tmp-name cur-namepace-tmp-name)
                 (setq tmp-name tmp-name-as-global))))
@@ -725,8 +725,9 @@ been replaced by '."
 
     (when tmp-name
       (setq tmp-name (ac-php--as-global-name tmp-name))
+
       (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
-      (ac-php--debug "11 tmp-ret %S" tmp-ret)
+      (ac-php--debug "11 tmp-re %s=> %S" tmp-name tmp-ret)
       (if tmp-ret
           (if get-return-type-flag
               (setq ret-name (aref tmp-ret 4))
@@ -1806,13 +1807,19 @@ If it is outdated, a re-index process will be performed."
   (ac-php--debug "Retrieving tags file...")
   (let ((project-root-dir (ac-php--get-project-root-dir))
         tags-file
+        tags-vendor-file
         file-attr
         file-last-time
+        tags-save-dir
         now)
     (if project-root-dir
         (progn
-          (setq tags-file (concat (ac-php--get-tags-save-dir project-root-dir) "tags.el")
-                file-attr (file-attributes tags-file))
+          (setq
+           tags-save-dir  (ac-php--get-tags-save-dir project-root-dir)
+           tags-file (concat tags-save-dir "tags.el")
+           tags-vendor-file (concat tags-save-dir "tags-vendor.el")
+           file-attr (file-attributes tags-file)
+           )
 
           (when file-attr
             (progn
@@ -1825,7 +1832,7 @@ If it is outdated, a re-index process will be performed."
                 (ac-php--debug "The tags file is out of date")
                 (ac-php--remake-tags project-root-dir nil))))
 
-          (list project-root-dir tags-file))
+          (list project-root-dir tags-file tags-vendor-file ))
       nil)))
 
 (defun ac-php--get-config-path-noti-str (project-root-dir path-str)
@@ -1944,7 +1951,7 @@ file in case of its absence, or if it is empty."
 (define-hash-table-test 'case-fold
   'case-fold-string= 'case-fold-string-hash)
 
-(defun ac-php-load-data (tags-file project-root-dir)
+(defun ac-php-load-data (tags-file tags-vendor-file project-root-dir)
   "Return the autocompleted data for the project.
 
 This function tries to use the `ac-php-tag-last-data-list' variable to query the
@@ -1953,11 +1960,15 @@ in-memory storage of all the tags.
 
 The TAGS-FILE argument is used as an assoc key to search the data for the
 project located at the PROJECT-ROOT-DIR.
+The TAGS-VENDOR-FILE argument is used as an assoc key to search the data for the
+project located at the PROJECT-ROOT-DIR.
+
 
 If no data is found for the autocomplete, or the data is outdated, the tags file
 will be loaded and the in-memory storage will be updated."
   (let ((file-attr (file-attributes tags-file))
         file-data
+        vender-file-data
         tags-old-mtime
         tags-new-mtime
         class-map
@@ -1973,9 +1984,13 @@ will be loaded and the in-memory storage will be updated."
       (when (or (null tags-old-mtime) (> tags-new-mtime tags-old-mtime))
         (message (concat "ac-php: Reloading the autocompletion "
                          "data from the tags file..."))
-        (load tags-file nil t)
 
         ;; `g-ac-php-tmp-tags' will be populated from tags.el file
+        ;; 加载 vendor
+        (load tags-vendor-file nil t)
+        (setq vender-file-data g-ac-php-tmp-tags)
+
+        (load tags-file nil t)
         (setq file-data g-ac-php-tmp-tags)
 
         (assq-delete-all tags-file ac-php-tag-last-data-list)
@@ -1995,25 +2010,26 @@ will be loaded and the in-memory storage will be updated."
          (lambda (class-item)
            (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
 
-         (aref file-data 0))
+         (vconcat (aref vender-file-data 0)  (aref file-data 0) ))
 
         (mapc
          (lambda (function-item)
+           (ac-php--debug "add function: %s" (aref function-item 1) )
            (puthash (aref function-item 1) function-item function-map))
-         (aref file-data 1))
+         (vconcat (aref vender-file-data 1)  (aref file-data 1) ))
 
         (mapc
          (lambda (inherit-item)
            (puthash (format "%s" (car inherit-item))
                     (cdr inherit-item) inherit-map))
-         (aref file-data 2))
+         (vconcat (aref vender-file-data 2)  (aref file-data 2) ))
 
         (push (list tags-file
                     tags-new-mtime
                     (list class-map
                           function-map
                           inherit-map
-                          (aref file-data 3)
+                          (vconcat (aref vender-file-data 3)  (aref file-data 3) )
                           project-root-dir))
 
               ac-php-tag-last-data-list)
@@ -2037,15 +2053,18 @@ will be loaded and the in-memory storage will be updated."
 
 (defun ac-php-get-tags-data ()
   "Load a tags data for the particular project."
-  (let (tags-file project-root-dir (tags-definition (ac-php-get-tags-file)))
+  (let (tags-file tags-vendor-file project-root-dir (tags-definition (ac-php-get-tags-file)))
     (if tags-definition
         (progn
-          (setq tags-file (nth 1 tags-definition)
-                project-root-dir (nth 0 tags-definition)))
+          (setq
+           project-root-dir (nth 0 tags-definition)
+           tags-file (nth 1 tags-definition)
+           tags-vendor-file (nth 2 tags-definition)
+           ))
       (setq tags-file ac-php-common-json-file))
     (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
-    (if (file-exists-p tags-file)
-        (ac-php-load-data tags-file project-root-dir)
+    (if (and  (file-exists-p tags-file ) (file-exists-p tags-vendor-file))
+        (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
       (progn
         (ac-php--debug (concat "The per-project tags file doesn't exist. "
                                "Starting create a new one..."))
@@ -2706,9 +2725,10 @@ supposed to do."
 (defun ac-php-show-cur-project-info ()
   "Show current project ac-php info ."
   (interactive)
-  (let ((tags-arr (ac-php-get-tags-file)) tags-file project-root-dir file-attr file-last-time)
+  (let ((tags-arr (ac-php-get-tags-file)) tags-file project-root-dir file-attr file-last-time ( tags-data  (ac-php-get-tags-data ) ))
     (if tags-arr
         (progn
+          
           (setq tags-file (nth 1 tags-arr))
           (setq project-root-dir (nth 0 tags-arr)))
       (setq tags-file ac-php-common-json-file))
@@ -2718,12 +2738,18 @@ supposed to do."
     (message (concat "root dir          : %s\n"
                      "config file       : %s%s\n"
                      "tags file         : %s\n"
-                     "tags last gen time: %s")
+                     "tags last gen time: %s\n"
+                     "file count         : %s\n"
+                     "define count         : %s\n"
+                     )
              project-root-dir
              project-root-dir
              ac-php-config-file
              tags-file
-             file-last-time)))
+             file-last-time
+             (length   (ac-php-g--file-list tags-data) )
+             ( hash-table-count (ac-php-g--function-map tags-data) )
+             )))
 
 ;;; Initialization
 

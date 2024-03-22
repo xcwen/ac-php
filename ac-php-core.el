@@ -1968,7 +1968,7 @@ If no data is found for the autocomplete, or the data is outdated, the tags file
 will be loaded and the in-memory storage will be updated."
   (let ((file-attr (file-attributes tags-file))
         file-data
-        vender-file-data
+        vendor-tags-data
         tags-old-mtime
         tags-new-mtime
         class-map
@@ -1987,8 +1987,15 @@ will be loaded and the in-memory storage will be updated."
 
         ;; `g-ac-php-tmp-tags' will be populated from tags.el file
         ;; 加载 vendor
-        (load tags-vendor-file nil t)
-        (setq vender-file-data g-ac-php-tmp-tags)
+        (setq vendor-tags-data (list
+                                (make-hash-table :test 'case-fold)
+                                (make-hash-table :test 'case-fold)
+                                (make-hash-table :test 'case-fold)
+                                []
+                                ) )
+        (when  tags-vendor-file
+          (setq vendor-tags-data  (ac-php-load-data tags-vendor-file nil project-root-dir ))
+          )
 
         (load tags-file nil t)
         (setq file-data g-ac-php-tmp-tags)
@@ -2002,34 +2009,36 @@ will be loaded and the in-memory storage will be updated."
         ;; - inherit map (list):   (aref file-data 2)
         ;; - file list (array):    (aref file-data 3)
         ;;
-        (setq class-map (make-hash-table :test 'case-fold)
-              function-map (make-hash-table :test 'case-fold)
-              inherit-map (make-hash-table :test 'case-fold))
+
+        (setq class-map (copy-hash-table  (ac-php-g--class-map vendor-tags-data))
+              function-map (copy-hash-table  (ac-php-g--function-map vendor-tags-data) )
+              inherit-map  (copy-hash-table  (ac-php-g--inherit-map vendor-tags-data))
+              )
 
         (mapc
          (lambda (class-item)
            (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
 
-         (vconcat (aref vender-file-data 0)  (aref file-data 0) ))
+         (aref file-data 0) )
 
         (mapc
          (lambda (function-item)
            (ac-php--debug "add function: %s" (aref function-item 1) )
            (puthash (aref function-item 1) function-item function-map))
-         (vconcat (aref vender-file-data 1)  (aref file-data 1) ))
+         (aref file-data 1) )
 
         (mapc
          (lambda (inherit-item)
            (puthash (format "%s" (car inherit-item))
                     (cdr inherit-item) inherit-map))
-         (vconcat (aref vender-file-data 2)  (aref file-data 2) ))
+         (aref file-data 2) )
 
         (push (list tags-file
                     tags-new-mtime
                     (list class-map
                           function-map
                           inherit-map
-                          (vconcat (aref vender-file-data 3)  (aref file-data 3) )
+                          (vconcat (ac-php-g--file-list vendor-tags-data )  (aref file-data 3) )
                           project-root-dir))
 
               ac-php-tag-last-data-list)
@@ -2725,22 +2734,27 @@ supposed to do."
 (defun ac-php-show-cur-project-info ()
   "Show current project ac-php info ."
   (interactive)
-  (let ((tags-arr (ac-php-get-tags-file)) tags-file project-root-dir file-attr file-last-time ( tags-data  (ac-php-get-tags-data ) ))
+  (let ((tags-arr (ac-php-get-tags-file)) tags-file tags-vendor-file project-root-dir file-attr file-last-time ( tags-data  (ac-php-get-tags-data ) )  vendor-tags-data)
     (if tags-arr
         (progn
-          
+
           (setq tags-file (nth 1 tags-arr))
-          (setq project-root-dir (nth 0 tags-arr)))
+          (setq tags-vendor-file (nth 2 tags-arr))
+          (setq project-root-dir (nth 0 tags-arr))
+          (setq vendor-tags-data ( ac-php-load-data tags-vendor-file nil project-root-dir ))
+          )
       (setq tags-file ac-php-common-json-file))
     (when tags-file
       (setq file-attr (file-attributes tags-file))
       (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr))))
-    (message (concat "root dir          : %s\n"
-                     "config file       : %s%s\n"
-                     "tags file         : %s\n"
-                     "tags last gen time: %s\n"
+    (message (concat "root dir           : %s\n"
+                     "config file        : %s%s\n"
+                     "tags file          : %s\n"
+                     "tags last gen time : %s\n"
                      "file count         : %s\n"
-                     "define count         : %s\n"
+                     "define count       : %s\n"
+                     "vendor file count  : %s\n"
+                     "vendor define count: %s\n"
                      )
              project-root-dir
              project-root-dir
@@ -2749,6 +2763,8 @@ supposed to do."
              file-last-time
              (length   (ac-php-g--file-list tags-data) )
              ( hash-table-count (ac-php-g--function-map tags-data) )
+             (length   (ac-php-g--file-list vendor-tags-data) )
+             ( hash-table-count (ac-php-g--function-map vendor-tags-data) )
              )))
 
 ;;; Initialization

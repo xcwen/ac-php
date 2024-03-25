@@ -10,8 +10,10 @@ class A
     {
     }
     public function __construct(
-        protected string $sss="", $sk = null)
-    {
+        protected string $sss = "",
+        $sk = null
+    ) {
+        isset("x");
     }
 
 

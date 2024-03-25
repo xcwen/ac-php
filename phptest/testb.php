@@ -55,7 +55,6 @@ class Testb extends Testa
         $this->v2->set_v1("ss");
         $this->v8->set_v1("sss");
         parent::set_v1("s");
-
         $q=new SplQueue();
     }
 

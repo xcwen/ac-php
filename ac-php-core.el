@@ -2655,7 +2655,7 @@ Return empty string if there is no valid sequence of characters."
         (setq file-pos (aref function-item 3))
 
         (setq return-type (aref function-item 4))
-        (popup-tip (concat "[" (if (string= "S" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
+        (popup-tip (concat "[" (if (string= "sys" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
   "Set `cscope-initial-directory' and run egrep over the cscope database SYMBOL."

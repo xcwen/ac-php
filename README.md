@@ -44,26 +44,9 @@ This repository contains:
 The PHP code completion and the jump to definition/declaration/inclusion-file provided by [phpctags][:phpctags:].
 
 - Support of [`auto-complete`][:gh-ac:], [`company-mode`][:gh-company:]
-  and [`helm`][:gh-helm:] (an apropos functionality)
-- Auto Completion for built-in extensions
-  - PDO
-  - SPL
-  - mysqli
-  - SQLite3
-  - ...
-- Auto Completion for PECL extensions
-  - Redis
-  - Imagick
-  - Swoole
-  - Memcache
-  - ...
-- Auto Completion for built-in classes
-  - SplFileInfo
-  - DOMDocument
-  - SimpleXMLElement
-  - ...
-- Auto Completion for user defined classes
-- Auto Completion for built-in functions
+
+- use [phpstorm stubs][:phpstorm-stubs:] for completion.
+
 - Support of annotations and type hints
 - Currently ships with [Spacemacs][:gh-spacemacs:]
 
@@ -271,6 +254,12 @@ $ cd /project/to/poject/root
 $ touch .ac-php-conf.json
 ```
 
+You can add the standard php library with [phpstorm stubs][:phpstorm-stubs:].
+```
+composer require  jetbrains/phpstorm-stubs
+```
+
+
 And use `M-x company-complete` to complete.
 
 ### company-mode
@@ -429,10 +418,6 @@ filter result is:
 `2.php` `31.php` will be ignored during tag generation;
 
 
-You can also add the standard php library with [phpstorm stubs][:phpstorm-stubs:].
-```
-composer require  jetbrains/phpstorm-stubs
-```
 
 ### Rebuilding tags
 

@@ -47,6 +47,8 @@ The PHP code completion and the jump to definition/declaration/inclusion-file pr
 
 - use [phpstorm stubs][:phpstorm-stubs:] for completion.
 
+- Auto Completion for user defined classes
+
 - Support of annotations and type hints
 - Currently ships with [Spacemacs][:gh-spacemacs:]
 

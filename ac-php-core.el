@@ -2416,7 +2416,7 @@ although in fact they may not be."
   (interactive "P")
   ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
-        symbol-ret type jump-pos local-var local-var-flag)
+        symbol-ret type jump-pos local-var local-var-flag (jump-flag t ) )
     (setq local-var (ac-php-get-cur-word-with-dollar))
     (setq local-var-flag (s-matches-p "^\\$" local-var))
 
@@ -2452,18 +2452,9 @@ although in fact they may not be."
                 (cond
                  ((s-matches-p "sys" (nth 0 tmp-arr))
                   (let((sys-item-name (aref (nth 3 symbol-ret) 1))) ;; system function
-                    ;; \trim(=> trim
-                    (if (string= type "user_function")
-                        (setq sys-item-name
-                              (substring-no-properties
-                               sys-item-name 1
-                               (if (string= "(" (substring sys-item-name -1))
-                                   -1 nil)))
-                      ;; class name
-                      (setq sys-item-name (nth 2 symbol-ret)))
-                    (if (fboundp 'php-search-documentation)
-                        (php-search-documentation sys-item-name)
-                      (message "Unable to find php-search-documentation function"))))
+                    (goto-char (1+ (point)))
+                    (message "need install : composer require jetbrains/phpstorm-stubs ")
+                    ))
                  (t
                   (let ((file-list (ac-php-g--file-list tags-data)))
                     ;; from get index

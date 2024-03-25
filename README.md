@@ -428,38 +428,10 @@ filter result is:
 
 `2.php` `31.php` will be ignored during tag generation;
 
-Laravel example:
-
-```json
-{
-  "filter": {
-    "php-file-ext-list": [
-      "php"
-    ],
-    "php-path-list": [
-        "./app",
-        "./database",
-        "./vendor/laravel/framework/src/Illuminate"
-    ]
-  }
-}
-```
 
 You can also add the standard php library with [phpstorm stubs][:phpstorm-stubs:].
-Assuming you cloned this repo into `/usr/local/src/phpstorm-stubs` you base configuration will be:
-
-```json
-{
-  "filter": {
-    "php-file-ext-list": [
-      "php"
-    ],
-    "php-path-list": [
-        ".",
-        "/usr/local/src/phpstorm-stubs"
-    ]
-  }
-}
+```
+composer require  jetbrains/phpstorm-stubs
 ```
 
 ### Rebuilding tags

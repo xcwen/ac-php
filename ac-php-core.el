@@ -2085,7 +2085,8 @@ will be loaded and the in-memory storage will be updated."
         ))
       )
     (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
-    (if (and  (file-exists-p tags-file ) )
+    (if (and  (file-exists-p tags-file )
+              (or (not tags-vendor-file) (file-exists-p tags-vendor-file ) ) )
         (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
       (progn
         (ac-php--debug (concat "The per-project tags file doesn't exist. "

@@ -154,9 +154,6 @@ tags for."
 (defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags")
   "Set the Phpctags executable path.  Don't change the value of this variable.")
 
-(defvar ac-php-common-json-file (concat ac-php-root-directory "ac-php-comm-tags-data.el")
-  "Default tags file.
-Will be used as a fallback when unable to obtain the project related tags.")
 
 (defvar ac-php-debug-flag nil
   "Non-nil means enable verbose mode when processing autocomplete.
@@ -404,6 +401,12 @@ ac-php developer only."
   (forward-line (1- line))
   (beginning-of-line)
   (forward-char (1- column)))
+
+
+(defun  ac-php--get-common-json-file ()
+  "Doc LINE COLUMN."
+  (concat ac-php-tags-path "/common.el"  )
+  )
 
 (defun ac-php-current-location (&optional offset)
   "Doc OFFSET."
@@ -1608,6 +1611,8 @@ work for multi class hint:
   "Doc FILE-PATH CACHE1-FILES."
   (ac-php--json-save-data file-path (list :cache1-files cache1-files)))
 
+
+
 (defun ac-php--ctags-opts (project-root-dir rebuild)
   "Create phpctags command options.
 
@@ -2070,9 +2075,17 @@ will be loaded and the in-memory storage will be updated."
            tags-file (nth 1 tags-definition)
            tags-vendor-file (nth 2 tags-definition)
            ))
-      (setq tags-file ac-php-common-json-file))
+      (setq tags-file (ac-php--get-common-json-file))
+      (unless(f-exists?  tags-file )
+        ;;gen
+        (shell-command-to-string
+         (concat  ac-php-php-executable " " ac-php-ctags-executable " "
+                  "--save-common-el=" tags-file
+                  )
+        ))
+      )
     (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
-    (if (and  (file-exists-p tags-file ) (file-exists-p tags-vendor-file))
+    (if (and  (file-exists-p tags-file ) )
         (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
       (progn
         (ac-php--debug (concat "The per-project tags file doesn't exist. "
@@ -2744,7 +2757,7 @@ supposed to do."
           (setq project-root-dir (nth 0 tags-arr))
           (setq vendor-tags-data ( ac-php-load-data tags-vendor-file nil project-root-dir ))
           )
-      (setq tags-file ac-php-common-json-file))
+      (setq tags-file  (ac-php--get-common-json-file)))
     (when tags-file
       (setq file-attr (file-attributes tags-file))
       (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr))))

@@ -228,8 +228,6 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
     (when (ac-php--tag-name-is-function arg)
       (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
       (insert (concat doc ")"))
-      (when (bound-and-true-p smartparens-mode)
-        (delete-char 1))
       (company-template-c-like-templatify (concat arg doc ")")))))
 
 ;; Local Variables:

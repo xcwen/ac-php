@@ -4,6 +4,7 @@ namespace Test;
 require "testa.php";
 use Test  as T ;
 use Test\Testa as Ta ;
+use BBC\Testa ;
 use Test\Testb;
 
 /**
@@ -19,6 +20,7 @@ use Test\Testb;
 class Testb extends Testa
 {
 
+    public  Testa $test3333;
 
     /**
      * @return $this

@@ -20,7 +20,7 @@ use Test\Testb;
 class Testb extends Testa
 {
 
-    public  Testa $test3333;
+    public Testa $test3333;
 
     /**
      * @return $this
@@ -30,6 +30,15 @@ class Testb extends Testa
         //$this->v1
         //$this->get_moth( )
     }
+
+    /**
+     *   @return  null| T\Testb
+     */
+    public function get_v3($a = [])
+    {
+         $this->get_v3()
+
+
     use Instance;
 
 

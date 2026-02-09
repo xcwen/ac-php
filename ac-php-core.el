@@ -692,6 +692,9 @@ been replaced by '."
         (setq  first-key  (ac-php-get-cur-full-class-name)))
 
 
+
+
+
       (if (ac-php--check-global-name first-key)
           (setq tmp-name first-key)
         (progn
@@ -745,7 +748,6 @@ been replaced by '."
           (if get-return-type-flag
               (setq ret-name (aref tmp-ret 4))
             (setq ret-name (aref tmp-ret 1)))))
-    (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer ret-name %s" ret-name)
     ret-name))
 ;; "This function is used to tokinize PHP string.
 
@@ -1326,7 +1328,8 @@ work for multi class hint:
                     (ac-php--debug "XXLLL %s" symbol-type)
                     (when (or (string= symbol-type "class_member")
                               (string= symbol-type "user_function"))
-                      (setq first-class-name (nth 2 symbol-ret))))))))
+                      (setq first-class-name (nth 2 symbol-ret)))
+                    )))))
 
           (unless first-class-name (setq first-class-name first-key)))))
 
@@ -1661,20 +1664,20 @@ processed even though they were recently processed (so-called force rebuild)."
     (set-process-sentinel
      process
      #'(lambda (process event)
-        (ac-php-mode 0)
-        (cond
-         ((string-match "finished" event)
-          (if ac-php-rebuild-tmp-error-msg
-              (message "ac-php: An error occurred during to re-index: %s"
-                       ac-php-rebuild-tmp-error-msg)
-            (message "ac-php: The project has been successfully re-indexed")))
-         ((string-match "exited abnormally" event)
-          (progn
-            (message (concat "ac-php: Something went wrong\n"
-                             "ac-php: The re-indexing process exited abnormally\n"
-                             "ac-php: Please re-check for incorrect syntax and "
-                             "possible PHP errors and try again later"))
-            (ac-php--debug event))))))
+         (ac-php-mode 0)
+         (cond
+          ((string-match "finished" event)
+           (if ac-php-rebuild-tmp-error-msg
+               (message "ac-php: An error occurred during to re-index: %s"
+                        ac-php-rebuild-tmp-error-msg)
+             (message "ac-php: The project has been successfully re-indexed")))
+          ((string-match "exited abnormally" event)
+           (progn
+             (message (concat "ac-php: Something went wrong\n"
+                              "ac-php: The re-indexing process exited abnormally\n"
+                              "ac-php: Please re-check for incorrect syntax and "
+                              "possible PHP errors and try again later"))
+             (ac-php--debug event))))))
 
     (set-process-filter process 'ac-php-phptags-index-process-filter)))
 
@@ -1954,7 +1957,7 @@ file in case of its absence, or if it is empty."
   (sxhash (upcase a)))
 
 (define-hash-table-test 'case-fold
-  'case-fold-string= 'case-fold-string-hash)
+                        'case-fold-string= 'case-fold-string-hash)
 
 (defun ac-php-load-data (tags-file tags-vendor-file project-root-dir)
   "Return the autocompleted data for the project.
@@ -2082,7 +2085,7 @@ will be loaded and the in-memory storage will be updated."
          (concat  ac-php-php-executable " " ac-php-ctags-executable " "
                   "--save-common-el=" tags-file
                   )
-        ))
+         ))
       )
     (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
     (if (and  (file-exists-p tags-file )

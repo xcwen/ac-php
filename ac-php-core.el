@@ -1328,7 +1328,11 @@ work for multi class hint:
                     (ac-php--debug "XXLLL %s" symbol-type)
                     (when (or (string= symbol-type "class_member")
                               (string= symbol-type "user_function"))
-                      (setq first-class-name (nth 2 symbol-ret)))
+                      (setq first-class-name (nth 2 symbol-ret))
+                      )
+
+
+
                     )))))
 
           (unless first-class-name (setq first-class-name first-key)))))
@@ -2366,7 +2370,15 @@ although in fact they may not be."
                 (progn
                   (setq member-info (ac-php-get-class-member-info (ac-php-g--class-map tags-data) (ac-php-g--inherit-map tags-data) class-name cur-word))
                   (if member-info
-                      (setq ret (list "class_member" (aref member-info 3) (aref member-info 4) member-info))
+                      (progn
+                        (let (return-type)
+                          (setq return-type  (aref member-info 4)  )
+                          (when (string=  return-type "self" )
+                            (setq return-type  class-name )
+                            )
+                          (setq ret (list "class_member" (aref member-info 3) return-type member-info)))
+
+                        )
                     (progn
                       (message "no find %s.%s " class-name cur-word))))
               ;; (message "no find class from key-list %s " key-str-list)

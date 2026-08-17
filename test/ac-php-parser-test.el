@@ -140,5 +140,11 @@
     (setq ret '("yii\\web\\Application(" "." "ru"))
     (ac-php-test-parse-equal line-txt ret)))
 
+(ert-deftest ac-php-test-parse-line-20 ()
+  (let (line-txt ret)
+    (setq line-txt ") );(new \\App\\Job\\Mindshow\\AiImageToCommonPic())->deal_one($ai_image_id)")
+    (setq ret '("\\App\\Job\\Mindshow\\AiImageToCommonPic(" "." "deal_one("))
+    (ac-php-test-parse-equal line-txt ret)))
+
 (provide 'ac-php-parser-test)
 ;;; ac-php-parser-test.el ends here

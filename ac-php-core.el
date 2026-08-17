@@ -652,7 +652,10 @@ been replaced by '."
         (setq elisp-str (concat elisp-str "("))
         (setq need-add-right-count (1+ need-add-right-count)))
        ((string= ")" item)
-        (when (> need-add-right-count 0)
+        ;; The initial count represents the synthetic outer list.  Ignore
+        ;; unmatched closing parentheses from the prefix instead of consuming
+        ;; that synthetic level.
+        (when (> need-add-right-count 1)
           (setq elisp-str (concat elisp-str ")"))
           (setq need-add-right-count (1- need-add-right-count)))
         )

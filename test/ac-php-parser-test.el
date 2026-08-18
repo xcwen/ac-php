@@ -146,5 +146,114 @@
     (setq ret '("\\App\\Job\\Mindshow\\AiImageToCommonPic(" "." "deal_one("))
     (ac-php-test-parse-equal line-txt ret)))
 
+(ert-deftest ac-php-parser/split-separator-uses-match-boundaries ()
+  (should (equal
+           (ac-php-split-string-with-separator
+            "a  .  b" "[ \t]*\\.[ \t]*" "." t)
+           '("a" "." "b"))))
+
+(ert-deftest ac-php-parser/token-stack-does-not-read-input-as-elisp ()
+  (should (equal
+           (ac-php-remove-unnecessary-items-4-complete-method
+            (ac-php-split-line-4-complete-method
+             "$x->m(' say \" hi')->z"))
+           '("x" "." "m(" "." "z"))))
+
+(ert-deftest ac-php-parser/expression-scan-is-multiline-and-comment-aware ()
+  (with-ac-php-buffer-test
+      "<?php\n$service->first() // ignored->call()\n  ->second(\"// kept\")\n  ->third"
+    (goto-char (point-max))
+    (should (equal (ac-php--expression-before-point)
+                   "$service->first()   ->second(\"// kept\")\n  ->third"))))
+
+(ert-deftest ac-php-parser/expression-scan-honors-pos ()
+  (with-ac-php-buffer-test
+      "<?php\n$first->one();\n$second->two"
+    (let ((first-expression-end
+           (save-excursion
+             (goto-char (point-min))
+             (search-forward "one")
+             (point))))
+      (goto-char (point-max))
+      (should (equal (ac-php--expression-before-point first-expression-end)
+                     "$first->one")))))
+
+(ert-deftest ac-php-parser/expression-scan-stops-at-point-min ()
+  (with-ac-php-buffer-test "->deal"
+    (goto-char (point-max))
+    (should (equal (ac-php--expression-before-point) "->deal"))))
+
+(ert-deftest ac-php-parser/expression-scan-does-not-parse-every-character ()
+  (with-ac-php-buffer-test
+      (concat "<?php\n$service"
+              (mapconcat (lambda (_) "->method()")
+                         (number-sequence 1 1000) "")
+              "->tail")
+    (goto-char (point-max))
+    (let ((original-syntax-ppss (symbol-function 'syntax-ppss))
+          (syntax-ppss-calls 0))
+      (cl-letf (((symbol-function 'syntax-ppss)
+                 (lambda (&rest args)
+                   (setq syntax-ppss-calls (1+ syntax-ppss-calls))
+                   (apply original-syntax-ppss args))))
+        (should (string-suffix-p
+                 "->method()->tail"
+                 (ac-php--expression-before-point)))
+        (should (< syntax-ppss-calls 10))))))
+
+(ert-deftest ac-php-parser/expression-scan-skips-prior-statements ()
+  (with-ac-php-buffer-test
+      (concat "<?php\nfunction run() {\n"
+              (mapconcat (lambda (index)
+                           (format "$v%d = %d;" index index))
+                         (number-sequence 1 2000) "\n")
+              "\n$service->tail")
+    (goto-char (point-max))
+    (let ((original-syntax-ppss (symbol-function 'syntax-ppss))
+          (syntax-ppss-calls 0))
+      (cl-letf (((symbol-function 'syntax-ppss)
+                 (lambda (&rest args)
+                   (setq syntax-ppss-calls (1+ syntax-ppss-calls))
+                   (apply original-syntax-ppss args))))
+        (should (equal (ac-php--expression-before-point)
+                       "$service->tail"))
+        (should (< syntax-ppss-calls 10))))))
+
+(ert-deftest ac-php-parser/expression-scan-skips-comment-markers-in-strings ()
+  (with-ac-php-buffer-test
+      (concat "<?php\n$service->method(\""
+              (mapconcat (lambda (_) "http://host/#part")
+                         (number-sequence 1 1000) "")
+              "\")->tail")
+    (goto-char (point-max))
+    (let ((original-syntax-ppss (symbol-function 'syntax-ppss))
+          (syntax-ppss-calls 0))
+      (cl-letf (((symbol-function 'syntax-ppss)
+                 (lambda (&rest args)
+                   (setq syntax-ppss-calls (1+ syntax-ppss-calls))
+                   (apply original-syntax-ppss args))))
+        (should (string-suffix-p
+                 "\")->tail" (ac-php--expression-before-point)))
+        (should (< syntax-ppss-calls 10))))))
+
+(ert-deftest ac-php-parser/callable-normalization-is-linear-search ()
+  (should (equal (ac-php--normalize-callable
+                  "prefix array($foo, 'run') suffix")
+                 "$foo->run"))
+  (should (equal (ac-php--normalize-callable
+                  "prefix [$foo, \"run\"] suffix")
+                 "$foo->run"))
+  (should (equal (ac-php--normalize-callable "plain text")
+                 "plain text")))
+
+(ert-deftest ac-php-parser/callable-expression-keeps-containing-delimiters ()
+  (dolist (fixture '("<?php\n[$foo, \"run\""
+                     "<?php\narray($foo, \"run\""))
+    (with-ac-php-buffer-test fixture
+      (goto-char (point-max))
+      (let ((expression (ac-php--expression-before-point)))
+        (should (equal (ac-php--normalize-callable expression)
+                       "$foo->run"))))))
+
 (provide 'ac-php-parser-test)
 ;;; ac-php-parser-test.el ends here

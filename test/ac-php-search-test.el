@@ -250,5 +250,31 @@ class Bar {}"
    (goto-char (point-max))
    (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
 
+(ert-deftest ac-php-search/syntax-backward-returns-nearest-same-line-match ()
+  :tags '(re search)
+  (with-ac-php-buffer-test
+      "<?php\n$foo = $first; $foo = $second;"
+    (goto-char (point-max))
+    (let* ((expected-pos (save-excursion (search-backward "$foo")))
+           (result (ac-php-get-syntax-backward
+                    "\\$foo[ \t]*=[ \t]*\\(\\$[[:alpha:]]+\\)"
+                    :sexp 1)))
+      (should (equal result "$second"))
+      (should (= (get-text-property 0 'pos result) expected-pos)))))
+
+(ert-deftest ac-php-search/syntax-backward-rejects-comments-before-defun-scan ()
+  :tags '(re search)
+  (with-ac-php-buffer-test
+      "<?php\n// Type $value\n// Type $value\n"
+    (goto-char (point-max))
+    (let ((function-scan-count 0))
+      (cl-letf (((symbol-function 'ac-php--in-function-p)
+                 (lambda (&optional _pos)
+                   (setq function-scan-count (1+ function-scan-count))
+                   nil)))
+        (should-not
+         (ac-php-get-syntax-backward "Type[ \t]+\\(\\$value\\)" :sexp 1))
+        (should (= function-scan-count 0))))))
+
 (provide 'ac-php-search-test)
 ;;; ac-php-search-test.el ends here

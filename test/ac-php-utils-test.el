@@ -44,5 +44,49 @@
    (goto-char (point-min))
    (should (eq (ac-php--in-function-p 24) t))))
 
+(ert-deftest ac-php-utils/class-list-preserves-inheritance-order ()
+  (let ((class-map (make-hash-table :test #'equal))
+        (inherit-map (make-hash-table :test #'equal)))
+    (dolist (class-name '("\\A" "\\B" "\\C" "\\D"))
+      (puthash class-name [] class-map))
+    (puthash "\\A" ["\\B" "Missing" "\\C"] inherit-map)
+    (puthash "\\B" ["\\D"] inherit-map)
+    (should (equal (ac-php--get-check-class-list
+                    "\\A" inherit-map class-map)
+                   '("\\A" "\\B" "\\D" "\\C")))
+
+    (puthash "\\A" ["\\B"] inherit-map)
+    (puthash "\\B" ["\\A"] inherit-map)
+    (should (equal (ac-php--get-check-class-list
+                    "\\A" inherit-map class-map)
+                   '("\\A" "\\B" "\\A")))))
+
+(ert-deftest ac-php-utils/use-imports-remain-unique ()
+  (with-ac-php-buffer-test
+      "<?php\nuse Foo\\Bar;\nuse Foo\\Bar;\nuse Baz\\Qux as Alias;\nuse Baz\\Qux as Alias;\n"
+    (should (equal (ac-php--get-all-use-as-name-in-cur-buffer)
+                   '(("\\Baz\\Qux" "Alias")
+                     ("\\Foo\\Bar" "Bar"))))))
+
+(ert-deftest ac-php-utils/generated-tags-use-dynamic-container ()
+  (let ((main-tags-file (make-temp-file "ac-php-main-tags-" nil ".el"))
+        (vendor-tags-file (make-temp-file "ac-php-vendor-tags-" nil ".el"))
+        (ac-php-tag-last-data-list nil)
+        (g-ac-php-tmp-tags 'outside))
+    (unwind-protect
+        (progn
+          (with-temp-file main-tags-file
+            (insert "(setq g-ac-php-tmp-tags [nil nil nil [\"main.php\"]])"))
+          (with-temp-file vendor-tags-file
+            (insert "(setq g-ac-php-tmp-tags [nil nil nil [\"vendor.php\"]])"))
+          (let ((tags-data (ac-php-load-data
+                            main-tags-file vendor-tags-file "/project/")))
+            (should (equal (append (ac-php-g--file-list tags-data) nil)
+                           '("vendor.php" "main.php")))
+            (should (equal (ac-php-g--project-root-dir tags-data) "/project/")))
+          (should (eq g-ac-php-tmp-tags 'outside)))
+      (delete-file main-tags-file)
+      (delete-file vendor-tags-file))))
+
 (provide 'ac-php-utils-test)
 ;;; ac-php-utils-test.el ends here

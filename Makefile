@@ -22,8 +22,14 @@
 SHELL := $(shell which bash)
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-EMACS ?= emacs
-CASK ?= cask
+EMACS ?= $(shell emacs_path="$$(command -v emacs 2>/dev/null)"; \
+	if test -x "$$emacs_path"; then printf '%s' "$$emacs_path"; \
+	else printf '%s' /Applications/Emacs.app/Contents/MacOS/Emacs; fi)
+CASK ?= $(shell cask_path="$$(command -v cask 2>/dev/null)"; \
+	if test -x "$$cask_path"; then printf '%s' "$$cask_path"; \
+	else printf '%s' $(HOME)/.cask/bin/cask; fi)
+CASK_EMACS ?= $(EMACS)
+CASKCMD = CASK_EMACS="$(CASK_EMACS)" "$(CASK)"
 PANDOC ?= pandoc
 
 EMACSFLAGS ?=
@@ -32,13 +38,13 @@ PANDOCLAGS ?= --fail-if-warnings \
 	--reference-links \
 	--atx-headers
 
-PKGDIR := $(shell EMACS=$(EMACS) $(CASK) package-directory)
+PKGDIR := $(shell $(CASKCMD) package-directory)
 
 # File lists
 SRCS = ac-php-core.el ac-php.el company-php.el helm-ac-php-apropros.el
 OBJS = $(SRCS:.el=.elc)
 
-VERSION ?= $(shell $(CASK) version)
+VERSION ?= $(shell $(CASKCMD) version)
 
 .SILENT: ;               # no need for @
 .ONESHELL: ;             # recipes execute in same shell
@@ -59,14 +65,14 @@ ifndef HAVE_CASK
 $(warning "$(CASK) is not available.  Please run make help")
 RUNEMACS = $(EMACSBATCH)
 else
-RUNEMACS = $(CASK) exec $(EMACSBATCH)
+RUNEMACS = $(CASKCMD) exec $(EMACSBATCH)
 endif
 
 %.elc: %.el $(PKGDIR)
 	$(RUNEMACS) -f batch-byte-compile $<
 
 $(PKGDIR): Cask
-	$(CASK) install
+	$(CASKCMD) install
 	touch $(PKGDIR)
 
 README: README.md
@@ -91,11 +97,11 @@ build: $(OBJS)
 
 .PHONY: test
 test:
-	$(CASK) exec ert-runner $(TESTFLAGS)
+	$(CASKCMD) exec ert-runner $(TESTFLAGS)
 
 .PHONY: clean
 clean:
-	$(CASK) clean-elc
+	$(CASKCMD) clean-elc
 	$(RM) -f README
 
 .PHONY: help

@@ -8,6 +8,10 @@ Emacs Lisp data consumed by `ac-php`:
 - `tags-vendor.el` for Composer dependencies;
 - `mago-cache/files/*.postcard` for incremental per-file results.
 
+Normal runs parse only changed files. Unchanged metadata hits avoid reading the
+source file; when only timestamps change, the source hash is checked and the
+cached tags are reused. The final status line reports parsed and cached counts.
+
 This is an ac-php tag generator, not a standard etags/Exuberant Ctags writer.
 
 ## Requirements
@@ -51,6 +55,11 @@ The configuration reader supports these existing ac-php fields:
 
 Files below a path component named `vendor` are written to `tags-vendor.el`.
 Vendor file indexes precede project indexes, matching ac-php's merge behavior.
+The vendor phase is controlled by the `composer.lock` signature. On a normal
+incremental run with an unchanged lock file, the generator reuses
+`tags-vendor.el`, skips the vendor directory entirely, and starts project
+progress at 50%. A forced rebuild, a changed lock file, or a missing vendor tag
+file rebuilds the vendor index.
 
 ## Verify
 
@@ -63,4 +72,3 @@ cargo run --release -- \
   --rebuild
 emacs --batch -Q -l /tmp/ac-php-mago-tags-test/tags.el
 ```
-

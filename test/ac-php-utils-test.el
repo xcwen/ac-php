@@ -61,6 +61,14 @@
           "--output-dir" "/tmp/ac-php-tags/project/"
           "--rebuild"))))))
 
+(ert-deftest ac-php-utils/mago-incremental-command-omits-rebuild ()
+  (cl-letf (((symbol-function 'ac-php--mago-tags-executable)
+             (lambda () "/usr/local/bin/ac-php-mago-tags"))
+            ((symbol-function 'ac-php--get-tags-save-dir)
+             (lambda (_root) "/tmp/ac-php-tags/project/")))
+    (let ((command (ac-php--tags-process-command "/project/" nil 'mago)))
+      (should-not (member "--rebuild" command)))))
+
 (ert-deftest ac-php-search/in-function-std-case ()
   :tags '(re search)
   (with-ac-php-file-test "in-function-std-case.php"

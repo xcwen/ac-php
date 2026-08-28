@@ -5,11 +5,34 @@ use std::time::UNIX_EPOCH;
 
 use anyhow::{Context, Result};
 
-use crate::model::{CACHE_SCHEMA_VERSION, CachedFile, FileTags, MAGO_VERSION, SourceSignature};
+use crate::model::{
+    CACHE_SCHEMA_VERSION, CachedFile, FileTags, MAGO_VERSION, SourceSignature, VendorState,
+};
 
 pub struct Cache {
     root: PathBuf,
     rebuild: bool,
+}
+
+pub fn load_vendor_state(output_dir: &Path) -> Option<VendorState> {
+    let bytes = fs::read(output_dir.join("mago-cache").join("vendor-state.postcard")).ok()?;
+    let state: VendorState = postcard::from_bytes(&bytes).ok()?;
+    (state.schema == CACHE_SCHEMA_VERSION).then_some(state)
+}
+
+pub fn store_vendor_state(output_dir: &Path, state: &VendorState) -> Result<()> {
+    let cache_dir = output_dir.join("mago-cache");
+    fs::create_dir_all(&cache_dir)?;
+    let bytes = postcard::to_stdvec(state).context("failed to encode vendor state")?;
+    let destination = cache_dir.join("vendor-state.postcard");
+    let mut temporary = tempfile::NamedTempFile::new_in(&cache_dir)?;
+    temporary.write_all(&bytes)?;
+    temporary.flush()?;
+    temporary
+        .persist(&destination)
+        .map_err(|error| error.error)
+        .with_context(|| format!("failed to publish vendor state {}", destination.display()))?;
+    Ok(())
 }
 
 impl Cache {
@@ -20,19 +43,16 @@ impl Cache {
         Ok(Self { root, rebuild })
     }
 
-    pub fn load(&self, path: &Path, signature: &SourceSignature) -> Option<FileTags> {
+    pub fn load(&self, path: &Path) -> Option<CachedFile> {
         if self.rebuild {
             return None;
         }
         let bytes = fs::read(self.entry_path(path)).ok()?;
         let cached: CachedFile = postcard::from_bytes(&bytes).ok()?;
-        if cached.schema != CACHE_SCHEMA_VERSION
-            || cached.mago_version != MAGO_VERSION
-            || &cached.signature != signature
-        {
+        if cached.schema != CACHE_SCHEMA_VERSION || cached.mago_version != MAGO_VERSION {
             return None;
         }
-        Some(cached.tags)
+        Some(cached)
     }
 
     pub fn store(

@@ -15,6 +15,18 @@ pub struct SourceFile {
 }
 
 pub fn discover(workspace: &Path, config: &FilterConfig) -> Result<Vec<SourceFile>> {
+    discover_internal(workspace, config, true)
+}
+
+pub fn discover_project(workspace: &Path, config: &FilterConfig) -> Result<Vec<SourceFile>> {
+    discover_internal(workspace, config, false)
+}
+
+fn discover_internal(
+    workspace: &Path,
+    config: &FilterConfig,
+    include_vendor: bool,
+) -> Result<Vec<SourceFile>> {
     let matcher = build_ignore_matcher(workspace, &config.ignore_rules)?;
     let extensions: BTreeSet<String> = config
         .extensions
@@ -32,7 +44,7 @@ pub fn discover(workspace: &Path, config: &FilterConfig) -> Result<Vec<SourceFil
         for entry in WalkDir::new(&root)
             .follow_links(false)
             .into_iter()
-            .filter_entry(visible_entry)
+            .filter_entry(|entry| visible_entry(entry, include_vendor))
         {
             let entry = entry.with_context(|| format!("failed to walk {}", root.display()))?;
             if entry.file_type().is_file() {
@@ -51,7 +63,7 @@ pub fn discover(workspace: &Path, config: &FilterConfig) -> Result<Vec<SourceFil
             fs::read_dir(&root).with_context(|| format!("failed to read {}", root.display()))?
         {
             let path = entry?.path();
-            if path.is_file() {
+            if path.is_file() && (include_vendor || !is_vendor(&path)) {
                 add_if_php(&mut files, &path, &extensions, workspace, &matcher);
             }
         }
@@ -59,6 +71,7 @@ pub fn discover(workspace: &Path, config: &FilterConfig) -> Result<Vec<SourceFil
 
     let mut result: Vec<_> = files
         .into_iter()
+        .filter(|path| include_vendor || !is_vendor(path))
         .map(|path| SourceFile {
             vendor: is_vendor(&path),
             path,
@@ -78,8 +91,10 @@ fn resolve(workspace: &Path, path: &Path) -> Result<PathBuf> {
         .with_context(|| format!("source path does not exist: {}", path.display()))
 }
 
-fn visible_entry(entry: &DirEntry) -> bool {
-    entry.depth() == 0 || !entry.file_name().to_string_lossy().starts_with('.')
+fn visible_entry(entry: &DirEntry, include_vendor: bool) -> bool {
+    entry.depth() == 0
+        || (!entry.file_name().to_string_lossy().starts_with('.')
+            && (include_vendor || entry.file_name() != "vendor"))
 }
 
 fn add_if_php(
@@ -125,12 +140,34 @@ fn is_vendor(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::is_vendor;
+    use std::fs;
     use std::path::Path;
+
+    use crate::config::FilterConfig;
+
+    use super::{discover_project, is_vendor};
 
     #[test]
     fn vendor_is_a_path_component() {
         assert!(is_vendor(Path::new("/tmp/app/vendor/pkg/A.php")));
         assert!(!is_vendor(Path::new("/tmp/app/my-vendor/A.php")));
+    }
+
+    #[test]
+    fn project_discovery_skips_vendor_tree() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let vendor = directory.path().join("vendor/package");
+        fs::create_dir_all(&vendor).expect("create vendor fixture");
+        fs::write(directory.path().join("App.php"), "<?php class App {}")
+            .expect("write project fixture");
+        fs::write(vendor.join("Dependency.php"), "<?php class Dependency {}")
+            .expect("write vendor fixture");
+
+        let files = discover_project(directory.path(), &FilterConfig::default())
+            .expect("discover project files");
+
+        assert_eq!(files.len(), 1);
+        assert!(files[0].path.ends_with("App.php"));
+        assert!(!files[0].vendor);
     }
 }

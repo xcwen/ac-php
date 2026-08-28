@@ -100,6 +100,13 @@ pub struct CachedFile {
     pub tags: FileTags,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VendorState {
+    pub schema: u32,
+    pub composer_lock_signature: Option<SourceSignature>,
+    pub file_count: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndexedFile {
     pub index: usize,

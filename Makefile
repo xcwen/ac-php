@@ -38,13 +38,10 @@ PANDOCLAGS ?= --fail-if-warnings \
 	--reference-links \
 	--atx-headers
 
-PKGDIR := $(shell $(CASKCMD) package-directory)
-
 # File lists
 SRCS = ac-php-core.el ac-php.el company-php.el helm-ac-php-apropros.el
 OBJS = $(SRCS:.el=.elc)
-
-VERSION ?= $(shell $(CASKCMD) version)
+TESTS = $(wildcard test/*-test.el)
 
 .SILENT: ;               # no need for @
 .ONESHELL: ;             # recipes execute in same shell
@@ -62,10 +59,24 @@ RUNEMACS =
 # Program availability
 HAVE_CASK := $(shell sh -c "command -v $(CASK)")
 ifndef HAVE_CASK
-$(warning "$(CASK) is not available.  Please run make help")
+$(info "$(CASK) is not available; using direct Emacs batch commands")
 RUNEMACS = $(EMACSBATCH)
 else
 RUNEMACS = $(CASKCMD) exec $(EMACSBATCH)
+endif
+
+ifndef HAVE_CASK
+PKGDIR := $(ROOT_DIR)/.cask
+else
+PKGDIR := $(shell $(CASKCMD) package-directory)
+endif
+
+ifndef VERSION
+ifdef HAVE_CASK
+VERSION := $(shell $(CASKCMD) version)
+else
+VERSION := development
+endif
 endif
 
 %.elc: %.el $(PKGDIR)
@@ -97,7 +108,13 @@ build: $(OBJS)
 
 .PHONY: test
 test:
+
+ifndef HAVE_CASK
+	$(EMACSBATCH) -L test -l test/test-helper.el \
+		$(addprefix -l ,$(TESTS)) -f ert-run-tests-batch-and-exit
+else
 	$(CASKCMD) exec ert-runner $(TESTFLAGS)
+endif
 
 .PHONY: clean
 clean:

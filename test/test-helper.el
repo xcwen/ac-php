@@ -31,6 +31,28 @@
 
 ;;; Code:
 
+(require 'package)
+
+;; `cask exec' normally initializes this directory.  Also support running the
+;; tests directly with `emacs -Q' when Cask itself is unavailable but its
+;; project-local packages have already been installed.
+(unless (and (locate-library "php-mode")
+             (locate-library "s")
+             (locate-library "f")
+             (locate-library "xcscope")
+             (locate-library "popup")
+             (locate-library "dash"))
+  (let* ((helper-file (or load-file-name (buffer-file-name)))
+         (project-root (locate-dominating-file helper-file "Cask"))
+         (local-elpa (and project-root
+                          (expand-file-name
+                           (format ".cask/%d.%d/elpa"
+                                   emacs-major-version emacs-minor-version)
+                           project-root))))
+    (when (and local-elpa (file-directory-p local-elpa))
+      (setq package-user-dir local-elpa)
+      (package-initialize))))
+
 (require 'ert-x)  ; `ert-with-test-buffer'
 (require 'cl-lib) ; `cl-defmacro'
 (require 'php-mode)

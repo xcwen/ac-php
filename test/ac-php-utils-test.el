@@ -33,6 +33,34 @@
 
 ;;; Code:
 
+(ert-deftest ac-php-utils/tags-backend-defaults ()
+  (should (eq ac-php-tags-backend 'auto))
+  (should (equal ac-php-mago-tags-executable "ac-php-mago-tags")))
+
+(ert-deftest ac-php-utils/tags-backend-auto-selection ()
+  (let ((ac-php-tags-backend 'auto))
+    (cl-letf (((symbol-function 'ac-php--mago-tags-executable)
+               (lambda () "/usr/local/bin/ac-php-mago-tags")))
+      (should (eq (ac-php--effective-tags-backend) 'mago)))
+    (cl-letf (((symbol-function 'ac-php--mago-tags-executable)
+               (lambda () nil)))
+      (should (eq (ac-php--effective-tags-backend) 'phpctags)))))
+
+(ert-deftest ac-php-utils/mago-tags-command ()
+  (let ((ac-php-tags-path "/tmp/ac-php-tags"))
+    (cl-letf (((symbol-function 'ac-php--mago-tags-executable)
+               (lambda () "/usr/local/bin/ac-php-mago-tags"))
+              ((symbol-function 'ac-php--get-tags-save-dir)
+               (lambda (_root) "/tmp/ac-php-tags/project/")))
+      (should
+       (equal
+        (ac-php--tags-process-command "/project/" t 'mago)
+        '("/usr/local/bin/ac-php-mago-tags"
+          "--workspace" "/project/"
+          "--config-file" "/project/.ac-php-conf.json"
+          "--output-dir" "/tmp/ac-php-tags/project/"
+          "--rebuild"))))))
+
 (ert-deftest ac-php-search/in-function-std-case ()
   :tags '(re search)
   (with-ac-php-file-test "in-function-std-case.php"

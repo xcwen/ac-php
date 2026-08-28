@@ -369,6 +369,22 @@ the necessary configuration file (`.ac-php-conf.json`) will be created automatic
 
 If source has been changed, you may need run `ac-php-remake-tags` to remake tags.
 
+The tag generator is selected by `ac-php-tags-backend`:
+
+- `auto` (the default) uses `ac-php-mago-tags` when it is executable, and
+  otherwise falls back to the bundled PHP generator;
+- `mago` requires the Rust generator configured by
+  `ac-php-mago-tags-executable`;
+- `phpctags` always uses the bundled PHP generator.
+
+For example, to use a locally built Mago generator:
+
+```elisp
+(setq ac-php-tags-backend 'mago
+      ac-php-mago-tags-executable
+      "/path/to/ac-php-mago-tags/target/release/ac-php-mago-tags")
+```
+
 ac-php internally uses [phpctags][:phpctags:], so its operability depends on the correct
 syntax you use in the project. If something goes wrong with one of your files, you can find
 all errors in the `*Messages*` buffer. For example:

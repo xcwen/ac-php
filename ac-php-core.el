@@ -146,6 +146,21 @@ tags for."
   :group 'ac-php
   :type 'string)
 
+(defcustom ac-php-tags-backend 'auto
+  "Tag generator backend.
+When set to `auto', prefer `mago' when
+`ac-php-mago-tags-executable' can be found, otherwise use `phpctags'."
+  :group 'ac-php
+  :type '(choice
+          (const auto)
+          (const mago)
+          (const phpctags)))
+
+(defcustom ac-php-mago-tags-executable "ac-php-mago-tags"
+  "Path to the Mago-based tag generator."
+  :group 'ac-php
+  :type 'file)
+
 ;;; Internal configuration
 
 (defconst ac-php-config-file ".ac-php-conf.json"
@@ -1624,6 +1639,47 @@ force rebuild)."
     ,(concat "--realpath_flag="
              (if ac-php-project-root-dir-use-truename "yes" "no"))))
 
+(defun ac-php--mago-tags-executable ()
+  "Return the executable path for the configured Mago tag generator.
+Return nil when `ac-php-mago-tags-executable' cannot be executed."
+  (let ((configured ac-php-mago-tags-executable))
+    (cond
+     ((or (null configured) (s-blank? configured)) nil)
+     ((file-name-absolute-p configured)
+      (and (file-executable-p configured) configured))
+     ((file-name-directory configured)
+      (let ((expanded (expand-file-name configured)))
+        (and (file-executable-p expanded) expanded)))
+     (t (executable-find configured)))))
+
+(defun ac-php--effective-tags-backend ()
+  "Return the tag generator backend to use for the current rebuild."
+  (pcase ac-php-tags-backend
+    ('auto (if (ac-php--mago-tags-executable) 'mago 'phpctags))
+    ((or 'mago 'phpctags) ac-php-tags-backend)
+    (_ (user-error "Unsupported ac-php tags backend: %S"
+                   ac-php-tags-backend))))
+
+(defun ac-php--tags-process-command (project-root-dir rebuild backend)
+  "Build the tag generator command for PROJECT-ROOT-DIR.
+REBUILD requests a full rebuild and BACKEND selects the generator."
+  (pcase backend
+    ('mago
+     (let ((executable (ac-php--mago-tags-executable)))
+       (unless executable
+         (user-error "Unable to locate Mago tag generator: %s"
+                     ac-php-mago-tags-executable))
+       (append
+        (list executable
+              "--workspace" project-root-dir
+              "--config-file" (f-join project-root-dir ac-php-config-file)
+              "--output-dir" (ac-php--get-tags-save-dir project-root-dir))
+        (when rebuild (list "--rebuild")))))
+    ('phpctags
+     (append (list ac-php-php-executable ac-php-ctags-executable)
+             (ac-php--ctags-opts project-root-dir rebuild)))
+    (_ (user-error "Unsupported ac-php tags backend: %S" backend))))
+
 (defun ac-php--rebuild-file-list (project-root-dir rebuild)
   "Indexing project files.
 
@@ -1631,22 +1687,17 @@ This function uses PROJECT-ROOT-DIR as a base path for the project files.  It
 also takes into account REBUILD flag, which means that the files should be
 processed even though they were recently processed (so-called force rebuild)."
   (message "ac-php: Rebuild file list...")
-  (let* ((arguments (ac-php--ctags-opts project-root-dir rebuild))
+  (let* ((backend (ac-php--effective-tags-backend))
+         (command (ac-php--tags-process-command
+                   project-root-dir rebuild backend))
          (process (apply 'start-process
                          "ac-phptags"
                          "*AC-PHPTAGS*"
-                         ac-php-php-executable
-                         ac-php-ctags-executable
-                         arguments)))
+                         command)))
 
-    (ac-php--debug
-     "%s %s %s %s %s %s"
-     ac-php-php-executable
-     ac-php-ctags-executable
-     (nth 0 arguments)
-     (nth 1 arguments)
-     (nth 2 arguments)
-     (nth 3 arguments))
+    (ac-php--debug "Tag backend: %s; command: %s"
+                   backend
+                   (mapconcat #'shell-quote-argument command " "))
 
     (ac-php-mode t)
 
@@ -1712,7 +1763,8 @@ process is doing the same."
 (defun ac-php--remake-tags-ex (project-root-dir force)
   "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
 This function is used internally by the function `ac-php--remake-tags'."
-  (let ((file-name (buffer-file-name)))
+  (let ((file-name (buffer-file-name))
+        (backend (ac-php--effective-tags-backend)))
 
     ;; Always rebuild tags if currently opened file is from vendor directory
     (when (and file-name (s-match "/vendor/" file-name))
@@ -1722,23 +1774,35 @@ This function is used internally by the function `ac-php--remake-tags'."
              (ac-php--reduce-path project-root-dir 60)
              (if force "with a forced rebuilding of all tags" ""))
 
-    (unless (f-exists? ac-php-ctags-executable)
-      (message (concat "ac-php: Unable to locate phpctags executable at %s\n"
-                       "ac-php: Restarting GNU Emacs might help")
-               ac-php-ctags-executable))
+    (pcase backend
+      ('mago
+       (unless (ac-php--mago-tags-executable)
+         (message "ac-php: Unable to locate Mago tag generator at %s"
+                  ac-php-mago-tags-executable)))
+      ('phpctags
+       (unless (f-exists? ac-php-ctags-executable)
+         (message (concat "ac-php: Unable to locate phpctags executable at %s\n"
+                          "ac-php: Restarting GNU Emacs might help")
+                  ac-php-ctags-executable))
 
-    (unless (and (not (s-blank? ac-php-php-executable))
-                 (f-exists? ac-php-php-executable))
-      (message (concat "ac-php: Unable to locate PHP executable at %s\n"
-                       "ac-php: You need to install PHP CLI and restart GNU Emacs")
-               ac-php-php-executable))
+       (unless (and (not (s-blank? ac-php-php-executable))
+                    (f-exists? ac-php-php-executable))
+         (message (concat "ac-php: Unable to locate PHP executable at %s\n"
+                          "ac-php: You need to install PHP CLI and restart GNU Emacs")
+                  ac-php-php-executable))))
 
     (unless project-root-dir
       (message "ac-php: The per-project configuration file '%s' doesn't exist at %s"
                ac-php-config-file
                (file-name-directory (buffer-file-name))))
 
-    (if (and (f-exists? ac-php-ctags-executable) ac-php-php-executable project-root-dir)
+    (if (and project-root-dir
+             (pcase backend
+               ('mago (ac-php--mago-tags-executable))
+               ('phpctags
+                (and (f-exists? ac-php-ctags-executable)
+                     (not (s-blank? ac-php-php-executable))
+                     (f-exists? ac-php-php-executable)))))
         (progn
           (ac-php--get-tags-save-dir project-root-dir)
           (ac-php--rebuild-file-list project-root-dir force))

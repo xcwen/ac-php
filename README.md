@@ -385,6 +385,32 @@ For example, to use a locally built Mago generator:
       "/path/to/ac-php-mago-tags/target/release/ac-php-mago-tags")
 ```
 
+Prebuilt `ac-php-mago-tags` binaries are attached to each [GitHub
+Release](https://github.com/xcwen/ac-php/releases). Choose the archive matching
+your machine:
+
+| System | Architecture | Release asset suffix |
+|---|---|---|
+| Linux | x86_64 | `linux-x86_64.tar.gz` |
+| Linux | arm64/aarch64 | `linux-aarch64.tar.gz` |
+| macOS | Intel | `macos-x86_64.tar.gz` |
+| macOS | Apple Silicon | `macos-aarch64.tar.gz` |
+
+After downloading and extracting the archive, install the executable somewhere
+on `PATH`, for example:
+
+```sh
+mkdir -p ~/.local/bin
+tar -xzf ac-php-mago-tags-v2.8.0-linux-x86_64.tar.gz
+install -m 755 \
+  ac-php-mago-tags-v2.8.0-linux-x86_64/ac-php-mago-tags \
+  ~/.local/bin/ac-php-mago-tags
+```
+
+Every release provides `SHA256SUMS` alongside the archives. Verify the archive
+before installing it. With `ac-php-mago-tags` available on `PATH`, the default
+`auto` backend selects it without additional Emacs configuration.
+
 ac-php internally uses [phpctags][:phpctags:], so its operability depends on the correct
 syntax you use in the project. If something goes wrong with one of your files, you can find
 all errors in the `*Messages*` buffer. For example:

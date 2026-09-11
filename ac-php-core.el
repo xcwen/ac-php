@@ -1038,6 +1038,34 @@ work for multi class hint:
      :bound (when in-defun-p
               (save-excursion (ac-php--beginning-of-defun) (beginning-of-line) (point))))))
 
+(defun ac-php--get-type-hinted-variable-class (variable &optional pos)
+  "Return the declared class for VARIABLE at POS.
+
+Recognize typed function parameters, closure imports, and catch variables
+within the current function."
+  (save-match-data
+    (save-excursion
+      (goto-char (or pos (point)))
+      (when (ac-php--in-function-p)
+        (let ((bound (save-excursion
+                       (ac-php--beginning-of-defun)
+                       (point)))
+              (regexp
+               (concat "\\(?:^\\|[^a-zA-Z0-9_-ÿ\\\\]\\)"
+                       "\\(" ac-php-re-namespace-unit-pattern "\\)"
+                       "\\s-+&?\\$" (regexp-quote variable)
+                       "\\(?:\\'\\|[^a-zA-Z0-9_-ÿ]\\)"))
+              result)
+          (while (and (not result) (re-search-backward regexp bound t))
+            (let ((type (match-string-no-properties 1))
+                  (type-pos (match-beginning 1)))
+              ;; The preceding delimiter can be the signature's opening
+              ;; parenthesis.  Check scope at the type itself instead.
+              (when (and (not (ac-php--in-string-or-comment-p type-pos))
+                         (ac-php--in-function-p type-pos))
+                (setq result (propertize type 'pos type-pos)))))
+          result)))))
+
 (defun ac-php--code-without-comments (start end)
   "Return buffer text from START to END with PHP comments replaced by spaces."
   (save-excursion
@@ -1238,15 +1266,7 @@ The nearest valid statement boundary is found before extracting the text."
           (unless first-class-name
             (ac-php--debug "Scan for funcation like call or a catch statement")
             (setq first-class-name
-                  (ac-php-get-syntax-backward
-                   (concat "\\(" ac-php-re-namespace-unit-pattern "\\)"
-                           "\\s-+\\(&\\)?$" first-key "\\s-*")
-                   :sexp 1
-                   :defun (ac-php--in-function-p pos)
-                   :bound (save-excursion
-                            (ac-php--beginning-of-defun)
-                            (beginning-of-line)
-                            (point))))
+                  (ac-php--get-type-hinted-variable-class first-key pos))
 
             ;; not  match return $e->xx;
             (when (string= first-class-name "return" )

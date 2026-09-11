@@ -36,8 +36,8 @@ class Testb extends Testa
      */
     public function get_v3($a = [])
     {
-         $this->get_v3()
-
+        // $this->get_v3()
+    }
 
     use Instance;
 

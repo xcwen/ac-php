@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::time::SystemTime;
 
 use anyhow::{Context, Result};
 
@@ -20,6 +21,12 @@ pub fn write_tag_file(path: &Path, tags: &TagSet) -> Result<bool> {
 
     let generated = fs::read(temporary.path())?;
     if fs::read(path).ok().as_deref() == Some(generated.as_slice()) {
+        fs::OpenOptions::new()
+            .write(true)
+            .open(path)
+            .with_context(|| format!("failed to open {}", path.display()))?
+            .set_times(fs::FileTimes::new().set_modified(SystemTime::now()))
+            .with_context(|| format!("failed to refresh {}", path.display()))?;
         return Ok(false);
     }
     temporary
@@ -100,10 +107,42 @@ pub fn escape(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::escape;
+    use std::fs;
+    use std::time::{Duration, SystemTime};
+
+    use crate::model::TagSet;
+
+    use super::{escape, write_tag_file};
 
     #[test]
     fn escapes_elisp_strings() {
         assert_eq!(escape("a\\b\"c\nd"), "a\\\\b\\\"c\\nd");
+    }
+
+    #[test]
+    fn refreshes_unchanged_tag_file_modification_time() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("tags.el");
+        let tags = TagSet::default();
+
+        assert!(write_tag_file(&path, &tags).expect("initial tag write"));
+        let contents = fs::read(&path).expect("tag contents");
+        let old_modified = SystemTime::UNIX_EPOCH + Duration::from_secs(86_400);
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .expect("open tag file")
+            .set_times(fs::FileTimes::new().set_modified(old_modified))
+            .expect("set old modification time");
+
+        assert!(!write_tag_file(&path, &tags).expect("unchanged tag write"));
+        assert_eq!(fs::read(&path).expect("refreshed tag contents"), contents);
+        assert!(
+            fs::metadata(&path)
+                .expect("refreshed tag metadata")
+                .modified()
+                .expect("refreshed modification time")
+                > old_modified
+        );
     }
 }

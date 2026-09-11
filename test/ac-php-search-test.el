@@ -250,6 +250,64 @@ class Bar {}"
    (goto-char (point-max))
    (should (string= (ac-php-get-annotated-var-class "extension") "Fake"))))
 
+(ert-deftest ac-php-search/parameter-type-hint-with-import-alias ()
+  :tags '(re search)
+  (with-ac-php-buffer-test
+      "<?php
+namespace App\\Controllers\\Root;
+
+use \\Proto\\Project as P;
+
+class Test extends Controller
+{
+    /**
+     * 测试
+     */
+    public function test2(P\\Root\\test__test2\\in  $in, P\\Root\\test__test2\\out &$out) {
+        $in->
+    }
+}"
+    (search-forward "$in->")
+    (should (equal (ac-php--get-type-hinted-variable-class "in")
+                   "P\\Root\\test__test2\\in"))
+    (let ((tags-data (list (make-hash-table :test #'equal)
+                           (make-hash-table :test #'equal)
+                           (make-hash-table :test #'equal)
+                           [] "/project/")))
+      (puthash "\\Proto\\Project\\Root\\test__test2\\in"
+               ["c" "\\Proto\\Project\\Root\\test__test2\\in"
+                "" "" "\\Proto\\Project\\Root\\test__test2\\in"]
+               (ac-php-g--function-map tags-data))
+      (should (equal (ac-php-get-class-at-point tags-data)
+                     "\\Proto\\Project\\Root\\test__test2\\in.")))))
+
+(ert-deftest ac-php-search/type-hint-signature-layouts ()
+  (dolist (spacing '("" "  " "\n        "))
+    (with-ac-php-buffer-test
+        (concat "<?php\nclass Test {\n    public function test2("
+                spacing "P\\Input $in, P\\Output &$out) {\n"
+                "        $in->\n    }\n}")
+      (search-forward "$in->")
+      (let* ((pos (point))
+             (type (ac-php--get-type-hinted-variable-class "in")))
+        (should (equal type "P\\Input"))
+        (should (equal (buffer-substring-no-properties
+                        (get-text-property 0 'pos type)
+                        (+ (get-text-property 0 'pos type) (length type)))
+                       "P\\Input"))
+        (should (equal (ac-php--get-type-hinted-variable-class "out")
+                       "P\\Output"))
+        (goto-char (point-min))
+        (should (equal (ac-php--get-type-hinted-variable-class "in" pos)
+                       "P\\Input"))
+        (should (= (point) (point-min)))))))
+
+(ert-deftest ac-php-search/type-hint-rejects-prefixes-and-comments ()
+  (with-ac-php-buffer-test
+      "<?php\nfunction previous(Other $in) {}\nfunction test2(Real $input) {\n// Fake $in\n$text = 'Fake $in';\n$in->\n}"
+    (search-forward "$in->")
+    (should-not (ac-php--get-type-hinted-variable-class "in"))))
+
 (ert-deftest ac-php-search/syntax-backward-returns-nearest-same-line-match ()
   :tags '(re search)
   (with-ac-php-buffer-test

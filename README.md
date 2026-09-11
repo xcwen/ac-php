@@ -401,9 +401,9 @@ on `PATH`, for example:
 
 ```sh
 mkdir -p ~/.local/bin
-tar -xzf ac-php-mago-tags-v2.8.0-linux-x86_64.tar.gz
+tar -xzf ac-php-mago-tags-v2.8.1-linux-x86_64.tar.gz
 install -m 755 \
-  ac-php-mago-tags-v2.8.0-linux-x86_64/ac-php-mago-tags \
+  ac-php-mago-tags-v2.8.1-linux-x86_64/ac-php-mago-tags \
   ~/.local/bin/ac-php-mago-tags
 ```
 

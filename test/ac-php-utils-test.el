@@ -237,6 +237,54 @@
                         0 'ac-php-return-type shared-method)
                        "child-shared-method"))))))
 
+(ert-deftest ac-php-utils/late-static-intersection-keeps-receiver-class ()
+  (let* ((class-map (make-hash-table :test #'equal))
+         (inherit-map (make-hash-table :test #'equal))
+         (function-map (make-hash-table :test #'equal))
+         (service-base "\\App\\Service\\ServiceBase")
+         (user-class "\\App\\Service\\User\\User")
+         (instance-method
+          (vector "m" "instance(" "" "ServiceBase.php:10"
+                  (concat service-base "&static") service-base "public" "1"))
+         (add-user-method
+          (vector "m" "add_user(" "" "User.php:20" "bool"
+                  user-class "public" ""))
+         (tags-data (list class-map function-map inherit-map [] "/project/")))
+    (puthash service-base (vector instance-method) class-map)
+    (puthash user-class (vector add-user-method) class-map)
+    (puthash user-class
+             (vector "c" user-class "" "User.php:1" user-class)
+             function-map)
+    (puthash user-class (vector service-base) inherit-map)
+    (let ((resolved-class
+           (ac-php-get-class-name-by-key-list
+            tags-data (concat user-class ".instance("))))
+      (should (equal resolved-class user-class))
+      (should
+       (eq add-user-method
+           (ac-php-get-class-member-info
+            class-map inherit-map resolved-class "add_user(" tags-data))))
+    (dolist (expression
+             '("<?php\n$result = \\App\\Service\\User\\User::instance()->add_user("
+               "<?php\n$result = \\App\\Service\\User\\User::instance()\n    ->add_user("))
+      (with-ac-php-buffer-test expression
+        (goto-char (1- (point-max)))
+        (let ((symbol (ac-php-find-symbol-at-point-pri tags-data)))
+          (should (equal (car symbol) "class_member"))
+          (should (eq (nth 3 symbol) add-user-method)))))))
+
+(ert-deftest ac-php-utils/resolves-late-bound-return-type-variants ()
+  (let ((receiver "\\App\\Service\\User\\User"))
+    (dolist (return-type
+             '("self" "static" "$this" "\\App\\Service\\ServiceBase&static"
+               "(\\App\\Contract&static)|null"))
+      (should
+       (equal (ac-php--resolve-member-return-type return-type receiver)
+              receiver)))
+    (should
+     (equal (ac-php--resolve-member-return-type "\\App\\Result" receiver)
+            "\\App\\Result"))))
+
 (ert-deftest ac-php-utils/use-imports-remain-unique ()
   (with-ac-php-buffer-test
       "<?php\nuse Foo\\Bar;\nuse Foo\\Bar;\nuse Baz\\Qux as Alias;\nuse Baz\\Qux as Alias;\n"

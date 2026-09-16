@@ -152,6 +152,18 @@
             "a  .  b" "[ \t]*\\.[ \t]*" "." t)
            '("a" "." "b"))))
 
+(ert-deftest ac-php-parser/object-operators-allow-line-breaks ()
+  (dolist (expression '("$service::instance()\n  ->run"
+                        "$service\n  ?->run"
+                        "$service\n  ::\n  instance()\n  ->run"))
+    (should
+     (equal
+      (ac-php-remove-unnecessary-items-4-complete-method
+       (ac-php-split-line-4-complete-method expression))
+      (if (string-match-p "instance" expression)
+          '("service::" "." "instance(" "." "run")
+        '("service" "." "run"))))))
+
 (ert-deftest ac-php-parser/token-stack-does-not-read-input-as-elisp ()
   (should (equal
            (ac-php-remove-unnecessary-items-4-complete-method

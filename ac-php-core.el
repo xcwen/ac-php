@@ -777,12 +777,12 @@ been replaced by '."
 
       ;; class->method => class.method
       (setq line-string (replace-regexp-in-string
-                         "[ \t]*\\??->[ \t]*" "."
+                         "[ \t\n\r]*\\??->[ \t\n\r]*" "."
                          line-string) )
 
       ;; :: => ::.
       (setq line-string (replace-regexp-in-string
-                         "[ \t]*::[ \t]*" "::."
+                         "[ \t\n\r]*::[ \t\n\r]*" "::."
                          line-string))
 
       ;; new | return | echo => ;
@@ -2459,6 +2459,21 @@ TAGS-DATA enables generation-scoped lazy indexes and result caching."
   "D '\\Class1,interface1' => Class1 PARENT-LIST-STR."
   (s-trim (aref (s-split "," parent-list-str) 1)))
 
+(defun ac-php--resolve-member-return-type (return-type receiver-class)
+  "Resolve RETURN-TYPE relative to RECEIVER-CLASS.
+
+`self', `static', and PHPDoc's `$this' describe the object on which the
+member was resolved.  They can also occur inside compound types such as
+`ServiceBase&static'.  The completion engine follows one class at a time, so
+keep the receiver class when any of these late-bound types is present."
+  (if (and (stringp return-type)
+           (stringp receiver-class)
+           (or (string-match-p
+                "\\b\\(?:self\\|static\\)\\b" return-type)
+               (string-match-p "\\$this\\b" return-type)))
+      receiver-class
+    return-type))
+
 (defun ac-php-get-class-name-by-key-list(tags-data key-list-str)
   "D TAGS-DATA KEY-LIST-STR."
   (let (temp-class (cur-class "")
@@ -2490,23 +2505,22 @@ TAGS-DATA enables generation-scoped lazy indexes and result caching."
                             class-map inherit-map cur-class item tags-data))
                      (setq cur-class (if member-info
                                          (let (tmp-class cur-namespace relative-classname member-local-class-name)
-                                           (setq tmp-class (aref member-info 4))
+                                           (setq tmp-class
+                                                 (ac-php--resolve-member-return-type
+                                                  (aref member-info 4)
+                                                  cur-class))
                                            (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info)
-                                           (if (string= "self" tmp-class )
-                                               (progn
-                                                 cur-class
-                                                 )
-                                             (when (stringp tmp-class)
-                                               (if (ac-php--check-global-name tmp-class)
-                                                   ;;  global name, like \test\ss
-                                                   tmp-class
-                                                 (progn;; tmp-class like test\ss
-                                                   ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
-                                                   (setq member-local-class-name (aref member-info 5))
-                                                   (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
-                                                   (setq relative-classname (concat cur-namespace "\\" tmp-class))
-                                                   (ac-php--debug " 2 relative-classname %s " relative-classname)
-                                                   relative-classname)))))
+                                           (when (stringp tmp-class)
+                                             (if (ac-php--check-global-name tmp-class)
+                                                 ;;  global name, like \test\ss
+                                                 tmp-class
+                                               (progn;; tmp-class like test\ss
+                                                 ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
+                                                 (setq member-local-class-name (aref member-info 5))
+                                                 (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
+                                                 (setq relative-classname (concat cur-namespace "\\" tmp-class))
+                                                 (ac-php--debug " 2 relative-classname %s " relative-classname)
+                                                 relative-classname))))
                                        ""))))
 
                  (when (string= cur-class "")
@@ -2562,10 +2576,9 @@ TAGS-DATA enables generation-scoped lazy indexes and result caching."
                   (if member-info
                       (progn
                         (let (return-type)
-                          (setq return-type  (aref member-info 4)  )
-                          (when (string=  return-type "self" )
-                            (setq return-type  class-name )
-                            )
+                          (setq return-type
+                                (ac-php--resolve-member-return-type
+                                 (aref member-info 4) class-name))
                           (setq ret (list "class_member" (aref member-info 3) return-type member-info)))
 
                         )

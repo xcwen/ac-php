@@ -2634,7 +2634,8 @@ keep the receiver class when any of these late-bound types is present."
     (setq local-var (ac-php-get-cur-word-with-dollar))
     (setq local-var-flag (s-matches-p "^\\$" local-var))
 
-    (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
+    (setq symbol-ret (or (ac-php--named-argument-symbol tags-data)
+                         (ac-php-find-symbol-at-point-pri tags-data)))
 
     (ac-php--debug "11goto %s" symbol-ret)
     (unless symbol-ret
@@ -2659,7 +2660,7 @@ keep the receiver class when any of these late-bound types is present."
                       )
                   (ac-php--goto-local-var-def local-var)))
             (cond
-             ((or (string= type "class_member") (string= type "user_function"))
+             ((member type '("class_member" "user_function" "named_argument"))
               (let ((file-pos (nth 1 symbol-ret)) tmp-arr)
                 (setq tmp-arr (s-split ":" file-pos))
                 (ac-php--debug "tmp-arr %S" tmp-arr)
@@ -2675,7 +2676,13 @@ keep the receiver class when any of these late-bound types is present."
                            (aref file-list (string-to-number (nth 0 tmp-arr)))
                            ":" (nth 1 tmp-arr)))
                     (ac-php-location-stack-push)
-                    (ac-php-goto-location jump-pos)))))))))
+                    (ac-php-goto-location jump-pos)
+                    (when (string= type "named_argument")
+                      (let ((parameter-pos
+                             (ac-php--parameter-definition-position
+                              (nth 4 symbol-ret))))
+                        (when parameter-pos
+                          (goto-char parameter-pos))))))))))))
       (when local-var-flag (ac-php--goto-local-var-def local-var)))))
 
 (defun ac-php-gen-def ()
@@ -2737,6 +2744,239 @@ keep the receiver class when any of these late-bound types is present."
           (if v v ""))
       "")))
 
+(defun ac-php--argument-ranges (start end)
+  "Split arguments between START and END at top-level commas.
+Return a list of (START . END) buffer positions, preserving empty arguments."
+  (save-excursion
+    (goto-char start)
+    (let ((depth (car (syntax-ppss start)))
+          (argument-start start)
+          ranges)
+      (while (search-forward "," end t)
+        (let* ((comma (1- (point)))
+               (state (save-excursion (syntax-ppss comma))))
+          (when (and (= (car state) depth)
+                     (not (nth 3 state)) (not (nth 4 state)))
+            (push (cons argument-start comma) ranges)
+            (setq argument-start (1+ comma)))))
+      (nreverse (cons (cons argument-start end) ranges)))))
+
+(defun ac-php--named-argument-context ()
+  "Return the argument-name context at point, or nil.
+Only the beginning of an argument in the innermost parenthesized expression
+is eligible; argument values, strings, comments and arrays are excluded."
+  (save-excursion
+    (let* ((pos (point))
+           (state (syntax-ppss pos))
+           (open (nth 1 state)))
+      (when (and open (eq (char-after open) ?\()
+                 (not (nth 3 state)) (not (nth 4 state)))
+        (let* ((end (or (condition-case nil
+                           (let ((close (scan-sexps open 1)))
+                             (and close (1- close)))
+                         (scan-error nil))
+                       pos))
+               (ranges (ac-php--argument-ranges (1+ open) end))
+               (current (cl-find-if
+                         (lambda (range)
+                           (<= (car range) pos (cdr range)))
+                         ranges)))
+          (when current
+            (let ((prefix (s-trim (ac-php--code-without-comments
+                                   (car current) pos))))
+              (when (string-match-p
+                     "\\`\\(?:[[:alpha:]_][[:alnum:]_]*\\)?\\'" prefix)
+                (list :open open :current current :ranges ranges
+                      :prefix prefix)))))))))
+
+(defun ac-php--callable-tag (tags-data open)
+  "Resolve the function, method or constructor called at OPEN in TAGS-DATA."
+  (save-excursion
+    (goto-char open)
+    (forward-comment (- (buffer-size)))
+    (let ((name-end (point)))
+      (skip-chars-backward "a-zA-Z0-9_\\\\")
+      (let* ((name-start (point))
+             (name (buffer-substring-no-properties name-start name-end))
+             (function-map (ac-php-g--function-map tags-data))
+             (previous-word
+              (save-excursion
+                (forward-comment (- (buffer-size)))
+                (when (eq (char-before) ?&)
+                  (backward-char)
+                  (forward-comment (- (buffer-size))))
+                (let ((word-end (point)))
+                  (skip-chars-backward "a-zA-Z_")
+                  (downcase (buffer-substring-no-properties
+                             (point) word-end)))))
+             (constructor-p (string= previous-word "new")))
+        (when (and (not (string= name ""))
+                   (not (eq (char-before name-start) ?$))
+                   (not (member previous-word '("function" "fn"))))
+          (goto-char name-end)
+          (let ((chain (unless constructor-p
+                         (ac-php-get-class-at-point tags-data))))
+            (if chain
+                (let ((class-name
+                       (ac-php-get-class-name-by-key-list
+                        tags-data (replace-regexp-in-string
+                                   "\\.[^.]*$" "" chain))))
+                  (ac-php-get-class-member-info
+                   (ac-php-g--class-map tags-data)
+                   (ac-php-g--inherit-map tags-data)
+                   class-name (concat name "(") tags-data))
+              (let* ((class-name
+                      (when constructor-p
+                        (if (member (downcase name) '("self" "static" "parent"))
+                            (ac-php-get-class-name-by-key-list
+                             tags-data
+                             (concat (ac-php-get-cur-full-class-name)
+                                     (if (string= (downcase name) "parent")
+                                         ".__parent__" "")))
+                          (ac-php--get-class-full-name-in-cur-buffer
+                           name function-map nil))))
+                     (full-name
+                      (ac-php--get-class-full-name-in-cur-buffer
+                       (concat (or class-name name) "(") function-map nil)))
+                (or (and full-name (gethash full-name function-map))
+                    (and class-name
+                         (ac-php-get-class-member-info
+                          (ac-php-g--class-map tags-data)
+                          (ac-php-g--inherit-map tags-data)
+                          class-name "__construct(" tags-data)))))))))))
+
+(defun ac-php--signature-parameters (signature)
+  "Return (NAME . DECLARATION) pairs from a tagged PHP SIGNATURE."
+  (when (and (stringp signature) (not (string= signature "")))
+    (let ((table (syntax-table)))
+      (with-temp-buffer
+        (set-syntax-table table)
+        (insert (ac-php-clean-document signature))
+        (let (parameters)
+          (dolist (range (ac-php--argument-ranges (point-min) (point-max)))
+            (let ((declaration (s-trim (ac-php--code-without-comments
+                                      (car range) (cdr range)))))
+              (when (string-match
+                     "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" declaration)
+                (push (cons (match-string 1 declaration) declaration)
+                      parameters))))
+          (nreverse parameters))))))
+
+(defun ac-php--named-argument-symbol (tags-data)
+  "Return symbol information for a named argument label at point in TAGS-DATA."
+  (save-match-data
+    (save-excursion
+      (skip-chars-backward "a-zA-Z0-9_")
+      (let ((start (point)))
+        (skip-chars-forward "a-zA-Z0-9_")
+        (let* ((end (point))
+               (name (buffer-substring-no-properties start end))
+               (context (ac-php--named-argument-context))
+               (tag (and context tags-data (not (string= name ""))
+                         (string= name (plist-get context :prefix))
+                         (ac-php--callable-tag
+                          tags-data (plist-get context :open)))))
+          (forward-comment (buffer-size))
+          (when (and tag (eq (char-after) ?:)
+                     (not (eq (char-after (1+ (point))) ?:))
+                     (assoc name (ac-php--signature-parameters (aref tag 2))))
+            (list "named_argument" (aref tag 3) "" tag name)))))))
+
+(defun ac-php--parameter-definition-position (name)
+  "Find parameter NAME in the callable declared on the current indexed line.
+Return its buffer position, or nil without moving point.  Only the signature
+is searched, excluding attributes, comments, literals and default values."
+  (save-match-data
+    (save-excursion
+      (let ((line-start (line-beginning-position))
+            (line-end (line-end-position))
+            open result)
+        (goto-char line-end)
+        (while (and (not open) (re-search-backward "\\_<function\\_>" nil t))
+          (let ((function-pos (point))
+                (function-end (match-end 0)))
+            (unless (ac-php--in-string-or-comment-p function-pos)
+              (save-excursion
+                (goto-char function-end)
+                (forward-comment (buffer-size))
+                (when (eq (char-after) ?&)
+                  (forward-char)
+                  (forward-comment (buffer-size)))
+                (when (looking-at "[[:alpha:]_][[:alnum:]_]*")
+                  (let ((name-pos (point)))
+                    (goto-char (match-end 0))
+                    (forward-comment (buffer-size))
+                    (when (and (eq (char-after) ?\()
+                               (or (<= line-start function-pos line-end)
+                                   (<= line-start name-pos line-end)))
+                      (setq open (point)))))))))
+        (when open
+          (let ((close (condition-case nil (scan-sexps open 1)
+                         (scan-error nil)))
+                (depth (1+ (car (syntax-ppss open)))))
+            (when close
+              (dolist (range (ac-php--argument-ranges (1+ open) (1- close)))
+                (goto-char (car range))
+                (let (parameter-found)
+                  (while (and (not parameter-found)
+                              (re-search-forward
+                               "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" (cdr range) t))
+                    (let* ((parameter-name (match-string-no-properties 1))
+                           (parameter-pos (match-beginning 0))
+                           (state (save-excursion (syntax-ppss parameter-pos))))
+                      (when (and (= (car state) depth)
+                                 (not (nth 3 state)) (not (nth 4 state)))
+                        (setq parameter-found t)
+                        (when (string= name parameter-name)
+                          (setq result parameter-pos))))))))))
+        result))))
+
+(defun ac-php-candidate-named-argument (tags-data)
+  "Return PHP named argument candidates at point using TAGS-DATA."
+  (save-match-data
+    (save-excursion
+      (let* ((context (ac-php--named-argument-context))
+             (tag (and context tags-data
+                       (ac-php--callable-tag
+                        tags-data (plist-get context :open)))))
+        (when tag
+          (let* ((parameters (ac-php--signature-parameters (aref tag 2)))
+                 (current (plist-get context :current))
+                 (prefix (plist-get context :prefix))
+                 (colon-present-p
+                  (save-excursion
+                    (skip-chars-forward "a-zA-Z0-9_")
+                    (forward-comment (buffer-size))
+                    (and (eq (char-after) ?:)
+                         (not (eq (char-after (1+ (point))) ?:)))))
+                 (positional-count 0)
+                 used candidates)
+            (dolist (range (plist-get context :ranges))
+              (unless (eq range current)
+                (let ((argument (s-trim (ac-php--code-without-comments
+                                        (car range) (cdr range)))))
+                  (cond
+                   ((string-match
+                     (concat "\\`\\([[:alpha:]_][[:alnum:]_]*\\)"
+                             "[ \t\n\r]*:\\(?:[^:]\\|\\'\\)") argument)
+                    (push (match-string 1 argument) used))
+                   ((and (< (car range) (car current))
+                         (not (string= argument ""))
+                         (not (string-prefix-p "..." argument)))
+                    (setq positional-count (1+ positional-count)))))))
+            (dolist (parameter (nthcdr positional-count parameters))
+              (let ((name (car parameter)))
+                (when (and (string-prefix-p prefix name)
+                           (not (member name used)))
+                  (push (propertize
+                         (concat name (if colon-present-p "" ": "))
+                         'ac-php-help (cdr parameter)
+                         'ac-php-tag-type "v"
+                         'ac-php-return-type ""
+                         'summary "")
+                        candidates))))
+            (nreverse candidates)))))))
+
 (defun ac-php-candidate ()
   "Doc."
   (let (key-str-list tags-data)
@@ -2744,9 +2984,10 @@ keep the receiver class when any of these late-bound types is present."
     (setq tags-data (ac-php-get-tags-data))
     (setq key-str-list (ac-php-get-class-at-point tags-data))
     (ac-php--debug "GET key-str-list :%s" key-str-list)
-    (if key-str-list
-        (ac-php-candidate-class tags-data key-str-list)
-      (ac-php-candidate-other tags-data))))
+    (append (ac-php-candidate-named-argument tags-data)
+            (if key-str-list
+                (ac-php-candidate-class tags-data key-str-list)
+              (ac-php-candidate-other tags-data)))))
 
 ;; "Return a 'word' before current point.
 

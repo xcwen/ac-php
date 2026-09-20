@@ -3316,6 +3316,84 @@ The result records both the right-hand-side text and its buffer start."
       (setq index (1+ index)))
     result))
 
+(defun ac-php--matching-angle-bracket-in-string (text open)
+  "Return the closing angle bracket in TEXT matching OPEN, or nil."
+  (let ((index (1+ open)) (depth 1) (length (length text))
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?<) (setq depth (1+ depth)))
+         ((eq character ?>)
+          (setq depth (1- depth))
+          (when (= depth 0)
+            (setq result index)))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--phpdoc-template-bounds (declarations)
+  "Return (TEMPLATE . BOUND) pairs from method template DECLARATIONS."
+  (let (bounds)
+    (when declarations
+      (dolist (declaration
+               (ac-php--split-top-level-type declarations ?,))
+        (let ((declaration (s-trim declaration)))
+          (when (string-match
+                 (concat
+                  "\\`\\([[:alpha:]_][[:alnum:]_]*\\)"
+                  "[ \t\n\r]+\\(?:of\\|as\\)[ \t\n\r]+\\(.+\\)\\'")
+                 declaration)
+            (push (cons (match-string 1 declaration)
+                        (s-trim (match-string 2 declaration)))
+                  bounds)))))
+    (nreverse bounds)))
+
+(defun ac-php--phpdoc-method-info-from-value (value name index)
+  "Return parameter INDEX information for @method VALUE named NAME.
+The result contains the parameter type and any inline method template bounds."
+  (let ((pattern (concat "\\_<" (regexp-quote name) "\\_>"))
+        (scan 0))
+    (catch 'info
+      (while (string-match pattern value scan)
+        (let ((cursor (match-end 0)) templates)
+          (setq scan cursor)
+          (while (and (< cursor (length value))
+                      (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+            (setq cursor (1+ cursor)))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?<))
+            (let ((close
+                   (ac-php--matching-angle-bracket-in-string value cursor)))
+              (when close
+                (setq templates (substring value (1+ cursor) close)
+                      cursor (1+ close))
+                (while (and (< cursor (length value))
+                            (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+                  (setq cursor (1+ cursor))))))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?\())
+            (let ((close
+                   (ac-php--matching-parenthesis-in-string value cursor)))
+              (when close
+                (let* ((parameter
+                        (nth index
+                             (ac-php--split-top-level-type
+                              (substring value (1+ cursor) close) ?,)))
+                       (type
+                        (ac-php--parameter-type-from-declaration parameter)))
+                  (when parameter
+                    (throw 'info
+                           (list :type type
+                                 :templates
+                                 (ac-php--phpdoc-template-bounds templates))))))))))
+      nil)))
+
 (defun ac-php--parameter-type-from-declaration (declaration)
   "Return the type preceding the parameter variable in DECLARATION."
   (when (and declaration
@@ -3327,25 +3405,18 @@ The result records both the right-hand-side text and its buffer start."
              "[ \t]*\\(?:&\\|[.][.][.]\\)[ \t]*\\'" "" type))
       (unless (string= type "") type))))
 
+(defun ac-php--phpdoc-method-parameter-info (name index)
+  "Return @method NAME's parameter information at INDEX in this buffer."
+  (catch 'info
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
+      (let ((info
+             (ac-php--phpdoc-method-info-from-value value name index)))
+        (when info (throw 'info info))))
+    nil))
+
 (defun ac-php--phpdoc-method-parameter-type (name index)
   "Return @method NAME's parameter type at zero-based INDEX in this buffer."
-  (catch 'type
-    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
-      (when (string-match
-             (concat "\\_<" (regexp-quote name) "\\_>[ \t\n\r]*(")
-             value)
-        (let* ((open (1- (match-end 0)))
-               (close (ac-php--matching-parenthesis-in-string value open)))
-          (when close
-            (let ((parameter
-                   (nth index
-                        (ac-php--split-top-level-type
-                         (substring value (1+ open) close) ?,))))
-              (when parameter
-                (let ((type
-                       (ac-php--parameter-type-from-declaration parameter)))
-                  (when type (throw 'type type)))))))))
-    nil))
+  (plist-get (ac-php--phpdoc-method-parameter-info name index) :type))
 
 (defun ac-php--local-callable-declaration (name pos)
   "Return the declaration position of local callable NAME near POS."
@@ -3434,15 +3505,20 @@ The result records both the right-hand-side text and its buffer start."
 
 (defun ac-php--phpdoc-method-parameter-type-in-file (file name index)
   "Return @method NAME's parameter type at INDEX from FILE."
+  (plist-get
+   (ac-php--phpdoc-method-parameter-info-in-file file name index) :type))
+
+(defun ac-php--phpdoc-method-parameter-info-in-file (file name index)
+  "Return @method NAME's parameter information at INDEX from FILE."
   (when (and file (file-readable-p file))
     (let ((buffer (get-file-buffer file)))
       (if buffer
           (with-current-buffer buffer
-            (ac-php--phpdoc-method-parameter-type name index))
+            (ac-php--phpdoc-method-parameter-info name index))
         (with-temp-buffer
           (insert-file-contents file)
           (php-mode)
-          (ac-php--phpdoc-method-parameter-type name index))))))
+          (ac-php--phpdoc-method-parameter-info name index))))))
 
 (defun ac-php--tagged-callable-parameter-type (tags-data context)
   "Return CONTEXT's parameter type from indexed TAGS-DATA or its source."
@@ -3551,6 +3627,109 @@ Return a list of (START . END) buffer positions, preserving empty arguments."
             (push (cons argument-start comma) ranges)
             (setq argument-start (1+ comma)))))
       (nreverse (cons (cons argument-start end) ranges)))))
+
+(defun ac-php--string-literal-argument-context (&optional pos)
+  "Return direct string argument completion context at POS, or nil."
+  (save-match-data
+    (save-excursion
+      (goto-char (or pos (point)))
+      (let* ((target (point))
+             (state (syntax-ppss target))
+             (string-start (and (nth 3 state) (nth 8 state))))
+        (when string-start
+          (let* ((call-open (nth 1 (syntax-ppss string-start)))
+                 (callable
+                  (and call-open
+                       (eq (char-after call-open) ?\()
+                       (ac-php--callable-name-before-open call-open)))
+                 (ranges
+                  (and callable
+                       (ac-php--argument-ranges
+                        (1+ call-open) string-start)))
+                 (current (car (last ranges))))
+            (when (and current
+                       (string=
+                        (s-trim
+                         (ac-php--code-without-comments
+                          (car current) string-start))
+                        ""))
+              (list :callable callable
+                    :argument-index (1- (length ranges))
+                    :prefix
+                    (buffer-substring-no-properties
+                     (1+ string-start) target)
+                    :call-open call-open))))))))
+
+(defun ac-php--string-literals-from-type (type)
+  "Return string literal alternatives declared by PHPDoc TYPE."
+  (let (literals)
+    (when (stringp type)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let ((alternative (s-trim alternative)) value)
+          (cond
+           ((string-match "\\`'\\([^']*\\)'\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match "\\`\"\\([^\"]*\\)\"\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*'\\([^']*\\)'[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*\"\\([^\"]*\\)\"[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative))))
+          (when (and value (not (member value literals)))
+            (push value literals)))))
+    (nreverse literals)))
+
+(defun ac-php--tagged-phpdoc-method-parameter-info (tags-data context)
+  "Return source PHPDoc method information for indexed call CONTEXT."
+  (when (and tags-data (plist-get context :call-open))
+    (let ((tag (ac-php--callable-tag
+                tags-data (plist-get context :call-open))))
+      (and tag
+           (ac-php--phpdoc-method-parameter-info-in-file
+            (ac-php--tag-source-file tags-data tag)
+            (plist-get context :callable)
+            (plist-get context :argument-index))))))
+
+(defun ac-php-candidate-string-literal (tags-data &optional context)
+  "Return string literal argument candidates using TAGS-DATA.
+CONTEXT may be supplied from `ac-php--string-literal-argument-context'."
+  (let* ((context
+          (or context (ac-php--string-literal-argument-context)))
+         (name (plist-get context :callable))
+         (index (plist-get context :argument-index))
+         (local-type
+          (and context
+               (ac-php--local-callable-parameter-type
+                name index (point))))
+         (source-info
+          (and context
+               (or (ac-php--tagged-phpdoc-method-parameter-info
+                    tags-data context)
+                   (ac-php--phpdoc-method-parameter-info name index))))
+         (type
+          (and context
+               (or local-type
+                   (plist-get source-info :type)
+                   (ac-php--tagged-callable-parameter-type
+                    tags-data context))))
+         (bound
+          (and type
+               (cdr (assoc type (plist-get source-info :templates)))))
+         (literal-type (or bound type))
+         candidates)
+    (dolist (literal (ac-php--string-literals-from-type literal-type))
+      (push (propertize
+             literal
+             'ac-php-help literal-type
+             'ac-php-return-type type
+             'ac-php-tag-type "v"
+             'summary literal-type)
+            candidates))
+    (nreverse candidates)))
 
 (defun ac-php--named-argument-context ()
   "Return the argument-name context at point, or nil.
@@ -3770,18 +3949,23 @@ is searched, excluding attributes, comments, literals and default values."
 
 (defun ac-php-candidate ()
   "Doc."
-  (let (key-str-list tags-data array-context)
+  (let (key-str-list tags-data array-context literal-context)
     (ac-php--debug "=== 1ac-php-candidate")
     (setq tags-data (ac-php-get-tags-data))
     (setq array-context (ac-php--array-key-context))
-    (if array-context
-        (ac-php-candidate-array-key tags-data array-context)
+    (setq literal-context (ac-php--string-literal-argument-context))
+    (cond
+     (array-context
+      (ac-php-candidate-array-key tags-data array-context))
+     (literal-context
+      (ac-php-candidate-string-literal tags-data literal-context))
+     (t
       (setq key-str-list (ac-php-get-class-at-point tags-data))
       (ac-php--debug "GET key-str-list :%s" key-str-list)
       (append (ac-php-candidate-named-argument tags-data)
               (if key-str-list
                   (ac-php-candidate-class tags-data key-str-list)
-                (ac-php-candidate-other tags-data))))))
+                (ac-php-candidate-other tags-data)))))))
 
 ;; "Return a 'word' before current point.
 

@@ -2958,30 +2958,37 @@ A value includes continuation lines up to the next PHPDoc tag."
             values))
     (nreverse values)))
 
-(defun ac-php--phpstan-type-aliases ()
-  "Return PHPStan type aliases declared in PHPDoc comments in this buffer.
-Each result is a cons cell whose car is the alias and whose cdr is its complete
-possibly multiline type expression.  Later declarations replace earlier ones."
+(defun ac-php--phpdoc-tag-values-in-buffer (tag)
+  "Return all values for PHPDoc TAG in the current buffer."
   (save-match-data
     (save-excursion
       (goto-char (point-min))
-      (let ((aliases (make-hash-table :test #'equal)) results)
+      (let (values)
         (while (re-search-forward "/\\*\\*" nil t)
           (let ((start (match-beginning 0)))
             (when (search-forward "*/" nil t)
               (let ((end (point)))
                 (when (nth 4 (syntax-ppss (min (1- end) (+ start 3))))
-                  (dolist (value
-                           (ac-php--phpdoc-tag-values
-                            (ac-php--phpdoc-content start end)
-                            "phpstan-type"))
-                    (when (string-match
-                           "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+\\(.+\\)\\'"
-                           value)
-                      (puthash (match-string 1 value)
-                               (s-trim (match-string 2 value)) aliases))))))))
-        (maphash (lambda (name type) (push (cons name type) results)) aliases)
-        results))))
+                  (setq values
+                        (append
+                         values
+                         (ac-php--phpdoc-tag-values
+                          (ac-php--phpdoc-content start end) tag))))))))
+        values))))
+
+(defun ac-php--phpstan-type-aliases ()
+  "Return PHPStan type aliases declared in PHPDoc comments in this buffer.
+Each result is a cons cell whose car is the alias and whose cdr is its complete
+possibly multiline type expression.  Later declarations replace earlier ones."
+  (let ((aliases (make-hash-table :test #'equal)) results)
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "phpstan-type"))
+      (when (string-match
+             "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+\\(.+\\)\\'"
+             value)
+        (puthash (match-string 1 value)
+                 (s-trim (match-string 2 value)) aliases)))
+    (maphash (lambda (name type) (push (cons name type) results)) aliases)
+    results))
 
 (defun ac-php--split-top-level-type (text delimiter)
   "Split TEXT on top-level DELIMITER characters.
@@ -3041,22 +3048,32 @@ Delimiters inside quotes or (), [], {}, and <> are ignored."
       (setq index (1+ index)))
     result))
 
-(defun ac-php--array-shape-from-type (type aliases &optional seen)
-  "Resolve TYPE to an array-shape expression using ALIASES.
+(defun ac-php--array-shapes-from-type (type aliases &optional seen)
+  "Resolve every array-shape alternative in TYPE using ALIASES.
 SEEN prevents recursive aliases from looping."
   (when (stringp type)
-    (cl-loop
-     for alternative in (ac-php--split-top-level-type type ?|)
-     for clean = (s-trim alternative)
-     for unwrapped = (replace-regexp-in-string
-                      "\\`[?]\\|[ \t]*[?]\\'" "" clean)
-     if (string-match-p "\\`array[ \t\n\r]*{" unwrapped)
-     return unwrapped
-     else if (and (not (member unwrapped seen))
-                  (assoc unwrapped aliases))
-     thereis (ac-php--array-shape-from-type
-              (cdr (assoc unwrapped aliases)) aliases
-              (cons unwrapped seen)))))
+    (let (shapes)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let ((unwrapped
+               (replace-regexp-in-string
+                "\\`[?]\\|[ \t]*[?]\\'" "" (s-trim alternative))))
+          (cond
+           ((string-match-p "\\`array[ \t\n\r]*{" unwrapped)
+            (push unwrapped shapes))
+           ((and (not (member unwrapped seen))
+                 (assoc unwrapped aliases))
+            (setq shapes
+                  (append
+                   (nreverse
+                    (ac-php--array-shapes-from-type
+                     (cdr (assoc unwrapped aliases)) aliases
+                     (cons unwrapped seen)))
+                   shapes))))))
+      (nreverse shapes))))
+
+(defun ac-php--array-shape-from-type (type aliases &optional seen)
+  "Resolve the first array-shape alternative in TYPE using ALIASES."
+  (car (ac-php--array-shapes-from-type type aliases seen)))
 
 (defun ac-php--array-shape-fields (shape)
   "Return the keyed fields declared by array SHAPE.
@@ -3089,6 +3106,19 @@ Each field is represented by a cons cell (KEY . TYPE)."
                   (push (cons key type) fields)))))))
       (nreverse fields))))
 
+(defun ac-php--array-shapes-fields (shapes)
+  "Return merged fields from array SHAPES, preserving declaration order."
+  (let (fields)
+    (dolist (shape shapes)
+      (dolist (field (ac-php--array-shape-fields shape))
+        (let ((existing (assoc (car field) fields)))
+          (if existing
+              (unless (member (cdr field)
+                              (ac-php--split-top-level-type (cdr existing) ?|))
+                (setcdr existing (concat (cdr existing) "|" (cdr field))))
+            (setq fields (append fields (list field)))))))
+    fields))
+
 (defun ac-php--array-literal-key-position-p (open string-start)
   "Return non-nil when STRING-START begins a key slot in array OPEN."
   (save-excursion
@@ -3104,6 +3134,35 @@ Each field is represented by a cons cell (KEY . TYPE)."
       (string=
        (s-trim (ac-php--code-without-comments field-start string-start))
        ""))))
+
+(defun ac-php--array-literal-used-keys (open current-string-start)
+  "Return keys already declared in array OPEN.
+CURRENT-STRING-START is excluded so an existing key can still be edited."
+  (save-match-data
+    (save-excursion
+      (let* ((content-start (1+ open))
+             (depth (car (syntax-ppss content-start)))
+             (close (condition-case nil (scan-sexps open 1)
+                      (scan-error nil)))
+             (end (if close (1- close) current-string-start))
+             (pattern
+              (concat
+               "\\(?:['\"]\\([^'\"]+\\)['\"]\\|"
+               "\\([[:alpha:]_][[:alnum:]_]*\\|[0-9]+\\)\\)"
+               "[ \t\n\r]*=>"))
+             keys)
+        (goto-char content-start)
+        (while (re-search-forward pattern end t)
+          (let* ((key-start (match-beginning 0))
+                 (state (save-excursion (syntax-ppss key-start)))
+                 (key (or (match-string-no-properties 1)
+                          (match-string-no-properties 2))))
+            (when (and key
+                       (/= key-start current-string-start)
+                       (= (car state) depth)
+                       (not (nth 3 state)) (not (nth 4 state)))
+              (push key keys))))
+        (delete-dups (nreverse keys))))))
 
 (defun ac-php--array-key-context (&optional pos)
   "Return the array-shape key completion context at POS.
@@ -3168,6 +3227,9 @@ call argument, together with the prefix between the current quote and point."
                               (1- (length
                                    (ac-php--argument-ranges
                                     (1+ call-open) active-open)))
+                              :used-keys
+                              (ac-php--array-literal-used-keys
+                               active-open string-start)
                               :prefix prefix :open active-open
                               :call-open call-open))))))))))))))
 
@@ -3232,6 +3294,58 @@ The result records both the right-hand-side text and its buffer start."
           (when (not (string= type ""))
             (push (cons name type) parameters)))))
     (nreverse parameters)))
+
+(defun ac-php--matching-parenthesis-in-string (text open)
+  "Return the closing parenthesis in TEXT matching OPEN, or nil."
+  (let ((index (1+ open)) (depth 1) (length (length text))
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?\() (setq depth (1+ depth)))
+         ((eq character ?\))
+          (setq depth (1- depth))
+          (when (= depth 0)
+            (setq result index)))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--parameter-type-from-declaration (declaration)
+  "Return the type preceding the parameter variable in DECLARATION."
+  (when (and declaration
+             (string-match
+              "\\$[[:alpha:]_][[:alnum:]_]*\\b" declaration))
+    (let ((type (s-trim (substring declaration 0 (match-beginning 0)))))
+      (setq type
+            (replace-regexp-in-string
+             "[ \t]*\\(?:&\\|[.][.][.]\\)[ \t]*\\'" "" type))
+      (unless (string= type "") type))))
+
+(defun ac-php--phpdoc-method-parameter-type (name index)
+  "Return @method NAME's parameter type at zero-based INDEX in this buffer."
+  (catch 'type
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
+      (when (string-match
+             (concat "\\_<" (regexp-quote name) "\\_>[ \t\n\r]*(")
+             value)
+        (let* ((open (1- (match-end 0)))
+               (close (ac-php--matching-parenthesis-in-string value open)))
+          (when close
+            (let ((parameter
+                   (nth index
+                        (ac-php--split-top-level-type
+                         (substring value (1+ open) close) ?,))))
+              (when parameter
+                (let ((type
+                       (ac-php--parameter-type-from-declaration parameter)))
+                  (when type (throw 'type type)))))))))
+    nil))
 
 (defun ac-php--local-callable-declaration (name pos)
   "Return the declaration position of local callable NAME near POS."
@@ -3304,6 +3418,53 @@ The result records both the right-hand-side text and its buffer start."
                (or (ac-php--phpdoc-before-line declaration) ""))))
         (cdr (assoc parameter-name parameters))))))
 
+(defun ac-php--tag-source-file (tags-data tag)
+  "Return TAG's source filename from TAGS-DATA, or nil."
+  (when (and tag (> (length tag) 3))
+    (let ((location (aref tag 3))
+          (file-list (ac-php-g--file-list tags-data)))
+      (when (and (stringp location)
+                 (string-match "\\`\\([0-9]+\\):" location))
+        (let ((index (string-to-number (match-string 1 location))))
+          (when (< index (length file-list))
+            (let ((file (aref file-list index)))
+              (if (file-name-absolute-p file)
+                  file
+                (expand-file-name file (ac-php-g--project-root-dir tags-data))))))))))
+
+(defun ac-php--phpdoc-method-parameter-type-in-file (file name index)
+  "Return @method NAME's parameter type at INDEX from FILE."
+  (when (and file (file-readable-p file))
+    (let ((buffer (get-file-buffer file)))
+      (if buffer
+          (with-current-buffer buffer
+            (ac-php--phpdoc-method-parameter-type name index))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (php-mode)
+          (ac-php--phpdoc-method-parameter-type name index))))))
+
+(defun ac-php--tagged-callable-parameter-type (tags-data context)
+  "Return CONTEXT's parameter type from indexed TAGS-DATA or its source."
+  (when (and tags-data (plist-get context :call-open))
+    (let* ((tag (ac-php--callable-tag
+                 tags-data (plist-get context :call-open)))
+           (index (plist-get context :argument-index))
+           (typed-parameter
+            (and tag (> (length tag) 8)
+                 (nth index (ac-php--signature-parameters (aref tag 8)))))
+           (parameter
+            (and tag (> (length tag) 2)
+                 (nth index (ac-php--signature-parameters (aref tag 2)))))
+           (type
+            (ac-php--parameter-type-from-declaration
+             (cdr (or typed-parameter parameter)))))
+      (or type
+          (and tag
+               (ac-php--phpdoc-method-parameter-type-in-file
+                (ac-php--tag-source-file tags-data tag)
+                (plist-get context :callable) index))))))
+
 (defun ac-php--local-callable-return-type (name pos)
   "Return the PHPDoc return type of local callable NAME visible at POS."
   (let ((declaration (ac-php--local-callable-declaration name pos)))
@@ -3348,23 +3509,30 @@ CONTEXT may be supplied from `ac-php--array-key-context'."
                (if (plist-get context :variable)
                    (ac-php--array-variable-type
                     (plist-get context :variable) (point) tags-data)
-                 (ac-php--local-callable-parameter-type
-                  (plist-get context :callable)
-                  (plist-get context :argument-index) (point)))))
-         (shape (and type (ac-php--array-shape-from-type type aliases))))
+                 (or
+                  (ac-php--local-callable-parameter-type
+                   (plist-get context :callable)
+                   (plist-get context :argument-index) (point))
+                  (ac-php--tagged-callable-parameter-type tags-data context)
+                  (ac-php--phpdoc-method-parameter-type
+                   (plist-get context :callable)
+                   (plist-get context :argument-index))))))
+         (shapes (and type (ac-php--array-shapes-from-type type aliases))))
     (dolist (key (plist-get context :path))
-      (let ((field (assoc key (ac-php--array-shape-fields shape))))
-        (setq shape (and field
-                         (ac-php--array-shape-from-type (cdr field) aliases)))))
-    (let (candidates)
-      (dolist (field (ac-php--array-shape-fields shape))
-        (push (propertize
-               (car field)
-               'ac-php-help (cdr field)
-               'ac-php-return-type (cdr field)
-               'ac-php-tag-type "a"
-               'summary (cdr field))
-              candidates))
+      (let ((field (assoc key (ac-php--array-shapes-fields shapes))))
+        (setq shapes
+              (and field
+                   (ac-php--array-shapes-from-type (cdr field) aliases)))))
+    (let ((used-keys (plist-get context :used-keys)) candidates)
+      (dolist (field (ac-php--array-shapes-fields shapes))
+        (unless (member (car field) used-keys)
+          (push (propertize
+                 (car field)
+                 'ac-php-help (cdr field)
+                 'ac-php-return-type (cdr field)
+                 'ac-php-tag-type "a"
+                 'summary (cdr field))
+                candidates)))
       (nreverse candidates))))
 
 (defun ac-php--argument-ranges (start end)

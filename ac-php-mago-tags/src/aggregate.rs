@@ -53,6 +53,7 @@ pub fn aggregate(files: &[IndexedFile]) -> TagSet {
                     class_name: class.name.clone(),
                     access: member.access.clone(),
                     is_static: member.is_static,
+                    typed_args: member.typed_args.clone(),
                 });
             }
         }

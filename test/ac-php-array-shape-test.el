@@ -6,15 +6,16 @@
 
 ;;; Code:
 
-(defun ac-php-test--array-shape-candidates (content &optional frontend)
-  "Complete CONTENT at |CURSOR| using FRONTEND and return plain candidates."
+(defun ac-php-test--array-shape-candidates (content &optional frontend tags-data)
+  "Complete CONTENT at |CURSOR| using FRONTEND and TAGS-DATA."
   (with-ac-php-buffer-test content
     (search-forward "|CURSOR|")
     (replace-match "" t t)
-    (let ((tags (list (make-hash-table :test #'equal)
-                      (make-hash-table :test #'equal)
-                      (make-hash-table :test #'equal)
-                      [] "/project/"))
+    (let ((tags (or tags-data
+                    (list (make-hash-table :test #'equal)
+                          (make-hash-table :test #'equal)
+                          (make-hash-table :test #'equal)
+                          [] "/project/")))
           (pos (point)))
       (cl-letf (((symbol-function 'ac-php-get-tags-data) (lambda () tags)))
         (prog1
@@ -159,12 +160,13 @@ private function get_user_device($voice_device_id)
           "  $voice_device_id = 100;\n"
           "  $this->set_user_device($voice_device_id, [\n"
           "    \"net_type\" => 1,\n"
+          "    \"api_user_id\" => 1,\n"
           "    \"|CURSOR|\"\n"
           "  ]);\n}\n}")))
     (dolist (frontend '(core company auto-complete))
       (should
        (equal (ac-php-test--array-shape-candidates content frontend)
-              ac-php-test--user-device-keys)))))
+              '("voice_device_id" "sn" "card_device_type"))))))
 
 (ert-deftest ac-php-array-shape/call-array-does-not-complete-value-string ()
   (let ((content
@@ -176,6 +178,63 @@ private function get_user_device($voice_device_id)
           "  $this->set_user_device(100, [\"sn\" => \"|CURSOR|\"]);\n"
           "}\n}")))
     (should-not (ac-php-test--array-shape-candidates content))))
+
+(ert-deftest ac-php-array-shape/phpdoc-method-union-shapes-complete-first-argument ()
+  (let ((content
+         (concat
+          "<?php\n/**\n"
+          " * @method int field_update_list("
+          "int|array{voice_device_id: int}|array{sn: string} $id, "
+          "array{tenant_id?: int} $fields)\n"
+          " */\nclass Test {\npublic function run() {\n"
+          "  $this->field_update_list([\"|CURSOR|\"], []);\n"
+          "}\n}")))
+    (should
+     (equal (ac-php-test--array-shape-candidates content)
+            '("voice_device_id" "sn")))))
+
+(ert-deftest ac-php-array-shape/phpdoc-method-generic-tail-completes-second-argument ()
+  (let ((content
+         (concat
+          "<?php\n/**\n"
+          " * @method int field_update_list("
+          "int|array{voice_device_id: int}|array{sn: string} $id, "
+          "array{tenant_id?: int, net_type?: int|null, "
+          "card_device_type?: int, "
+          "...<int, string|array{0: string, 1: mixed, "
+          "2?: '+'|'-'}>} $fields)\n"
+          " */\nclass Test {\npublic function run() {\n"
+          "  $this->field_update_list(1, [\n"
+          "    \"tenant_id\" => 1,\n"
+          "    \"|CURSOR|\"\n"
+          "  ]);\n}\n}")))
+    (should
+     (equal (ac-php-test--array-shape-candidates content)
+            '("net_type" "card_device_type")))))
+
+(ert-deftest ac-php-array-shape/mago-typed-member-arguments-complete-cross-file-method ()
+  (let* ((class "\\Gen\\Models\\DbCard\\BVoiceDevice")
+         (class-map (make-hash-table :test #'equal))
+         (function-map (make-hash-table :test #'equal))
+         (inherit-map (make-hash-table :test #'equal))
+         (member
+          (vector
+           "m" "field_update_list(" "$voice_device_id, $set_field_arr"
+           "0:10" "int" class "public" ""
+           (concat
+            "array{'sn': string}|array{'voice_device_id': int}|int "
+            "$voice_device_id, array{'tenant_id'?: int, "
+            "'net_type'?: int|null, ...<int, string>} $set_field_arr")))
+         (tags (list class-map function-map inherit-map [] "/project/"))
+         (content
+          (concat
+           "<?php\nfunction run(" class " $device) {\n"
+           "  $device->field_update_list(1, [\"|CURSOR|\"]);\n}")))
+    (puthash class (vector member) class-map)
+    (puthash class (vector "c" class "" "0:1" class) function-map)
+    (should
+     (equal (ac-php-test--array-shape-candidates content 'core tags)
+            '("tenant_id" "net_type")))))
 
 (provide 'ac-php-array-shape-test)
 ;;; ac-php-array-shape-test.el ends here

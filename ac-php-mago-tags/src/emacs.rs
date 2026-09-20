@@ -44,7 +44,7 @@ pub fn write_tags(mut writer: impl Write, tags: &TagSet) -> Result<()> {
         for member in &class.members {
             writeln!(
                 writer,
-                "    [\"{}\" \"{}\" \"{}\"  \"{}\"  \"{}\" \"{}\" \"{}\" \"{}\" ]",
+                "    [\"{}\" \"{}\" \"{}\"  \"{}\"  \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" ]",
                 member.kind,
                 escape(&member.name),
                 escape(&member.args),
@@ -53,6 +53,7 @@ pub fn write_tags(mut writer: impl Write, tags: &TagSet) -> Result<()> {
                 escape(&member.class_name),
                 escape(&member.access),
                 if member.is_static { "1" } else { "" },
+                escape(&member.typed_args),
             )?;
         }
         writeln!(writer, "  ])")?;
@@ -110,13 +111,40 @@ mod tests {
     use std::fs;
     use std::time::{Duration, SystemTime};
 
-    use crate::model::TagSet;
+    use crate::model::{OutputClass, OutputMember, TagSet};
 
-    use super::{escape, write_tag_file};
+    use super::{escape, write_tag_file, write_tags};
 
     #[test]
     fn escapes_elisp_strings() {
         assert_eq!(escape("a\\b\"c\nd"), "a\\\\b\\\"c\\nd");
+    }
+
+    #[test]
+    fn writes_typed_member_arguments_as_ninth_field() {
+        let tags = TagSet {
+            classes: vec![OutputClass {
+                name: "\\Device".to_owned(),
+                members: vec![OutputMember {
+                    kind: "m".to_owned(),
+                    name: "update(".to_owned(),
+                    args: "$fields".to_owned(),
+                    location: "0:1".to_owned(),
+                    return_type: "int".to_owned(),
+                    class_name: "\\Device".to_owned(),
+                    access: "public".to_owned(),
+                    is_static: false,
+                    typed_args: "array{'name'?: string} $fields".to_owned(),
+                }],
+            }],
+            ..TagSet::default()
+        };
+        let mut output = Vec::new();
+
+        write_tags(&mut output, &tags).expect("write tags");
+        let output = String::from_utf8(output).expect("UTF-8 tag file");
+
+        assert!(output.contains("\"array{'name'?: string} $fields\" ]"));
     }
 
     #[test]

@@ -125,6 +125,7 @@ pub fn scan(path: &Path, workspace: &Path, source: Vec<u8>, vendor: bool) -> Res
                     .map_or_else(|| "void".to_owned(), type_name),
                 access: visibility(constant.visibility),
                 is_static: false,
+                typed_args: String::new(),
             });
         }
         for case in class.enum_cases.values() {
@@ -136,6 +137,7 @@ pub fn scan(path: &Path, workspace: &Path, source: Vec<u8>, vendor: bool) -> Res
                 return_type: "void".to_owned(),
                 access: "public".to_owned(),
                 is_static: false,
+                typed_args: String::new(),
             });
         }
         members.sort_by(|left, right| (left.line, &left.name).cmp(&(right.line, &right.name)));
@@ -209,6 +211,7 @@ fn method_tag(method: &FunctionLikeMetadata, file: &File, source: &[u8]) -> Memb
         access: method_metadata
             .map_or_else(|| "public".to_owned(), |value| visibility(value.visibility)),
         is_static: method_metadata.is_some_and(|value| value.is_static),
+        typed_args: typed_arguments(method),
     }
 }
 
@@ -229,7 +232,28 @@ fn property_tag(property: &PropertyMetadata, file: &File) -> MemberTag {
             .map_or_else(String::new, type_name),
         access: visibility(property.read_visibility),
         is_static: property.flags.is_static(),
+        typed_args: String::new(),
     }
+}
+
+fn typed_arguments(function: &FunctionLikeMetadata) -> String {
+    function
+        .parameters
+        .iter()
+        .map(|parameter| {
+            let name = word_string(parameter.name.0.as_bytes());
+            parameter
+                .type_metadata
+                .as_ref()
+                .map_or(name.clone(), |metadata| {
+                    format!(
+                        "{} {name}",
+                        word_string(metadata.type_union.get_id().as_bytes())
+                    )
+                })
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn arguments(function: &FunctionLikeMetadata, source: &[u8]) -> String {
@@ -409,5 +433,39 @@ mod tests {
         assert!(method_names.contains(&"cases"));
         assert!(method_names.contains(&"from"));
         assert!(method_names.contains(&"tryFrom"));
+    }
+
+    #[test]
+    fn keeps_magic_method_array_shape_parameter_types() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("Device.php");
+        let source = br#"<?php
+/**
+ * @method int field_update_list(
+ *   int|array{voice_device_id: int}|array{sn: string} $voice_device_id,
+ *   array{tenant_id?: int, net_type?: int|null, ...<int, string>} $set_field_arr
+ * )
+ */
+class Device {}
+"#
+        .to_vec();
+        fs::write(&path, &source).expect("write PHP fixture");
+
+        let tags = scan(&path, directory.path(), source, false).expect("scan PHPDoc fixture");
+        let method = tags.classes[0]
+            .members
+            .iter()
+            .find(|member| member.name == "field_update_list")
+            .expect("magic method tag");
+
+        assert_eq!(method.args, "$voice_device_id, $set_field_arr");
+        assert!(
+            method.typed_args.contains("'voice_device_id': int"),
+            "{}",
+            method.typed_args
+        );
+        assert!(method.typed_args.contains("'sn': string"));
+        assert!(method.typed_args.contains("'tenant_id'?: int"));
+        assert!(method.typed_args.contains("...<int, string>"));
     }
 }

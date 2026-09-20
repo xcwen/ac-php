@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const CACHE_SCHEMA_VERSION: u32 = 1;
+pub const CACHE_SCHEMA_VERSION: u32 = 2;
 pub const MAGO_VERSION: &str = "1.47.4";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -48,6 +48,7 @@ pub struct MemberTag {
     pub return_type: String,
     pub access: String,
     pub is_static: bool,
+    pub typed_args: String,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -137,6 +138,7 @@ pub struct OutputMember {
     pub class_name: String,
     pub access: String,
     pub is_static: bool,
+    pub typed_args: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

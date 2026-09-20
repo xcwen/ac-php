@@ -281,6 +281,39 @@ class Test extends Controller
       (should (equal (ac-php-get-class-at-point tags-data)
                      "\\Proto\\Project\\Root\\test__test2\\in.")))))
 
+(ert-deftest ac-php-search/complex-closure-chain-completion ()
+  (let* ((class-map (make-hash-table :test #'equal))
+         (function-map (make-hash-table :test #'equal))
+         (inherit-map (make-hash-table :test #'equal))
+         (query "\\think\\db\\Query")
+         (where ["m" "where(" "$callback" "Query.php:10" "self"
+                 "\\think\\db\\Query" "public" ""])
+         (select ["m" "select(" "" "Query.php:20" "array"
+                  "\\think\\db\\Query" "public" ""])
+         (tags-data
+          (list class-map function-map inherit-map [] "/project/")))
+    (puthash query (vector where select) class-map)
+    (puthash query ["c" "\\think\\db\\Query" "" "Query.php:1"
+                     "\\think\\db\\Query"]
+             function-map)
+    ;; Leave the outer function unclosed to exercise completion while the
+    ;; buffer is temporarily invalid, as it often is during editing.
+    (with-ac-php-buffer-test
+        (concat "<?php\nfunction run(\\think\\db\\Query $builder) {\n"
+                "    $builder->where(function (\\think\\db\\Query $sub_query) "
+                "use ($adminid_list, $self_order_flag, $user_id) {\n"
+                "        $sub_query->whereIn(\"o.counselor_id\", $adminid_list);\n"
+                "        $sub_query->whereIn(\"u.cr_uid\", $adminid_list, \"OR\");\n"
+                "    })->")
+      (goto-char (point-max))
+      (let ((chain (ac-php-get-class-at-point tags-data)))
+        (should (equal chain (concat query ".where(.")))
+        (should (equal
+                 (sort (mapcar #'substring-no-properties
+                               (ac-php-candidate-class tags-data chain))
+                       #'string-lessp)
+                 '("select(" "where(")))))))
+
 (ert-deftest ac-php-search/type-hint-signature-layouts ()
   (dolist (spacing '("" "  " "\n        "))
     (with-ac-php-buffer-test

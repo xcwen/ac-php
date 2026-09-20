@@ -105,9 +105,12 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
 ;; TODO: May not work for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
   "D."
-  (if company-php-begin-after-member-access
-      (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
-    (company-ac-php--prefix-symbol)))
+  (let ((array-context (ac-php--array-key-context)))
+    (if array-context
+        (cons (plist-get array-context :prefix) t)
+      (if company-php-begin-after-member-access
+          (company-ac-php-company-grab-symbol-cons "->\\|::" 2)
+        (company-ac-php--prefix-symbol)))))
 
 (defun company-ac-php-candidate (arg)
   "D ARG."

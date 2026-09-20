@@ -178,6 +178,48 @@
     (should (equal (ac-php--expression-before-point)
                    "$service->first()   ->second(\"// kept\")\n  ->third"))))
 
+(ert-deftest ac-php-parser/structured-chain-skips-closure-arguments ()
+  (with-ac-php-buffer-test
+      (concat "<?php\nfunction run($builder) {\n"
+              "    $builder->where(function (\\think\\db\\Query $sub_query) "
+              "use ($adminid_list, $self_order_flag, $user_id) {\n"
+              "        $sub_query->whereIn(\"o.counselor_id\", $adminid_list);\n"
+              "        $text = ')->not_a_chain';\n"
+              "        $sub_query->whereIn(\"u.cr_uid\", $adminid_list, \"OR\");\n"
+              "    })->\n}\n")
+    (search-forward "    })->")
+    (let ((chain (ac-php--chain-at-point)))
+      (should (equal (plist-get (plist-get chain :receiver) :name)
+                     "builder"))
+      (should (equal (mapcar (lambda (segment)
+                               (plist-get segment :name))
+                             (plist-get chain :segments))
+                     '("where")))
+      (should (equal (plist-get chain :operator) "->"))
+      (should (equal (plist-get chain :prefix) ""))
+      (should (equal (ac-php--chain-key-list chain)
+                     '("builder" "." "where(" "."))))))
+
+(ert-deftest ac-php-parser/structured-chain-rejects-partial-grouping ()
+  (dolist (expression '("return (($this->first())->second())->third"
+                        "return (new \\App\\Service())->configure"))
+    (with-ac-php-buffer-test
+        (concat "<?php\nfunction run() {\n" expression "\n}\n")
+      (search-forward expression)
+      ;; The legacy parser understands these grouped receivers.  A partial
+      ;; structured parse must not override that complete result.
+      (should-not (ac-php--chain-at-point)))))
+
+(ert-deftest ac-php-parser/structured-chain-preserves-access-operators ()
+  (dolist (fixture '(("$service::instance()->run" .
+                       ("service::" "." "instance(" "." "run"))
+                      ("$service\n  ?->run" .
+                       ("service" "." "run"))))
+    (with-ac-php-buffer-test (concat "<?php\n" (car fixture))
+      (goto-char (point-max))
+      (should (equal (ac-php--chain-key-list (ac-php--chain-at-point))
+                     (cdr fixture))))))
+
 (ert-deftest ac-php-parser/expression-scan-honors-pos ()
   (with-ac-php-buffer-test
       "<?php\n$first->one();\n$second->two"

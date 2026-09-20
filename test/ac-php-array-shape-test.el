@@ -150,6 +150,21 @@ private function get_user_device($voice_device_id)
        (equal (ac-php-test--array-shape-candidates content frontend)
               ac-php-test--user-device-keys)))))
 
+(ert-deftest ac-php-array-shape/local-var-completes-keys ()
+  (let ((content
+         (concat
+          "<?php\nfunction run() {\n"
+          "  /**\n"
+          "   @var  array{ id: int } $item\n"
+          "   */\n"
+          "  $item = [\"id\" => 1];\n"
+          "  $value = $item[\"|CURSOR|\"];\n"
+          "}")))
+    (dolist (frontend '(core company auto-complete))
+      (should
+       (equal (ac-php-test--array-shape-candidates content frontend)
+              '("id"))))))
+
 (ert-deftest ac-php-array-shape/phpdoc-parameter-completes-call-array ()
   (let ((content
          (concat

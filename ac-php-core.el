@@ -3477,6 +3477,46 @@ The result contains the parameter type and any inline method template bounds."
                   (ac-php--phpdoc-parameter-types
                    (or (ac-php--phpdoc-before-line (point)) "")))))))
 
+(defun ac-php--phpdoc-variable-type-from-value (value variable)
+  "Return VARIABLE's type from a PHPDoc @var VALUE, or nil."
+  (when (string-match
+         (concat "\\$" (regexp-quote variable) "\\b") value)
+    (let ((type (s-trim (substring value 0 (match-beginning 0)))))
+      (unless (string= type "") type))))
+
+(defun ac-php--phpdoc-variable-type-at-point (variable pos)
+  "Return VARIABLE's nearest PHPDoc @var type visible at POS."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let* ((in-function-p (ac-php--in-function-p pos))
+             (bound
+              (if in-function-p
+                  (save-excursion
+                    (goto-char pos)
+                    (ac-php--beginning-of-defun)
+                    (line-beginning-position))
+                (point-min))))
+        (catch 'type
+          (while (re-search-backward "/\\*\\*" bound t)
+            (let ((start (point)))
+              (when (or in-function-p
+                        (not (ac-php--in-function-p start)))
+                (save-excursion
+                  (when (search-forward "*/" pos t)
+                    (let ((end (point)))
+                      (when (nth 4 (syntax-ppss
+                                    (min (1- end) (+ start 3))))
+                        (dolist
+                            (value
+                             (ac-php--phpdoc-tag-values
+                              (ac-php--phpdoc-content start end) "var"))
+                          (let ((type
+                                 (ac-php--phpdoc-variable-type-from-value
+                                  value variable)))
+                            (when type (throw 'type type)))))))))))
+          nil)))))
+
 (defun ac-php--local-callable-parameter-type (name index pos)
   "Return local callable NAME's PHPDoc parameter type at zero-based INDEX."
   (let ((declaration (ac-php--local-callable-declaration name pos)))
@@ -3568,8 +3608,7 @@ The result contains the parameter type and any inline method template bounds."
 
 (defun ac-php--array-variable-type (variable pos tags-data)
   "Infer VARIABLE's PHPDoc type at POS using TAGS-DATA when necessary."
-  (or (let ((annotated (ac-php-get-annotated-var-class variable pos)))
-        (and annotated (substring-no-properties annotated)))
+  (or (ac-php--phpdoc-variable-type-at-point variable pos)
       (ac-php--phpdoc-parameter-type-at-point variable pos)
       (let ((assignment (ac-php--variable-assignment variable pos)))
         (and assignment

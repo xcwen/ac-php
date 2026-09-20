@@ -158,6 +158,7 @@ private function get_user_device($voice_device_id)
           "public function run() {\n"
           "  $voice_device_id = 100;\n"
           "  $this->set_user_device($voice_device_id, [\n"
+          "    \"net_type\" => 1,\n"
           "    \"|CURSOR|\"\n"
           "  ]);\n}\n}")))
     (dolist (frontend '(core company auto-complete))

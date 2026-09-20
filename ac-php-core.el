@@ -3097,7 +3097,7 @@ Each field is represented by a cons cell (KEY . TYPE)."
           (field-start (point)))
       (while (search-forward "," string-start t)
         (let* ((comma (1- (point)))
-               (state (syntax-ppss comma)))
+               (state (save-excursion (syntax-ppss comma))))
           (when (and (= (car state) depth)
                      (not (nth 3 state)) (not (nth 4 state)))
             (setq field-start (point)))))

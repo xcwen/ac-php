@@ -12,7 +12,11 @@ use mago_codex::visibility::Visibility;
 use mago_database::file::{File, FileType};
 use mago_names::resolver::NameResolver;
 use mago_php_version::PHPVersion;
+use mago_phpdoc_syntax::PHPDocParser;
+use mago_phpdoc_syntax::cst::TagValue;
 use mago_span::Span;
+use mago_syntax::comments::docblock::get_docblock_before_position;
+use mago_syntax::cst::Program;
 use mago_syntax::parser::parse_file;
 
 use crate::model::{
@@ -106,11 +110,13 @@ pub fn scan(path: &Path, workspace: &Path, source: Vec<u8>, vendor: bool) -> Res
             if property.name_span.is_none() && property.span.is_none() {
                 continue;
             }
-            members.push(property_tag(property, &file));
+            members.push(property_tag(property, &file, None));
         }
         for property in class.magic_properties.values() {
             if !class.properties.contains_key(&property.name.0) {
-                members.push(property_tag(property, &file));
+                let property_line =
+                    magic_property_line(&arena, &file, program, class.span, property);
+                members.push(property_tag(property, &file, property_line));
             }
         }
         for constant in class.constants.values() {
@@ -215,17 +221,21 @@ fn method_tag(method: &FunctionLikeMetadata, file: &File, source: &[u8]) -> Memb
     }
 }
 
-fn property_tag(property: &PropertyMetadata, file: &File) -> MemberTag {
+fn property_tag(property: &PropertyMetadata, file: &File, source_line: Option<u32>) -> MemberTag {
     MemberTag {
         kind: MemberKind::Property,
         name: word_string(property.name.0.as_bytes())
             .trim_start_matches('$')
             .to_owned(),
         args: String::new(),
-        line: property
-            .name_span
-            .or(property.span)
-            .map_or(1, |span| line(file, span)),
+        line: source_line
+            .or_else(|| {
+                property
+                    .name_span
+                    .or(property.span)
+                    .map(|span| line(file, span))
+            })
+            .unwrap_or(1),
         return_type: property
             .type_metadata
             .as_ref()
@@ -234,6 +244,30 @@ fn property_tag(property: &PropertyMetadata, file: &File) -> MemberTag {
         is_static: property.flags.is_static(),
         typed_args: String::new(),
     }
+}
+
+fn magic_property_line<'arena>(
+    arena: &'arena LocalArena,
+    file: &File,
+    program: &'arena Program<'arena>,
+    class_span: Span,
+    property: &PropertyMetadata,
+) -> Option<u32> {
+    let docblock =
+        get_docblock_before_position(program.trivia.as_slice(), class_span.start.offset)?;
+    let document = PHPDocParser::parse_with_span(arena, docblock.value, docblock.span);
+    let property_name = property.name.0.as_bytes();
+
+    document.tags().find_map(|tag| {
+        let value = match &tag.value {
+            TagValue::Property(value)
+            | TagValue::PropertyRead(value)
+            | TagValue::PropertyWrite(value) => value,
+            _ => return None,
+        };
+
+        (value.variable.value == property_name).then(|| line(file, value.variable.span))
+    })
 }
 
 fn typed_arguments(function: &FunctionLikeMetadata) -> String {
@@ -467,5 +501,38 @@ class Device {}
         assert!(method.typed_args.contains("'sn': string"));
         assert!(method.typed_args.contains("'tenant_id'?: int"));
         assert!(method.typed_args.contains("...<int, string>"));
+    }
+
+    #[test]
+    fn locates_magic_properties_at_their_phpdoc_declarations() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("ControllerEx.php");
+        let source = br#"<?php
+/**
+ * @property \App\Models\User $t_user
+ * @property-read
+ *   \App\Models\UserToken
+ *   $t_user_token
+ * @property-write \App\Models\UserTokenSubToken $t_user_token_sub_token
+ */
+class ControllerEx {}
+"#
+        .to_vec();
+        fs::write(&path, &source).expect("write PHP fixture");
+
+        let tags = scan(&path, directory.path(), source, false).expect("scan PHPDoc fixture");
+        let class = &tags.classes[0];
+        let line_for = |name: &str| {
+            class
+                .members
+                .iter()
+                .find(|member| member.name == name)
+                .unwrap_or_else(|| panic!("missing magic property {name}"))
+                .line
+        };
+
+        assert_eq!(line_for("t_user"), 3);
+        assert_eq!(line_for("t_user_token"), 6);
+        assert_eq!(line_for("t_user_token_sub_token"), 7);
     }
 }

@@ -15,6 +15,7 @@ dependencies = [
  "mago-database",
  "mago-names",
  "mago-php-version",
+ "mago-phpdoc-syntax",
  "mago-span",
  "mago-syntax",
  "mago-word",

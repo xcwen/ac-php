@@ -165,6 +165,80 @@ private function get_user_device($voice_device_id)
        (equal (ac-php-test--array-shape-candidates content frontend)
               '("id"))))))
 
+(ert-deftest ac-php-array-shape/local-var-list-element-completes-keys ()
+  (let ((content
+         (concat
+          "<?php\nfunction run() {\n"
+          "  /** @var array{\n"
+          "   *   code: int,\n"
+          "   *   info: string,\n"
+          "   *   request_id: string,\n"
+          "   *   data?: array{\n"
+          "   *     list: list<array{\n"
+          "   *       content: string,\n"
+          "   *       content_type: int,\n"
+          "   *       id: int,\n"
+          "   *       sub_type_1: int,\n"
+          "   *       sub_type_2: int,\n"
+          "   *       distance: float\n"
+          "   *     }>\n"
+          "   *   }\n"
+          "   * } $ret */\n"
+          "  $ret[\"data\"][\"list\"][0][\"|CURSOR|\"];\n"
+          "}")))
+    (dolist (frontend '(core company auto-complete))
+      (should
+       (equal (ac-php-test--array-shape-candidates content frontend)
+              '("content" "content_type" "id" "sub_type_1"
+                "sub_type_2" "distance"))))))
+
+(ert-deftest ac-php-array-shape/assigned-list-element-completes-keys ()
+  (let ((content
+         (concat
+          "<?php\nfunction run() {\n"
+          "  /** @var array{data: array{list: list<array{\n"
+          "   * content: string, content_type: int, id: int,\n"
+          "   * sub_type_1: int, sub_type_2: int, distance: float\n"
+          "   * }>}} $ret */\n"
+          "  $item = $ret[\"data\"][\"list\"][0];\n"
+          "  $item[\"|CURSOR|\"];\n"
+          "}")))
+    (dolist (frontend '(core company auto-complete))
+      (should
+       (equal (ac-php-test--array-shape-candidates content frontend)
+              '("content" "content_type" "id" "sub_type_1"
+                "sub_type_2" "distance"))))))
+
+(ert-deftest ac-php-array-shape/foreach-coalesced-list-completes-keys ()
+  (let ((content
+         (concat
+          "<?php\nfunction run() {\n"
+          "  /** @var array{data: array{list: list<array{\n"
+          "   * content: string, content_type: int, id: int,\n"
+          "   * sub_type_1: int, sub_type_2: int, distance: float\n"
+          "   * }>}} $ret */\n"
+          "  $list = $ret[\"data\"][\"list\"] ?? [];\n"
+          "  foreach ($list as $item) {\n"
+          "    $item[\"|CURSOR|\"];\n"
+          "  }\n"
+          "}")))
+    (dolist (frontend '(core company auto-complete))
+      (should
+       (equal (ac-php-test--array-shape-candidates content frontend)
+              '("content" "content_type" "id" "sub_type_1"
+                "sub_type_2" "distance"))))))
+
+(ert-deftest ac-php-array-shape/bare-offset-does-not-trigger-key-completion ()
+  (with-ac-php-buffer-test
+      (concat
+       "<?php\nfunction run() {\n"
+       "  /** @var array{id: int} $item */\n"
+       "  $item[|CURSOR|];\n"
+       "}")
+    (search-forward "|CURSOR|")
+    (replace-match "" t t)
+    (should-not (ac-php--array-key-context))))
+
 (ert-deftest ac-php-array-shape/phpdoc-parameter-completes-call-array ()
   (let ((content
          (concat

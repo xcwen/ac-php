@@ -77,13 +77,18 @@
 
 (defun ac-php-prefix ()
   "D."
-  (let ((c (char-before)) ret)
+  (let* ((extra-completion (ac-php-extra-completion-at-point))
+         (extra-prefix (plist-get extra-completion :prefix))
+         (c (char-before)) ret)
+    (when (stringp extra-prefix)
+      (setq ret (- (point) (length extra-prefix))))
     (when
-        (or
+        (and (not ret)
+             (or
          ;; ->
          (and (eq ?> c) (eq ?- (char-before (1- (point)))))
          ;; ::
-         (and (eq ?: c) (eq ?: (char-before (1- (point))))))
+              (and (eq ?: c) (eq ?: (char-before (1- (point)))))))
       (setq ret (point)))
     (unless ret
       (save-excursion

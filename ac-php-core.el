@@ -252,6 +252,20 @@ Meant for `ac-php-mode-line-project-status'")
 
 (defvar ac-php-prefix-str "")
 
+(defvar ac-php-extra-completion-functions nil
+  "Functions providing project-specific completion at point.
+
+Each function is called with TAGS-DATA, which is nil while a frontend asks
+only for a prefix.  It should return nil when inactive, or a plist containing
+`:prefix' and, when TAGS-DATA is non-nil, `:candidates'.  Candidate strings
+may carry the same text properties as regular ac-php candidates.")
+
+(defun ac-php-extra-completion-at-point (&optional tags-data)
+  "Return the first extra completion result at point using TAGS-DATA."
+  (save-excursion
+    (run-hook-with-args-until-success
+     'ac-php-extra-completion-functions tags-data)))
+
 (defvar ac-php-location-stack-index 0)
 
 (defvar ac-php-location-stack nil)
@@ -3988,12 +4002,16 @@ is searched, excluding attributes, comments, literals and default values."
 
 (defun ac-php-candidate ()
   "Doc."
-  (let (key-str-list tags-data array-context literal-context)
+  (let (key-str-list tags-data array-context literal-context extra-completion)
     (ac-php--debug "=== 1ac-php-candidate")
     (setq tags-data (ac-php-get-tags-data))
     (setq array-context (ac-php--array-key-context))
     (setq literal-context (ac-php--string-literal-argument-context))
+    (setq extra-completion (ac-php-extra-completion-at-point tags-data))
     (cond
+     ((and extra-completion
+           (plist-member extra-completion :candidates))
+      (plist-get extra-completion :candidates))
      (array-context
       (ac-php-candidate-array-key tags-data array-context))
      (literal-context

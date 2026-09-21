@@ -11,6 +11,7 @@ A GNU Emacs auto completion source for the PHP.
 * [Provide Features](#provide-features)
   * [PHPDoc annotations](#phpdoc-annotations)
   * [Type hints](#type-hints)
+  * [Project completion providers](#project-completion-providers)
 * [Install](#installation)
   * [Using MELPA](#using-melpa)
 * [Usage](#usage)
@@ -146,6 +147,29 @@ class Test
 }
 
 ```
+
+#### Project completion providers
+
+Projects can add completion contexts without changing ac-php itself.  Add a
+function to `ac-php-extra-completion-functions`.  The function receives
+`TAGS-DATA`, or nil when a frontend only needs the prefix, and returns nil when
+inactive or a plist with `:prefix` and optional `:candidates`:
+
+```elisp
+(defun my-php-extra-completion (tags-data)
+  (when (my-project-context-p)
+    (if tags-data
+        (list :prefix "item"
+              :candidates (list (propertize "item_id"
+                                            'ac-php-return-type "int")))
+      (list :prefix "item"))))
+
+(add-hook 'ac-php-extra-completion-functions
+          #'my-php-extra-completion)
+```
+
+The same provider is used by the core candidate API, `company-mode`, and
+`auto-complete`.
 
 
 ## Installation

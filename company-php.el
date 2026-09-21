@@ -105,9 +105,12 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
 ;; TODO: May not work for namespace like \App\add\ss
 (defun company-ac-php--prefix ()
   "D."
-  (let ((array-context (ac-php--array-key-context))
+  (let ((extra-completion (ac-php-extra-completion-at-point))
+        (array-context (ac-php--array-key-context))
         (literal-context (ac-php--string-literal-argument-context)))
     (cond
+     ((stringp (plist-get extra-completion :prefix))
+      (cons (plist-get extra-completion :prefix) t))
      (array-context
       (cons (plist-get array-context :prefix) t))
      (literal-context
@@ -118,7 +121,12 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
 
 (defun company-ac-php-candidate (arg)
   "D ARG."
-  (let* ((ac-php-prefix-str (company-ac-php--prefix-symbol))
+  (let* ((extra-completion (ac-php-extra-completion-at-point))
+         (extra-prefix (plist-get extra-completion :prefix))
+         (ac-php-prefix-str
+          (if (stringp extra-prefix)
+              extra-prefix
+            (company-ac-php--prefix-symbol)))
          (ac-php-prefix-str-len (length ac-php-prefix-str))
          (find-count 0)
          raw-help

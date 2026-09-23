@@ -1,6 +1,6 @@
 [package]
 name = "ac-php-mago-tags"
-version = "2.8.1"
+version = "2.8.2"
 edition = "2024"
 rust-version = "1.97"
 description = "Fast Mago-based tag generator for ac-php"

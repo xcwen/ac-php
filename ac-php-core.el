@@ -10,7 +10,7 @@
 ;;      Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
-;; Version: 2.8.1
+;; Version: 2.8.2
 ;; Keywords: completion, convenience, intellisense
 ;; Package-Requires: ( (emacs "24.4") (dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0") (xcscope "1.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x

@@ -85,9 +85,9 @@ pub fn scan(path: &Path, workspace: &Path, source: Vec<u8>, vendor: bool) -> Res
                 .map(|name| fqcn(word_string(name.as_bytes()))),
         );
         for mixin in &class.mixins {
-            let name = word_string(mixin.type_union.get_id().as_bytes());
+            let name = type_name(mixin);
             if !name.is_empty() {
-                inherits.push(fqcn(name));
+                inherits.push(name);
             }
         }
         if kind == ClassKind::Enum {
@@ -501,6 +501,44 @@ class Device {}
         assert!(method.typed_args.contains("'sn': string"));
         assert!(method.typed_args.contains("'tenant_id'?: int"));
         assert!(method.typed_args.contains("...<int, string>"));
+    }
+
+    #[test]
+    fn adds_phpdoc_mixins_to_class_inheritance() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let path = directory.path().join("CmdBase.php");
+        let source = br#"<?php
+namespace Gen\Commands;
+
+/**
+ * @mixin \Gen\Controllers\ControllerEx
+ */
+class CmdBase extends Command {}
+"#
+        .to_vec();
+        fs::write(&path, &source).expect("write PHP fixture");
+
+        let tags = scan(&path, directory.path(), source, false).expect("scan PHPDoc fixture");
+        let class = tags
+            .classes
+            .iter()
+            .find(|class| class.name == "\\Gen\\Commands\\CmdBase")
+            .expect("CmdBase class tag");
+
+        assert!(
+            class
+                .inherits
+                .contains(&"\\Gen\\Controllers\\ControllerEx".to_owned()),
+            "{:?}",
+            class.inherits
+        );
+        assert!(
+            class
+                .inherits
+                .contains(&"\\gen\\commands\\command".to_owned()),
+            "{:?}",
+            class.inherits
+        );
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const CACHE_SCHEMA_VERSION: u32 = 3;
+pub const CACHE_SCHEMA_VERSION: u32 = 4;
 pub const MAGO_VERSION: &str = "1.47.4";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

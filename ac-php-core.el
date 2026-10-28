@@ -2990,19 +2990,288 @@ A value includes continuation lines up to the next PHPDoc tag."
                           (ac-php--phpdoc-content start end) tag))))))))
         values))))
 
-(defun ac-php--phpstan-type-aliases ()
-  "Return PHPStan type aliases declared in PHPDoc comments in this buffer.
-Each result is a cons cell whose car is the alias and whose cdr is its complete
-possibly multiline type expression.  Later declarations replace earlier ones."
-  (let ((aliases (make-hash-table :test #'equal)) results)
-    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "phpstan-type"))
-      (when (string-match
-             "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+\\(.+\\)\\'"
-             value)
-        (puthash (match-string 1 value)
-                 (s-trim (match-string 2 value)) aliases)))
-    (maphash (lambda (name type) (push (cons name type) results)) aliases)
-    results))
+(defconst ac-php--phpstan-class-pattern
+  (concat "\\_<\\(?:class\\|trait\\|interface\\|enum\\)\\_>[ \t\n\r]+"
+          "\\([a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*\\)")
+  "Pattern for named PHP declarations which can own PHPStan aliases.")
+
+(defun ac-php--phpstan-current-class-name ()
+  "Return the fully qualified class owning point's PHPStan aliases."
+  (save-match-data
+    (save-excursion
+      (let ((target (point)))
+        (catch 'found
+          (while (re-search-backward ac-php--phpstan-class-pattern nil t)
+            (let ((start (match-beginning 0))
+                  (end (match-end 0))
+                  (name (match-string-no-properties 1)))
+              (unless (or (member name '("extends" "implements"))
+                          (ac-php--in-string-or-comment-p start))
+                (save-excursion
+                  (goto-char end)
+                  (when (search-forward "{" target t)
+                    (let* ((open (1- (point)))
+                           (close (condition-case nil (scan-sexps open 1)
+                                    (scan-error nil))))
+                      (when (or (not close) (< target close))
+                        (throw 'found
+                               (ac-php--as-global-name
+                                (concat (ac-php-get-cur-namespace-name)
+                                        name))))))))))
+          nil)))))
+
+(defun ac-php--phpstan-class-doc (position)
+  "Return the PHPDoc before the class declaration at POSITION.
+Class modifiers and intervening PHP attributes belong to the declaration."
+  (save-match-data
+    (save-excursion
+      (goto-char position)
+      (while
+          (progn
+            (skip-chars-backward " \t\n\r")
+            (cond
+             ((eq (char-before) ?\])
+              (let* ((table (copy-syntax-table (syntax-table)))
+                     (parse-sexp-lookup-properties nil)
+                     (open
+                      (progn
+                        ;; Attribute syntax properties from php-mode can treat
+                        ;; a quoted closing bracket as a structural delimiter.
+                        (modify-syntax-entry ?# "." table)
+                        (with-syntax-table table
+                          (condition-case nil (scan-sexps (point) -1)
+                            (scan-error nil))))))
+                (when (and open (eq (char-before open) ?#))
+                  (goto-char (1- open))
+                  t)))
+             (t
+              (let ((end (point)))
+                (skip-chars-backward "a-zA-Z")
+                (if (member (buffer-substring-no-properties (point) end)
+                            '("abstract" "final" "readonly"))
+                    t
+                  (goto-char end)
+                  nil))))))
+      (when (and (>= (- (point) (point-min)) 2)
+                 (string= (buffer-substring-no-properties (- (point) 2) (point))
+                          "*/"))
+        (let ((end (point)))
+          (when (search-backward "/**" nil t)
+            (ac-php--phpdoc-content (point) end)))))))
+
+(defun ac-php--phpstan-class-position (class-name)
+  "Return the declaration position of fully qualified CLASS-NAME in this buffer."
+  (save-match-data
+    (save-excursion
+      (goto-char (point-min))
+      (catch 'found
+        (while (re-search-forward ac-php--phpstan-class-pattern nil t)
+          (let ((start (match-beginning 0))
+                (name (match-string-no-properties 1)))
+            (unless (ac-php--in-string-or-comment-p start)
+              (when (string-equal
+                     (downcase (ac-php--as-global-name
+                                (concat (ac-php-get-cur-namespace-name) name)))
+                     (downcase class-name))
+                (throw 'found start)))))
+        nil))))
+
+(defun ac-php--phpstan-use-name (name)
+  "Return the class or namespace imported as NAME in the current namespace.
+Support ordinary, comma-separated and grouped PHP use declarations."
+  (save-match-data
+    (save-excursion
+      (let* ((limit (point))
+             (namespace (ac-php-get-syntax-backward
+                         ac-php-re-namespace-pattern :sexp 1))
+             (bound (or (and namespace (get-text-property 0 'pos namespace))
+                        (point-min))))
+        (catch 'found
+          (while (re-search-backward "\\_<use[ \t\n\r]+" bound t)
+            (let* ((start (point))
+                   (state (syntax-ppss start)))
+              (when (and (not (nth 3 state)) (not (nth 4 state))
+                         (not (ac-php--phpstan-current-class-name)))
+                (let ((body (save-excursion
+                              (when (search-forward ";" limit t)
+                                (s-trim (replace-regexp-in-string
+                                         "[ \t\n\r]+" " "
+                                         (ac-php--code-without-comments
+                                          start (1- (point))))))))
+                      prefix entries)
+                  (when body
+                    (setq body (replace-regexp-in-string "\\`use[ ]+" "" body))
+                    (if (string-match "\\`\\([^{}]+\\){\\([^{}]+\\)}[ ]*\\'" body)
+                        (setq prefix (s-trim (match-string 1 body))
+                              entries (split-string (match-string 2 body) ","))
+                      (setq entries (split-string body ",")))
+                    (dolist (entry entries)
+                      (let ((entry (s-trim entry)))
+                        (when (string-match
+                               (concat "\\`\\(" ac-php-re-namespace-unit-pattern
+                                       "\\)\\(?: +as +\\([[:alnum:]_]+\\)\\)?\\'")
+                               entry)
+                          (let* ((target (concat prefix (match-string 1 entry)))
+                                 (alias (or (match-string 2 entry)
+                                            (car (last (split-string target "\\\\" t))))))
+                            (when (string-equal (downcase name) (downcase alias))
+                              (throw 'found target)))))))))))
+          nil)))))
+
+(defun ac-php--phpstan-import-class-name (name)
+  "Resolve an imported source class NAME in this buffer.
+Use PHP namespace rules even when the source class has not been indexed."
+  (cond
+   ((ac-php--check-global-name name) name)
+   ((string-prefix-p "namespace\\" name t)
+    (ac-php--as-global-name
+     (concat (ac-php-get-cur-namespace-name) (substring name 10))))
+   (t
+    (let* ((parts (split-string name "\\\\"))
+           (import (ac-php--phpstan-use-name (car parts))))
+      (ac-php--as-global-name
+       (if import
+           (mapconcat #'identity (cons import (cdr parts)) "\\")
+         (concat (ac-php-get-cur-namespace-name) name)))))))
+
+(defun ac-php--phpstan-qualify-type (type names)
+  "Qualify alias references in TYPE using the scope's alias NAMES.
+Quoted literals, shape keys, class names and class constants are preserved."
+  (let ((index 0) (start 0) (length (length type)) quote escaped parts)
+    (while (< index length)
+      (let ((character (aref type index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((string-match "\\`[[:alpha:]_\\\\]" (substring type index))
+          (string-match
+           "[[:alnum:]_\\\\-]+\\(?:::[[:alnum:]_*]+\\)?" type index)
+          (let* ((end (match-end 0))
+                 (token (substring type index end))
+                 (alias (cdr (assoc token names)))
+                 (key-p (string-match-p
+                         "\\`[ \t\n\r]*[?]?[ \t\n\r]*:"
+                         (substring type end))))
+            (when (and alias (not key-p))
+              (push (substring type start index) parts)
+              (push alias parts)
+              (setq start end))
+            (setq index (1- end))))))
+      (setq index (1+ index)))
+    (push (substring type start) parts)
+    (apply #'concat (nreverse parts))))
+
+(defun ac-php--phpstan-source-aliases
+    (class-name tags-data aliases scopes)
+  "Collect CLASS-NAME's aliases from its source using TAGS-DATA.
+ALIASES stores qualified type expressions; SCOPES memoizes class scopes."
+  (let* ((tag (and tags-data
+                   (ac-php--get-item-from-funtion-map
+                    class-name (ac-php-g--function-map tags-data))))
+         (file (or (and tag (ac-php--tag-source-file tags-data tag))
+                   (and buffer-file-name
+                        (expand-file-name
+                         (concat (car (last (split-string class-name "\\\\")))
+                                 ".php")
+                         (file-name-directory buffer-file-name))))))
+    (cond
+     ((ac-php--phpstan-class-position class-name)
+      (ac-php--phpstan-collect-aliases class-name tags-data aliases scopes))
+     ((and file (get-file-buffer file))
+      (with-current-buffer (get-file-buffer file)
+        (save-excursion
+          (ac-php--phpstan-collect-aliases
+           class-name tags-data aliases scopes))))
+     ((and file (file-readable-p file))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (let ((buffer-file-name file)
+              (php-mode-hook nil))
+          (php-mode)
+          (ac-php--phpstan-collect-aliases
+           class-name tags-data aliases scopes)))))))
+
+(defun ac-php--phpstan-collect-aliases
+    (class-name tags-data aliases scopes)
+  "Collect aliases for CLASS-NAME in the current buffer using TAGS-DATA.
+ALIASES stores qualified expressions; SCOPES memoizes local name mappings,
+including scopes currently being visited so cyclic imports terminate."
+  (let ((scope (or class-name
+                   (format "\\ac_php_buffer_%x" (abs (sxhash (current-buffer)))))))
+    (or (gethash scope scopes)
+        (save-match-data
+          (save-excursion
+            (let* ((position (and class-name
+                                  (ac-php--phpstan-class-position class-name)))
+                   (doc (and position (ac-php--phpstan-class-doc position)))
+                   (types
+                    (if class-name
+                        (ac-php--phpdoc-tag-values (or doc "") "phpstan-type")
+                      (ac-php--phpdoc-tag-values-in-buffer "phpstan-type")))
+                   (imports
+                    (if class-name
+                        (ac-php--phpdoc-tag-values
+                         (or doc "") "phpstan-import-type")
+                      (ac-php--phpdoc-tag-values-in-buffer "phpstan-import-type")))
+                   definitions declarations names)
+              (when position (goto-char position))
+              (dolist (value types)
+                (when (string-match
+                       "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+\\(.+\\)\\'"
+                       value)
+                  (let ((name (match-string 1 value)))
+                    (push (cons name (s-trim (match-string 2 value))) definitions)
+                    (push (cons name (concat scope "::" name)) names))))
+              (dolist (value imports)
+                (when (string-match
+                       (concat
+                        "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+from[ \t]+"
+                        "\\([^ \t]+\\)\\(?:[ \t]+as[ \t]+"
+                        "\\([[:alpha:]_][[:alnum:]_]*\\)\\)?[ \t]*\\'")
+                       value)
+                  (let* ((name (match-string 1 value))
+                         (source (match-string 2 value))
+                         (local (or (match-string 3 value) name)))
+                    (push (list local name source) declarations)
+                    (push (cons local (concat scope "::" local)) names))))
+              ;; Publish all names before following imports, including cycles.
+              (puthash scope names scopes)
+              (dolist (definition (nreverse definitions))
+                (puthash (cdr (assoc (car definition) names))
+                         (ac-php--phpstan-qualify-type (cdr definition) names)
+                         aliases))
+              (dolist (declaration (nreverse declarations))
+                (let* ((source-class
+                        (ac-php--phpstan-import-class-name (nth 2 declaration)))
+                       (source-names
+                        (or (gethash source-class scopes)
+                            (ac-php--phpstan-source-aliases
+                             source-class tags-data aliases scopes)))
+                       (source (cdr (assoc (nth 1 declaration) source-names))))
+                  (when source
+                    (puthash (cdr (assoc (car declaration) names)) source aliases))))
+              names))))))
+
+(defun ac-php--phpstan-type-aliases (&optional tags-data)
+  "Return PHPStan type aliases visible in this class using TAGS-DATA.
+Resolve `@phpstan-import-type', including `as' renaming and nested imports.
+Qualified internal aliases keep dependencies in their source class's scope."
+  (save-match-data
+    (save-excursion
+      (let* ((aliases (make-hash-table :test #'equal))
+             (scopes (make-hash-table :test #'equal))
+             (names (ac-php--phpstan-collect-aliases
+                     (ac-php--phpstan-current-class-name)
+                     tags-data aliases scopes))
+             results)
+        (dolist (name names)
+          (push name results))
+        (maphash (lambda (name type) (push (cons name type) results)) aliases)
+        results))))
 
 (defun ac-php--split-top-level-type (text delimiter)
   "Split TEXT on top-level DELIMITER characters.
@@ -3193,7 +3462,7 @@ Return a plist containing `:variable' and `:path', or nil."
         (setq current-type
               (if field
                   (cdr field)
-                (and index-p
+                (and (or index-p (not shapes))
                      (ac-php--array-element-type current-type aliases))))))
     current-type))
 
@@ -3286,10 +3555,92 @@ CURRENT-STRING-START is excluded so an existing key can still be edited."
               (push key keys))))
         (delete-dups (nreverse keys))))))
 
+(defun ac-php--array-literal-element-path (parent open)
+  "Return the path component for array OPEN directly inside PARENT.
+Known keys retain their names; unkeyed or computed keys use an element marker.
+Return nil when OPEN is part of a larger expression rather than an element."
+  (save-match-data
+    (save-excursion
+      (goto-char (1+ parent))
+      (let ((depth (car (syntax-ppss (point))))
+            (field-start (point)))
+        (while (search-forward "," open t)
+          (let* ((comma (1- (point)))
+                 (state (save-excursion (syntax-ppss comma))))
+            (when (and (= (car state) depth)
+                       (not (nth 3 state)) (not (nth 4 state)))
+              (setq field-start (point)))))
+        (let ((prefix (s-trim
+                       (ac-php--code-without-comments field-start open))))
+          (cond
+           ((string= prefix "") (list (cons :index "0")))
+           ((string-match "\\`\\(.+\\)=>[ \t\n\r]*\\'" prefix)
+            (let* ((key (s-trim (match-string 1 prefix)))
+                   (component (ac-php--array-offset-component key)))
+              (list (or component (cons :index nil)))))))))))
+
+(defun ac-php--enclosing-return-type (pos)
+  "Return the PHPDoc return type of the function containing POS.
+Anonymous functions form their own scope even without a PHPDoc comment."
+  (save-match-data
+    (save-excursion
+      (let ((parent pos) parents)
+        (while (setq parent (nth 1 (syntax-ppss parent)))
+          (push parent parents))
+        (goto-char pos)
+        (catch 'type
+          (while (re-search-backward "\\_<function\\_>" nil t)
+            (let ((declaration (point)))
+              (unless (ac-php--in-string-or-comment-p declaration)
+                (save-excursion
+                  (when (search-forward "(" pos t)
+                    (let ((end (condition-case nil
+                                   (scan-sexps (1- (point)) 1)
+                                 (scan-error nil))))
+                      (when end
+                        (goto-char end)
+                        (let (body)
+                          (while (and (not body) (search-forward "{" pos t))
+                            (unless (ac-php--in-string-or-comment-p (1- (point)))
+                              (setq body (1- (point)))))
+                          (when (memq body parents)
+                            (throw 'type
+                                   (car (ac-php--phpdoc-tag-values
+                                         (or (ac-php--phpdoc-before-line
+                                              declaration) "")
+                                         "return"))))))))))))
+          nil)))))
+
+(defun ac-php--return-array-context (open)
+  "Return the PHPDoc return type and nested literal path for array OPEN."
+  (save-match-data
+    (save-excursion
+      (let ((root open) path done invalid)
+        (while (not done)
+          (let ((parent (nth 1 (syntax-ppss root))))
+            (if (and parent (eq (char-after parent) ?\[))
+                (let ((component
+                       (ac-php--array-literal-element-path parent root)))
+                  (if component
+                      (setq path (cons (car component) path)
+                            root parent)
+                    (setq invalid t done t)))
+              (setq done t))))
+        (unless invalid
+          (goto-char root)
+          (forward-comment (- (buffer-size)))
+          (let ((end (point)))
+            (skip-chars-backward "a-zA-Z0-9_")
+            (when (string= (buffer-substring-no-properties (point) end)
+                           "return")
+              (let ((type (ac-php--enclosing-return-type root)))
+                (when type
+                  (list :return-type type :path path))))))))))
+
 (defun ac-php--array-key-context (&optional pos)
   "Return the array-shape key completion context at POS.
-The result describes either a variable offset or an array literal used as a
-call argument, together with the prefix between the current quote and point."
+The result describes a variable offset or an array literal used as a call
+argument or return value, together with the prefix after the current quote."
   (save-match-data
     (save-excursion
       (goto-char (or pos (point)))
@@ -3340,22 +3691,31 @@ call argument, together with the prefix between the current quote and point."
                     (and
                      (ac-php--array-literal-key-position-p
                       active-open string-start)
-                    (let* ((call-open (nth 1 (syntax-ppss active-open)))
-                           (callable
-                            (and call-open
-                                 (eq (char-after call-open) ?\()
-                                 (ac-php--callable-name-before-open call-open))))
-                      (when callable
-                        (list :callable callable
-                              :argument-index
-                              (1- (length
-                                   (ac-php--argument-ranges
-                                    (1+ call-open) active-open)))
-                              :used-keys
-                              (ac-php--array-literal-used-keys
-                               active-open string-start)
-                              :prefix prefix :open active-open
-                              :call-open call-open)))))))))))))
+                     (or
+                      (let ((context
+                             (ac-php--return-array-context active-open)))
+                        (when context
+                          (append context
+                                  (list :used-keys
+                                        (ac-php--array-literal-used-keys
+                                         active-open string-start)
+                                        :prefix prefix :open active-open))))
+                      (let* ((call-open (nth 1 (syntax-ppss active-open)))
+                             (callable
+                              (and call-open
+                                   (eq (char-after call-open) ?\()
+                                   (ac-php--callable-name-before-open call-open))))
+                        (when callable
+                          (list :callable callable
+                                :argument-index
+                                (1- (length
+                                     (ac-php--argument-ranges
+                                      (1+ call-open) active-open)))
+                                :used-keys
+                                (ac-php--array-literal-used-keys
+                                 active-open string-start)
+                                :prefix prefix :open active-open
+                                :call-open call-open))))))))))))))
 
 (defun ac-php--variable-assignment (variable pos)
   "Return VARIABLE's nearest simple assignment preceding POS.
@@ -3805,7 +4165,7 @@ The result contains the parameter type and any inline method template bounds."
   "Infer VARIABLE's PHPDoc type at POS using TAGS-DATA when necessary."
   (unless (member variable seen)
     (let ((seen (cons variable seen))
-          (aliases (or aliases (ac-php--phpstan-type-aliases))))
+          (aliases (or aliases (ac-php--phpstan-type-aliases tags-data))))
       (or (ac-php--phpdoc-variable-type-at-point variable pos)
           (ac-php--phpdoc-parameter-type-at-point variable pos)
           (ac-php--foreach-variable-type
@@ -3823,12 +4183,21 @@ The result contains the parameter type and any inline method template bounds."
   "Return array-shape key candidates at point using TAGS-DATA.
 CONTEXT may be supplied from `ac-php--array-key-context'."
   (let* ((context (or context (ac-php--array-key-context)))
-         (aliases (and context (ac-php--phpstan-type-aliases)))
+         (aliases (and context (ac-php--phpstan-type-aliases tags-data)))
+         (display-names
+          (delq nil
+                (mapcar (lambda (alias)
+                          (when (string-match "::\\([^:]+\\)\\'" (car alias))
+                            (cons (car alias) (match-string 1 (car alias)))))
+                        aliases)))
          (type
           (and context
-               (if (plist-get context :variable)
-                   (ac-php--array-variable-type
-                    (plist-get context :variable) (point) tags-data)
+               (cond
+                ((plist-get context :return-type))
+                ((plist-get context :variable)
+                 (ac-php--array-variable-type
+                  (plist-get context :variable) (point) tags-data nil aliases))
+                (t
                  (or
                   (ac-php--local-callable-parameter-type
                    (plist-get context :callable)
@@ -3836,7 +4205,7 @@ CONTEXT may be supplied from `ac-php--array-key-context'."
                   (ac-php--tagged-callable-parameter-type tags-data context)
                   (ac-php--phpdoc-method-parameter-type
                    (plist-get context :callable)
-                   (plist-get context :argument-index))))))
+                   (plist-get context :argument-index)))))))
          (current-type
           (ac-php--array-type-at-path
            type (plist-get context :path) aliases)))
@@ -3847,13 +4216,15 @@ CONTEXT may be supplied from `ac-php--array-key-context'."
            candidates)
       (dolist (field (ac-php--array-shapes-fields shapes))
         (unless (member (car field) used-keys)
-          (push (propertize
-                 (car field)
-                 'ac-php-help (cdr field)
-                 'ac-php-return-type (cdr field)
-                 'ac-php-tag-type "a"
-                 'summary (cdr field))
-                candidates)))
+          (let ((display-type
+                 (ac-php--phpstan-qualify-type (cdr field) display-names)))
+            (push (propertize
+                   (car field)
+                   'ac-php-help display-type
+                   'ac-php-return-type display-type
+                   'ac-php-tag-type "a"
+                   'summary display-type)
+                  candidates))))
       (nreverse candidates))))
 
 (defun ac-php--argument-ranges (start end)

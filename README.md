@@ -112,6 +112,32 @@ class Test
 $hello = hello();
 ```
 
+**PHPStan array shapes and imported type aliases**
+
+Array key completion reads `@phpstan-type` and `@phpstan-import-type`, including
+`as` renaming and aliases referenced by the imported shape. Source classes are
+resolved through project tags and PHP namespace / `use` declarations. Classes in
+the same file or a neighboring `ClassName.php` can also be read without tags.
+
+```php
+/** @phpstan-type Options array{title?: string, capabilities?: array{export?: bool}} */
+final class ConfigTypes {}
+
+/** @phpstan-import-type Options from ConfigTypes as Overrides */
+class BrokerConfig
+{
+    /** @return Overrides */
+    protected static function get_overrides(): array
+    {
+        return ['capabilities' => ['export' => false]];
+    }
+}
+```
+
+Keys are completed inside quoted array offsets, annotated call arguments and
+return array literals, including nested shapes, lists and maps. Both
+`auto-complete` and `company-mode` use the same type resolution.
+
 **Note:** if a function or a class member has no defined return value then you need to define it using annotation.
 
 #### Type hints

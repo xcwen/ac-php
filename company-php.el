@@ -239,11 +239,12 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
 
 (defun company-ac-php-backend-post-completion (arg)
   "D ARG."
-  (let ((doc))
-    (when (ac-php--tag-name-is-function arg)
-      (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
-      (insert (concat doc ")"))
-      (company-template-c-like-templatify (concat arg doc ")")))))
+  (unless (ac-php--array-key-post-completion arg)
+    (let ((doc))
+      (when (ac-php--tag-name-is-function arg)
+        (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
+        (insert (concat doc ")"))
+        (company-template-c-like-templatify (concat arg doc ")"))))))
 
 ;; Local Variables:
 ;;  flycheck-disabled-checkers: (emacs-lisp-package)

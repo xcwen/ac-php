@@ -134,9 +134,13 @@ class BrokerConfig
 }
 ```
 
-Keys are completed inside quoted array offsets, annotated call arguments and
-return array literals, including nested shapes, lists and maps. Both
-`auto-complete` and `company-mode` use the same type resolution.
+Keys are completed inside quoted array offsets, annotated call arguments,
+return arrays and assignments annotated with `@var`, including nested shapes,
+lists and maps. In literal key slots, completion also works before the opening
+quote; selecting a key inserts `'key' => ` and excludes keys already present in
+that array. Both `auto-complete` and `company-mode` use the same type resolution.
+Jump to definition on a PHPDoc type alias opens its original `@phpstan-type`
+declaration, including when the alias is imported or renamed.
 
 **Note:** if a function or a class member has no defined return value then you need to define it using annotation.
 

@@ -79,9 +79,13 @@
   "D."
   (let* ((extra-completion (ac-php-extra-completion-at-point))
          (extra-prefix (plist-get extra-completion :prefix))
+         (array-prefix (plist-get (ac-php--array-key-context) :prefix))
          (c (char-before)) ret)
-    (when (stringp extra-prefix)
+    (cond
+     ((stringp extra-prefix)
       (setq ret (- (point) (length extra-prefix))))
+     ((stringp array-prefix)
+      (setq ret (- (point) (length array-prefix)))))
     (when
         (and (not ret)
              (or
@@ -126,76 +130,77 @@
 (defun ac-php-action ()
   "D."
   (interactive)
-  (let* ((cur-item (cdr ac-last-completion))
-         (help (ac-php-clean-document
-                (get-text-property 0 'ac-php-help cur-item)))
-         (raw-help (get-text-property 0 'ac-php-help cur-item))
-         (tag-type (get-text-property 0 'ac-php-tag-type cur-item))
-         (candidates (list))
-         ss
-         fn
-         args
-         (ret-t "")
-         ret-f)
+  (unless (ac-php--array-key-post-completion (cdr ac-last-completion))
+    (let* ((cur-item (cdr ac-last-completion))
+           (help (ac-php-clean-document
+                  (get-text-property 0 'ac-php-help cur-item)))
+           (raw-help (get-text-property 0 'ac-php-help cur-item))
+           (tag-type (get-text-property 0 'ac-php-tag-type cur-item))
+           (candidates (list))
+           ss
+           fn
+           args
+           (ret-t "")
+           ret-f)
 
-    (when (ac-php--tag-name-is-function cur-item)
-      (setq raw-help (concat cur-item raw-help ")")))
+      (when (ac-php--tag-name-is-function cur-item)
+        (setq raw-help (concat cur-item raw-help ")")))
 
-    (ac-php--debug "raw-help:%s" raw-help)
+      (ac-php--debug "raw-help:%s" raw-help)
 
-    (dolist (item (split-string raw-help "\n"))
-      ;; do_f($v1,$v2 =0,$v3 =0)
-      (if (s-matches-p (concat "^" ac-php-re-namespace-unit-pattern "(") item)
-          (let (match-ret args-list)
-            (setq match-ret (s-match
-                             (concat "^\\(" ac-php-re-namespace-unit-pattern "\\)(\\(.*\\))$")
-                             item))
+      (dolist (item (split-string raw-help "\n"))
+        ;; do_f($v1,$v2 =0,$v3 =0)
+        (if (s-matches-p (concat "^" ac-php-re-namespace-unit-pattern "(") item)
+            (let (match-ret args-list)
+              (setq match-ret (s-match
+                               (concat "^\\(" ac-php-re-namespace-unit-pattern "\\)(\\(.*\\))$")
+                               item))
 
-            (if match-ret
-                (let ((option-start-index 1000000) (i 0) find-flag
-                      (item-pre-str (concat (nth 1 match-ret) "(")))
-                  (setq args-list (s-split "," (nth 2 match-ret)))
-                  (dolist (arg args-list)
-                    (when (and (not find-flag) (s-matches-p "=" arg))
-                      (setq find-flag t)
-                      (setq option-start-index i))
-                    (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
-                    (setq i (1+ i)))
+              (if match-ret
+                  (let ((option-start-index 1000000) (i 0) find-flag
+                        (item-pre-str (concat (nth 1 match-ret) "(")))
+                    (setq args-list (s-split "," (nth 2 match-ret)))
+                    (dolist (arg args-list)
+                      (when (and (not find-flag) (s-matches-p "=" arg))
+                        (setq find-flag t)
+                        (setq option-start-index i))
+                      (setf (nth i args-list) (replace-regexp-in-string "=.*" "" arg))
+                      (setq i (1+ i)))
 
-                  (ac-php--debug "ac-php-action option-start-index =%d" option-start-index)
-                  (setq i 0)
-                  (dolist (arg args-list)
-                    (when (>= i option-start-index)
-                      (push (propertize (concat item-pre-str ")") 'ac-php-help item) ss))
-                    (setq item-pre-str (concat item-pre-str (if (= i 0) "" ",")  arg))
-                    (setq i (1+ i)))
-                  (push (propertize (concat item-pre-str ")") 'ac-php-help item) ss))
+                    (ac-php--debug "ac-php-action option-start-index =%d" option-start-index)
+                    (setq i 0)
+                    (dolist (arg args-list)
+                      (when (>= i option-start-index)
+                        (push (propertize (concat item-pre-str ")") 'ac-php-help item) ss))
+                      (setq item-pre-str (concat item-pre-str (if (= i 0) "" ",")  arg))
+                      (setq i (1+ i)))
+                    (push (propertize (concat item-pre-str ")") 'ac-php-help item) ss))
 
-              (push item ss)))
-        (push item ss)))
-    (setq ss (reverse ss))
+                (push item ss)))
+          (push item ss)))
+      (setq ss (reverse ss))
 
-    (dolist (s ss)
-      ;; return type
-      (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)
-             (ac-php--debug "do function")
-             (setq fn (match-string 1 s)
-                   args (match-string 2 s))
-             (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)
-                               'raw-args args) candidates))))
+      (dolist (s ss)
+        ;; return type
+        (cond ((string-match "^\\([^(]*\\)(\\(.*)\\)" s)
+               (ac-php--debug "do function")
+               (setq fn (match-string 1 s)
+                     args (match-string 2 s))
+               (push (propertize (ac-php-clean-document args) 'ac-php-help (get-text-property 0 'ac-php-help s)
+                                 'raw-args args) candidates))))
 
-    (ac-php--debug "ac-php-action candidates=%S " candidates)
-    (cond
-     (candidates
-      (setq candidates (delete-dups candidates))
-      (setq candidates (nreverse candidates))
-      (setq ac-php-template-candidates candidates)
-      (setq ac-php-template-start-point (point))
-      (ac-complete-php-template)
-      (unless (cdr candidates) ;; unless length > 1
-        (message (replace-regexp-in-string "\n" " ;    " help))))
-     (t
-      (message (replace-regexp-in-string "\n" " ;    " help))))))
+      (ac-php--debug "ac-php-action candidates=%S " candidates)
+      (cond
+       (candidates
+        (setq candidates (delete-dups candidates))
+        (setq candidates (nreverse candidates))
+        (setq ac-php-template-candidates candidates)
+        (setq ac-php-template-start-point (point))
+        (ac-complete-php-template)
+        (unless (cdr candidates) ;; unless length > 1
+          (message (replace-regexp-in-string "\n" " ;    " help))))
+       (t
+        (message (replace-regexp-in-string "\n" " ;    " help)))))))
 
 (defun ac-php-template-candidate ()
   "D."

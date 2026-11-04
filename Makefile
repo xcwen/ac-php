@@ -33,7 +33,7 @@ CASKCMD = CASK_EMACS="$(CASK_EMACS)" "$(CASK)"
 PANDOC ?= pandoc
 
 EMACSFLAGS ?=
-TESTFLAGS ?= --reporter ert+duration
+TESTFLAGS ?=
 PANDOCLAGS ?= --fail-if-warnings \
 	--reference-links \
 	--atx-headers
@@ -53,20 +53,22 @@ Makefile: ; # skip prerequisite discovery
 .DEFAULT_GOAL = build
 
 # Internal variables
-EMACSBATCH = $(EMACS) -Q --batch -L . $(EMACSFLAGS)
+EMACSBATCH = "$(EMACS)" -Q --batch -L . $(EMACSFLAGS)
 RUNEMACS =
 
 # Program availability
-HAVE_CASK := $(shell sh -c "command -v $(CASK)")
+HAVE_CASK := $(shell command -v "$(CASK)" 2>/dev/null)
 ifndef HAVE_CASK
 $(info "$(CASK) is not available; using direct Emacs batch commands")
-RUNEMACS = $(EMACSBATCH)
+RUNEMACS = $(EMACSBATCH) -l test/dev-env.el
 else
 RUNEMACS = $(CASKCMD) exec $(EMACSBATCH)
 endif
 
 ifndef HAVE_CASK
-PKGDIR := $(ROOT_DIR)/.cask
+EMACS_VERSION := $(shell "$(EMACS)" -Q --batch \
+	--eval '(princ (format "%d.%d" emacs-major-version emacs-minor-version))')
+PKGDIR := $(ROOT_DIR)/.cask/$(EMACS_VERSION)/elpa
 else
 PKGDIR := $(shell $(CASKCMD) package-directory)
 endif
@@ -82,9 +84,13 @@ endif
 %.elc: %.el $(PKGDIR)
 	$(RUNEMACS) -f batch-byte-compile $<
 
-$(PKGDIR): Cask
-	$(CASKCMD) install
-	touch $(PKGDIR)
+init $(PKGDIR): Cask
+	if test -z "$(HAVE_CASK)"; then \
+		printf '%s\n' 'Cask is required to install dependencies for the selected Emacs.' >&2; \
+		printf '%s\n' 'Install Cask or set CASK=/path/to/cask, then run make init.' >&2; \
+		exit 1; \
+	fi
+	$(CASKCMD) install && touch "$(PKGDIR)"
 
 README: README.md
 	$(PANDOC) $(PANDOCLAGS) $(PANDOCLAGS) -f markdown+empty_paragraphs -t plain -o $@ $^
@@ -97,7 +103,6 @@ README: README.md
 	$(info )
 
 .PHONY: init
-init: $(PKGDIR)
 
 .PHONY: checkdoc
 checkdoc:
@@ -107,18 +112,17 @@ checkdoc:
 build: $(OBJS)
 
 .PHONY: test
-test:
-
-ifndef HAVE_CASK
-	$(EMACSBATCH) -L test -l test/test-helper.el \
-		$(addprefix -l ,$(TESTS)) -f ert-run-tests-batch-and-exit
-else
-	$(CASKCMD) exec ert-runner $(TESTFLAGS)
-endif
+test: $(PKGDIR)
+	$(RUNEMACS) -L test -l test/test-helper.el \
+		$(addprefix -l ,$(TESTS)) $(TESTFLAGS) -f ert-run-tests-batch-and-exit
 
 .PHONY: clean
 clean:
+ifdef HAVE_CASK
 	$(CASKCMD) clean-elc
+else
+	$(RM) -f $(OBJS)
+endif
 	$(RM) -f README
 
 .PHONY: help

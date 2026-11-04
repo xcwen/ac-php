@@ -37,6 +37,10 @@ pub fn write_tag_file(path: &Path, tags: &TagSet) -> Result<bool> {
 }
 
 pub fn write_tags(mut writer: impl Write, tags: &TagSet) -> Result<()> {
+    writeln!(
+        writer,
+        ";;; Generated ac-php tags -*- lexical-binding: t; -*-"
+    )?;
     writeln!(writer, "(setq  g-ac-php-tmp-tags  [")?;
     writeln!(writer, "(")?;
     for class in &tags.classes {

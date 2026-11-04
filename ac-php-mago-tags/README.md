@@ -8,6 +8,9 @@ Emacs Lisp data consumed by `ac-php`:
 - `tags-vendor.el` for Composer dependencies;
 - `mago-cache/files/*.postcard` for incremental per-file results.
 
+Generated Lisp files declare `lexical-binding` explicitly to avoid missing-cookie
+warnings when Emacs loads them.
+
 Normal runs parse only changed files. Unchanged metadata hits avoid reading the
 source file; when only timestamps change, the source hash is checked and the
 cached tags are reused. The final status line reports parsed and cached counts.

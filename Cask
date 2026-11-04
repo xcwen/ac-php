@@ -29,5 +29,4 @@
 (development
  (depends-on "php-mode" "1")
  (depends-on "ert-x")
- (depends-on "ert-runner")
  (depends-on "undercover"))

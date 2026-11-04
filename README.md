@@ -22,6 +22,7 @@ A GNU Emacs auto completion source for the PHP.
   * [Working with tags](#working-with-tags)
   * [Using configuration file](#using-configuration-file)
   * [Rebuilding tags](#rebuilding-tags)
+* [Development](#development)
 * [FAQ](#faq)
 * [License](#license)
 
@@ -431,6 +432,12 @@ The tag generator is selected by `ac-php-tags-backend`:
   `ac-php-mago-tags-executable`;
 - `phpctags` always uses the bundled PHP generator.
 
+Default tag caches now use a separate directory for each project path. After
+upgrading from the older cache layout, ac-php builds a fresh index automatically;
+existing cache files are left in place. An explicit `tag-dir` setting continues
+to select the configured directory. Both tag generators use the resolved output
+directory, and indexing different projects can run independently.
+
 For example, to use a locally built Mago generator:
 
 ```elisp
@@ -490,6 +497,45 @@ This means you have to create the `.ac-php-conf.json` file in the project root:
 ``` sh
 $ touch /path/to/the/project/.ac-php-conf.json
 ```
+
+## Development
+
+Install [Cask](https://github.com/cask/cask), then run these commands from the
+repository root:
+
+```sh
+make init
+make test
+make build
+```
+
+Tests run with Emacs's built-in ERT. The old `ert-runner` dependency is no
+longer required; its legacy autoloads are excluded if an older local
+environment still contains it. `TESTFLAGS`, when supplied, are additional
+Emacs batch arguments rather than `ert-runner` reporter options.
+
+Emacs 31.1 is supported for development. Dependencies are installed separately
+for each Emacs major/minor version, for example `.cask/31.1/elpa`. Run
+`make init` again after upgrading Emacs; the presence of `.cask/30.2` does not
+initialize the 31.1 environment.
+
+The Makefile discovers Emacs and Cask on `PATH`, with fallbacks to
+`/Applications/Emacs.app/Contents/MacOS/Emacs` and `~/.cask/bin/cask`. Override
+their locations when needed:
+
+```sh
+make init EMACS=/path/to/emacs CASK=/path/to/cask
+make test EMACS=/path/to/emacs CASK=/path/to/cask
+```
+
+`CASK_EMACS` defaults to the selected `EMACS`, so dependency installation and
+tests use the same version. Once that version's dependencies are installed,
+`make test` and `make build` also work without the Cask executable by loading
+the matching local package directory. Installing or updating dependencies
+still requires Cask.
+
+The core review and proposed refactoring within `ac-php-core.el` are documented in
+[docs/ac-php-core-redesign.md](docs/ac-php-core-redesign.md).
 
 ## FAQ
 

@@ -2736,6 +2736,246 @@ Private analysis buffers never execute user major-mode hooks."
                   file
                 (expand-file-name file (ac-php-g--project-root-dir tags-data))))))))))
 
+;;;; Source documentation
+
+(defun ac-php--declaration-phpdoc (position &optional property)
+  "Return the PHPDoc attached to the declaration at POSITION.
+Skip declaration modifiers and attributes.  PROPERTY also allows native
+property types between the comment and the variable name."
+  (save-match-data
+    (save-excursion
+      (goto-char position)
+      (catch 'document
+        (while t
+          (skip-chars-backward " \t\n\r")
+          (cond
+           ((and (>= (- (point) (point-min)) 2)
+                 (equal (buffer-substring-no-properties (- (point) 2) (point))
+                        "*/"))
+            (let* ((end (point))
+                   (start (nth 8 (syntax-ppss (1- end)))))
+              (throw 'document
+                     (when (and start
+                                (save-excursion
+                                  (goto-char start) (looking-at "/\\*\\*")))
+                       (s-trim (ac-php--phpdoc-content start end))))))
+           ((eq (char-before) ?\])
+            (let* ((table (copy-syntax-table (syntax-table)))
+                   (parse-sexp-lookup-properties nil)
+                   (open
+                    (progn
+                      (modify-syntax-entry ?# "." table)
+                      (with-syntax-table table
+                        (condition-case nil (scan-sexps (point) -1)
+                          (scan-error nil))))))
+              (if (and open (eq (char-before open) ?#))
+                  (goto-char (1- open))
+                (throw 'document nil))))
+           ((and property (eq (char-before) ?\)))
+            (let ((open (condition-case nil (scan-sexps (point) -1)
+                          (scan-error nil))))
+              (if open (goto-char open) (throw 'document nil))))
+           (t
+            (let ((end (point)))
+              (skip-chars-backward (if property "a-zA-Z0-9_\\\\|&?" "a-zA-Z"))
+              (unless (and (< (point) end)
+                           (or property
+                               (member (buffer-substring-no-properties (point) end)
+                                       '("public" "protected" "private" "var"
+                                         "static" "abstract" "final" "readonly"))))
+                (throw 'document nil))))))))))
+
+(defun ac-php--phpdoc-member-scope (class)
+  "Return (START END DEPTH) of CLASS's body in the source buffer."
+  (save-excursion
+    (let ((position (ac-php--phpstan-class-position class)))
+      (when position
+        (goto-char position)
+        (when (search-forward "{" nil t)
+          (let* ((open (1- (point)))
+                 (close (condition-case nil (scan-sexps open 1)
+                          (scan-error nil))))
+            (list (1+ open) (if close (1- close) (point-max))
+                  (1+ (car (syntax-ppss open))))))))))
+
+(defun ac-php--phpdoc-callable-name-p (position name)
+  "Return non-nil if the function keyword at POSITION declares NAME."
+  (save-excursion
+    (goto-char (+ position (length "function")))
+    (forward-comment (buffer-size))
+    (when (eq (char-after) ?&)
+      (forward-char)
+      (forward-comment (buffer-size)))
+    (when (looking-at (concat (regexp-quote name) "\\_>"))
+      (goto-char (match-end 0))
+      (forward-comment (buffer-size))
+      (eq (char-after) ?\())))
+
+(defun ac-php--phpdoc-first-property (position start depth)
+  "Return the first property in POSITION's declaration after START at DEPTH.
+Properties separated by commas share the declaration's PHPDoc."
+  (save-excursion
+    (goto-char position)
+    (let (boundary)
+      (while (and (not boundary) (re-search-backward "[;{}]" start t))
+        (let ((state (save-excursion (syntax-ppss (1+ (point))))))
+          (when (and (not (nth 8 state)) (= (car state) depth))
+            (setq boundary (1+ (point))))))
+      (goto-char (or boundary start))
+      (catch 'property
+        (while (re-search-forward "\\$[[:alpha:]_][[:alnum:]_]*" position t)
+          (let* ((begin (match-beginning 0))
+                 (state (save-excursion (syntax-ppss begin))))
+            (when (and (not (nth 8 state)) (= (car state) depth))
+              (throw 'property begin))))
+        position))))
+
+(defun ac-php--tag-declaration-position (tag)
+  "Find TAG's declaration by name and owner in the current source buffer.
+Indexed line numbers can be stale in unsaved buffers.  Exclude comments,
+strings and declarations belonging to another class or namespace."
+  (save-excursion
+    (let* ((kind (aref tag 0))
+           (name (replace-regexp-in-string "(\\'" "" (aref tag 1)))
+           (short (car (last (split-string name "\\\\" t))))
+           (owner (and (> (length tag) 5) (aref tag 5)))
+           (scope (and owner (ac-php--phpdoc-member-scope owner)))
+           (line (and (string-match ":\\([0-9]+\\)\\'" (aref tag 3))
+                      (string-to-number (match-string 1 (aref tag 3)))))
+           (pattern
+            (cond
+             ((member kind '("f" "m")) "\\_<function\\_>")
+             ((equal kind "p") (concat "\\$" (regexp-quote short) "\\_>"))
+             ((equal kind "d")
+              (concat "\\_<\\(?:const\\|case\\)\\_>[ \t\n\r]+"
+                      "\\(?:[[:alnum:]_\\\\|&?]+[ \t\n\r]+\\)?"
+                      (regexp-quote short) "\\_>")))))
+      (if (member kind '("c" "i" "t"))
+          (ac-php--phpstan-class-position name)
+        (when (and pattern (or (not owner) scope))
+          (goto-char (if scope (car scope) (point-min)))
+          (catch 'declaration
+            (let ((case-fold-search (not (member kind '("p" "d"))))
+                  best distance)
+              (while (re-search-forward pattern (nth 1 scope) t)
+                (let* ((position (match-beginning 0))
+                       (state (save-excursion (syntax-ppss position))))
+                  (when (and (not (nth 8 state))
+                             (or (not (member kind '("f" "m")))
+                                 (ac-php--phpdoc-callable-name-p position short))
+                             (if scope
+                                 (= (car state) (nth 2 scope))
+                               (and (not (ac-php--phpstan-current-class-name))
+                                    (string-equal
+                                     (downcase (ac-php--as-global-name
+                                                (concat (ac-php-get-cur-namespace-name)
+                                                        short)))
+                                     (downcase name)))))
+                    (let ((delta (abs (- (line-number-at-pos position) (or line 1))))
+                          (declaration
+                           (if (equal kind "p")
+                               (ac-php--phpdoc-first-property
+                                position (car scope) (nth 2 scope))
+                             position)))
+                      (when (or (not distance) (< delta distance))
+                        (setq best declaration distance delta))
+                      (when (= delta 0) (throw 'declaration declaration))))))
+              best)))))))
+
+(defun ac-php--magic-method-name (value)
+  "Return the declared method name in a PHPDoc @method VALUE.
+Stop at the declaration rather than matching method references in its prose."
+  (let ((scan 0))
+    (catch 'name
+      (while (string-match "\\_<[[:alpha:]_][[:alnum:]_]*\\_>" value scan)
+        (let ((name (match-string 0 value))
+              (cursor (match-end 0)))
+          (setq scan cursor)
+          (when (string-match "\\`[ \t]*" (substring value cursor))
+            (setq cursor (+ cursor (match-end 0))))
+          (when (and (< cursor (length value)) (eq (aref value cursor) ?<))
+            (let ((end (ac-php--matching-angle-bracket-in-string value cursor)))
+              (when end (setq cursor (1+ end)))))
+          (while (and (< cursor (length value)) (memq (aref value cursor) '(?\s ?\t)))
+            (setq cursor (1+ cursor)))
+          (when (and (< cursor (length value)) (eq (aref value cursor) ?\())
+            (if (member (downcase name) '("callable" "closure"))
+                (let ((end (ac-php--matching-parenthesis-in-string value cursor)))
+                  (when end (setq scan (1+ end))))
+              (throw 'name name)))))
+      nil)))
+
+(defun ac-php--magic-member-phpdoc (tag)
+  "Return TAG's matching magic member annotation from its class PHPDoc."
+  (let* ((kind (aref tag 0))
+         (name (replace-regexp-in-string "(\\'" "" (aref tag 1)))
+         (position (ac-php--phpstan-class-position (aref tag 5)))
+         (doc (and position (ac-php--declaration-phpdoc position)))
+         (annotations (if (equal kind "m") '("method")
+                        '("property" "property-read" "property-write")))
+         (case-fold-search nil))
+    (catch 'document
+      (dolist (annotation annotations)
+        (dolist (value (ac-php--phpdoc-tag-values (or doc "") annotation))
+          (when (if (equal kind "m")
+                    (equal (downcase name)
+                           (downcase (or (ac-php--magic-method-name value) "")))
+                  (equal name
+                         (catch 'property
+                           (dolist (part (ac-php--split-top-level-type
+                                          (replace-regexp-in-string "[\t\n\r]" " " value)
+                                          ?\s))
+                             (when (string-match
+                                    "\\`\\$\\([[:alpha:]_][[:alnum:]_]*\\)\\_>" part)
+                               (throw 'property (match-string 1 part))))
+                           nil)))
+            (throw 'document (concat "@" annotation " " value)))))
+      nil)))
+
+(defun ac-php--tag-phpdoc (tags-data tag)
+  "Read TAG's PHPDoc from its current source using TAGS-DATA.
+Constructor candidates use their actual constructor's documentation, or the
+class documentation when no constructor exists.  Missing source yields nil."
+  (save-match-data
+    (save-excursion
+      (when (and tags-data tag)
+        (let* ((name (replace-regexp-in-string "(\\'" "" (aref tag 1)))
+               (class-tag
+                (and (equal (aref tag 0) "f")
+                     (ac-php--get-item-from-funtion-map
+                      name (ac-php-g--function-map tags-data))))
+               (constructor
+                (and class-tag (member (aref class-tag 0) '("c" "i" "t"))
+                     (ac-php-get-class-member-info
+                      (ac-php-g--class-map tags-data)
+                      (ac-php-g--inherit-map tags-data)
+                      name "__construct(" tags-data))))
+          (when (and class-tag (member (aref class-tag 0) '("c" "i" "t")))
+            (setq tag (or constructor class-tag)))
+          (condition-case nil
+              (ac-php--call-with-source
+               (ac-php--tag-source-file tags-data tag)
+               (lambda ()
+                 (let ((position (ac-php--tag-declaration-position tag)))
+                   (if position
+                       (ac-php--declaration-phpdoc position (equal (aref tag 0) "p"))
+                     (when (and (> (length tag) 5)
+                                (member (aref tag 0) '("m" "p")))
+                       (ac-php--magic-member-phpdoc tag))))))
+            (file-error nil)))))))
+
+(defun ac-php--candidate-phpdoc (item)
+  "Read the PHPDoc for completion ITEM only when its documentation is requested."
+  (when (and (stringp item) (> (length item) 0))
+    (ac-php--tag-phpdoc (get-text-property 0 'ac-php-tags-data item)
+                        (get-text-property 0 'ac-php-source-tag item))))
+
+(defun ac-php--append-phpdoc (document phpdoc)
+  "Append nonempty PHPDOC to DOCUMENT, separated by a blank line."
+  (if (and phpdoc (not (string= phpdoc "")))
+      (concat document "\n\n" phpdoc)
+    document))
+
 ;;;; PHPStan aliases, imports and type references
 
 (defconst ac-php--phpstan-class-pattern
@@ -4498,6 +4738,8 @@ may carry the same text properties as regular ac-php candidates.")
           'ac-php-access (ac-php--get-array-string member member-length 6)
           'ac-php-static (ac-php--get-array-string member member-length 7)
           'ac-php-from (ac-php--get-array-string member member-length 5)
+          'ac-php-source-tag member
+          'ac-php-tags-data tags-data
           'summary (ac-php--get-array-string member member-length 4))
          ret-list)))
 
@@ -4541,18 +4783,21 @@ IGNORE-CASE controls exact filtering.  Preserve the original tag order."
       (mapcar (lambda (entry) (nth 1 entry))
               (sort matches (lambda (a b) (< (nth 2 a) (nth 2 b))))))))
 
-(defun ac-php--completion-string (text kind help return-type)
-  "Build completion TEXT with KIND, HELP and RETURN-TYPE metadata."
+(defun ac-php--completion-string (text kind help return-type &optional tag tags-data)
+  "Build completion TEXT with KIND, HELP and RETURN-TYPE metadata.
+TAG and TAGS-DATA identify the source for lazily requested PHPDoc."
   (propertize text 'ac-php-tag-type kind 'ac-php-help help
-              'ac-php-return-type return-type 'summary return-type))
+              'ac-php-return-type return-type 'summary return-type
+              'ac-php-source-tag tag 'ac-php-tags-data tags-data))
 
-(defun ac-php--function-candidate (tag text)
-  "Convert TAG to a candidate inserting TEXT using the shared metadata."
+(defun ac-php--function-candidate (tag text &optional tags-data)
+  "Convert TAG to a candidate inserting TEXT using the shared metadata.
+TAGS-DATA provides the source file index for lazily requested PHPDoc."
   (let ((length (length tag)))
     (ac-php--completion-string
      text (ac-php--get-array-string tag length 0)
      (ac-php--get-array-string tag length 2)
-     (ac-php--get-array-string tag length 4))))
+     (ac-php--get-array-string tag length 4) tag tags-data)))
 
 (defun ac-php-candidate-other (tags-data)
   "Return global, imported, namespace and local candidates from TAGS-DATA."
@@ -4561,20 +4806,24 @@ IGNORE-CASE controls exact filtering.  Preserve the original tag order."
     (unless (string= word "")
       (if (string-prefix-p "\\" word)
           (dolist (tag (ac-php--function-prefix-matches tags-data word t))
-            (push (ac-php--function-candidate tag (aref tag 1)) candidates))
+            (push (ac-php--function-candidate tag (aref tag 1) tags-data) candidates))
         (let ((first (car (split-string word "\\\\"))))
           (dolist (import (ac-php--get-all-use-as-name-in-cur-buffer))
             (let ((target (car import)) (alias (nth 1 import)))
               (if (string= first word)
                   (when (string-prefix-p word alias t)
                     (push (ac-php--completion-string
-                           (substring alias offset) target alias target)
+                           (substring alias offset) target alias target
+                           (ac-php--get-item-from-funtion-map
+                            target (ac-php-g--function-map tags-data))
+                           tags-data)
                           candidates))
                 (when (string= first alias)
                   (let ((prefix (concat target (substring word (length first)))))
                     (dolist (tag (ac-php--function-prefix-matches tags-data prefix t))
                       (push (ac-php--function-candidate
-                             tag (concat word (substring (aref tag 1) (length prefix))))
+                             tag (concat word (substring (aref tag 1) (length prefix)))
+                             tags-data)
                             candidates)))))))
           (dolist (keyword ac-php--php-key-list)
             (when (and (string-prefix-p word keyword) (not (string= word keyword)))
@@ -4583,7 +4832,8 @@ IGNORE-CASE controls exact filtering.  Preserve the original tag order."
             (dolist (tag (ac-php--function-prefix-matches
                          tags-data (concat namespace word)))
               (push (ac-php--function-candidate
-                     tag (substring (aref tag 1) (+ offset (length namespace))))
+                     tag (substring (aref tag 1) (+ offset (length namespace)))
+                     tags-data)
                     candidates)))
           (maphash (lambda (name _)
                      (when (and (string-prefix-p word name) (not (string= name word)))
@@ -4941,14 +5191,17 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
 
 ;;;; Popup documentation, ElDoc and project information
 
-(defun ac-php-show-tip(&optional _prefix)
-  "Doc PREFIX."
+(defun ac-php-show-tip (&optional _prefix)
+  "Show the signature, type information and source PHPDoc of the symbol at point."
   (interactive "P")
   ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
         symbol-ret
         type doc class-name access return-type member-info tag-name function-item file-pos)
-    (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data))
+    (when tags-data
+      (setq symbol-ret (or (ac-php-find-symbol-at-point-pri tags-data)
+                           (ac-php-find-symbol-at-point-pri tags-data t)
+                           (ac-php-find-symbol-at-point-pri tags-data nil t))))
     (when symbol-ret
       (setq type (car symbol-ret))
       (setq member-info (nth 3 symbol-ret))
@@ -4962,7 +5215,11 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
         (setq class-name (aref member-info 5))
         (setq return-type (aref member-info 4))
         (setq access (aref member-info 6))
-        (popup-tip (concat (ac-php-clean-document doc) "\n\t[  type]:" return-type "\n\t[access]:" access "\n\t[  from]:" class-name)))
+        (popup-tip
+         (ac-php--append-phpdoc
+          (concat (ac-php-clean-document doc) "\n\t[  type]:" return-type
+                  "\n\t[access]:" access "\n\t[  from]:" class-name)
+          (ac-php--tag-phpdoc tags-data member-info))))
        ((string= type "user_function")
         (setq function-item (nth 3 symbol-ret))
         (setq tag-name (aref function-item 1))
@@ -4973,7 +5230,11 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
         (setq file-pos (aref function-item 3))
 
         (setq return-type (aref function-item 4))
-        (popup-tip (concat "[" (if (string= "sys" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
+        (popup-tip
+         (ac-php--append-phpdoc
+          (concat "[" (if (string= "sys" file-pos) "system" "user") "]:"
+                  (ac-php-clean-document doc) "\n[  type]:" return-type)
+          (ac-php--tag-phpdoc tags-data function-item))))))))
 
 (defun ac-php-eldoc-documentation-function ()
   "A function to provide ElDoc support.

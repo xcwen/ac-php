@@ -101,6 +101,112 @@
       (ac-php--remake-tags "/project/" nil))
     (should started)))
 
+(defun ac-php-test--with-index-directories (function)
+  "Call FUNCTION with isolated non-project and PHP project directories."
+  (let* ((directory (file-name-as-directory
+                     (file-truename (make-temp-file "ac-php-index-roots-" t))))
+         (non-project (expand-file-name "outside/" directory))
+         (project (expand-file-name "project/" directory))
+         (file-exists (symbol-function 'file-exists-p)))
+    (unwind-protect
+        (progn
+          (make-directory non-project t)
+          (make-directory (expand-file-name "src/" project) t)
+          (with-temp-file (expand-file-name ac-php-config-file project)
+            (insert "{}"))
+          ;; Keep real discovery inside this fixture, ignoring any project
+          ;; markers in the machine's temporary directory or its parents.
+          (cl-letf (((symbol-function 'file-exists-p)
+                     (lambda (file)
+                       (and (string-prefix-p directory (expand-file-name file))
+                            (funcall file-exists file)))))
+            (funcall function non-project project)))
+      (delete-directory directory t))))
+
+(ert-deftest ac-php-regression/index-commands-recover-after-missing-project ()
+  (ac-php-test--with-index-directories
+   (lambda (non-project project)
+     (dolist (command '(ac-php-remake-tags ac-php-remake-tags-all))
+       (dolist (initial-flag '(nil t))
+         (let ((ac-php--index-processes (make-hash-table :test #'equal))
+               (ac-php-gen-tags-flag initial-flag)
+               (ac-php-tags-backend 'mago)
+               (ac-php-phptags-index-progress 37)
+               process invocation)
+           (unwind-protect
+               (with-temp-buffer
+                 (setq default-directory non-project
+                       buffer-file-name (expand-file-name "notes.txt" non-project))
+                 (cl-letf (((symbol-function 'ac-php--mago-tags-executable)
+                            (lambda () "test-generator"))
+                           ((symbol-function 'ac-php--get-tags-save-dir)
+                            (lambda (_) (expand-file-name "tags/" project)))
+                           ((symbol-function 'ac-php--tags-process-command)
+                            (lambda (root force backend)
+                              (setq invocation (list root force backend))
+                              '("test-generator")))
+                           ((symbol-function 'start-process)
+                            (lambda (&rest _)
+                              (setq process
+                                    (make-pipe-process :name "ac-php-retry"
+                                                       :noquery t)))))
+                   (should-error (call-interactively command) :type 'user-error)
+                   (should-not invocation)
+                   (should-not process)
+                   (should-not ac-php--index-process)
+                   (should-not ac-php-mode)
+                   (should (= ac-php-phptags-index-progress 37))
+                   (should (eq ac-php-gen-tags-flag initial-flag))
+                   (should (= (hash-table-count ac-php--index-processes) 0))
+                   ;; Retry from a nested PHP source directory.  In particular,
+                   ;; a legacy global busy flag must not prevent this startup.
+                   (setq default-directory (expand-file-name "src/" project)
+                         buffer-file-name (expand-file-name "example.php"
+                                                            default-directory))
+                   (should (eq (call-interactively command) process))
+                   (should (equal invocation
+                                  (list project
+                                        (eq command 'ac-php-remake-tags-all)
+                                        'mago)))
+                   (should (process-live-p process))
+                   (should (eq (gethash project ac-php--index-processes) process))
+                   (should (eq ac-php--index-process process))
+                   (should ac-php-mode)
+                   (should ac-php-gen-tags-flag)))
+             (when process (delete-process process)))))))))
+
+(ert-deftest ac-php-regression/index-missing-project-keeps-other-project-running ()
+  (ac-php-test--with-index-directories
+   (lambda (non-project project)
+     (let ((ac-php--index-processes (make-hash-table :test #'equal))
+           (ac-php-gen-tags-flag t)
+           (process (make-pipe-process :name "ac-php-other-project" :noquery t))
+           (origin (generate-new-buffer " *ac-php-other-project*")))
+       (unwind-protect
+           (progn
+             (process-put process 'ac-php-root project)
+             (process-put process 'ac-php-progress 61)
+             (puthash project process ac-php--index-processes)
+             (with-current-buffer origin (ac-php--index-attach-buffer process))
+             (with-temp-buffer
+               (setq default-directory non-project)
+               (dolist (command '(ac-php-remake-tags ac-php-remake-tags-all))
+                 (should-error (call-interactively command) :type 'user-error)
+                 (should-not ac-php--index-process)
+                 (should-not ac-php-mode)
+                 (should (process-live-p process))
+                 (should (eq (gethash project ac-php--index-processes) process))
+                 (should (= (hash-table-count ac-php--index-processes) 1))
+                 (should ac-php-gen-tags-flag)
+                 (should (equal (process-get process 'ac-php-buffers)
+                                (list origin)))
+                 (with-current-buffer origin
+                   (should ac-php-mode)
+                   (should (eq ac-php--index-process process))
+                   (should (= (process-get process 'ac-php-progress) 61))))))
+         (delete-process process)
+         (kill-buffer origin))))))
+
 (ert-deftest ac-php-regression/index-output-retains-arbitrary-chunks ()
   (let ((process (make-pipe-process :name "ac-php-chunks" :noquery t))
         (text "75% parsed\r\nPHPParser: invalid source\nfinal"))

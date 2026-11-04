@@ -176,7 +176,7 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
     (nreverse ac-php-company-list)))
 
 (defun company-ac-php-document (item)
-  "D ITEM."
+  "Return the signature and source PHPDoc for completion ITEM."
   (if (stringp item)
       (let (doc tag-type return-type access from-class)
         (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
@@ -188,13 +188,15 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
             (setq doc (concat item doc ")"))
           (setq doc item))
 
-        (cond
-         ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
-          (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
-         (return-type
-          (format "%s %s" return-type doc))
-         (t
-          doc)))))
+        (ac-php--append-phpdoc
+         (cond
+          ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
+           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
+          (return-type
+           (format "%s %s" return-type doc))
+          (t
+           doc))
+         (ac-php--candidate-phpdoc item)))))
 
 (defun company-ac-php--doc-buffer (candidate)
   "D CANDIDATE."

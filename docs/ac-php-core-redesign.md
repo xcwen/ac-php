@@ -269,3 +269,12 @@ PHP 标签生成器的配套修改位于 `/Users/jim/phpctags/bootstrap.php` 和
 圆括号和尖括号匹配复用 `ac-php--matching-delimiter-in-string`，保留原有两个 wrapper。宏、内联 helper 和共享词表保持在使用者之前，避免重排引入编译时的声明差异。
 
 按用户要求删除仓库内无活动调用的六个历史函数：`ac-php-find-php-files`、`ac-php--cache-files-save`、`ac-php--remake-cscope`、`ac-php--get-obj-tags-dir`、`ac-php--get-obj-tags-file-list`、`ac-php-save-data`；同时删除无调用的旧配置提示 helper `ac-php--get-config-path-noti-str`。当前 Cscope 查询命令仍归在导航分区。
+
+本次验证结果：
+
+- 逐个读取并对比整理前后的顶层 Lisp 表达式，251 个保留定义完全相同；仅两个括号扫描 wrapper 改为共享 helper，另外移除上述 7 个函数。
+- 新旧括号扫描器完成 14,762 组输入对照，结果全部相同，另核对嵌套、引号、转义、未闭合和非零起始位置的边界输入。
+- Emacs 31.1 下，源码加载与字节编译加载分别通过 204/204 ERT；`make build` 成功，核心无编译警告，前端仍有未使用变量和未知函数等警告。
+- 将核心源码单独复制到临时安装目录后，`require 'ac-php-core` 成功；`git diff --check` 通过。
+
+本次只完成职责归组、重复扫描实现合并和历史函数清理；请求上下文复用、文档格式化去重及其他行为改进仍不计为已完成。

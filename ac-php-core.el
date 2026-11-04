@@ -3732,32 +3732,6 @@ TAGS-DATA can identify an inherited method's declaring class."
             (or (ac-php--phpdoc-before-line declaration) "")
             "return")))))
 
-(defun ac-php--assignment-return-type (assignment tags-data)
-  "Infer ASSIGNMENT's result call from its original buffer using TAGS-DATA.
-Inspect the final complete call rather than a nested argument.  Original
-positions remain valid even when comments were removed from :text."
-  (save-match-data
-    (save-excursion
-      (goto-char (plist-get assignment :end))
-      (forward-comment (- (buffer-size)))
-      (let ((bound (plist-get assignment :start)) open name)
-        (while (and (> (point) bound) (eq (char-before) ?\)) (not name))
-          (setq open (condition-case nil (scan-sexps (point) -1)
-                       (scan-error nil)))
-          (if (not open)
-              (goto-char bound)
-            (setq name (ac-php--callable-name-before-open open))
-            (unless name
-              ;; Unwrap a grouped result expression such as (outer(inner())).
-              (backward-char)
-              (forward-comment (- (buffer-size))))))
-        (when name
-          (or (ac-php--local-callable-return-type
-               name open tags-data open)
-              (and tags-data
-                   (let ((tag (ac-php--callable-tag tags-data open)))
-                     (and tag (aref tag 4))))))))))
-
 (defun ac-php--tagged-phpdoc-method-parameter-info (tags-data context)
   "Return source PHPDoc method information for indexed call CONTEXT."
   (when (and tags-data (plist-get context :call-open))
@@ -4055,6 +4029,32 @@ The result records both the right-hand-side text and its buffer start."
               (unless result
                 (goto-char assignment-start)))))
         result))))
+
+(defun ac-php--assignment-return-type (assignment tags-data)
+  "Infer ASSIGNMENT's result call from its original buffer using TAGS-DATA.
+Inspect the final complete call rather than a nested argument.  Original
+positions remain valid even when comments were removed from :text."
+  (save-match-data
+    (save-excursion
+      (goto-char (plist-get assignment :end))
+      (forward-comment (- (buffer-size)))
+      (let ((bound (plist-get assignment :start)) open name)
+        (while (and (> (point) bound) (eq (char-before) ?\)) (not name))
+          (setq open (condition-case nil (scan-sexps (point) -1)
+                       (scan-error nil)))
+          (if (not open)
+              (goto-char bound)
+            (setq name (ac-php--callable-name-before-open open))
+            (unless name
+              ;; Unwrap a grouped result expression such as (outer(inner())).
+              (backward-char)
+              (forward-comment (- (buffer-size))))))
+        (when name
+          (or (ac-php--local-callable-return-type
+               name open tags-data open)
+              (and tags-data
+                   (let ((tag (ac-php--callable-tag tags-data open)))
+                     (and tag (aref tag 4))))))))))
 
 (defun ac-php--array-expression-type
     (expression pos tags-data aliases seen)

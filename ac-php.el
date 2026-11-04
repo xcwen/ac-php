@@ -1,4 +1,4 @@
-;;; ac-php.el --- Auto Completion source for PHP.
+;;; ac-php.el --- Auto Completion source for PHP.  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 
@@ -89,9 +89,9 @@
     (when
         (and (not ret)
              (or
-         ;; ->
-         (and (eq ?> c) (eq ?- (char-before (1- (point)))))
-         ;; ::
+              ;; ->
+              (and (eq ?> c) (eq ?- (char-before (1- (point)))))
+              ;; ::
               (and (eq ?: c) (eq ?: (char-before (1- (point)))))))
       (setq ret (point)))
     (unless ret

@@ -1,6 +1,6 @@
 # ac-php-core 审查与重构方案
 
-审查日期：2026-11-04。审查基线：`dff1c73`，当时 `ac-php-core.el` 共 5,086 行。下列问题表中的行号指审查基线，实施状态和新验证结果见第 9 节。
+审查日期：2026-11-04。审查基线：`dff1c73`，当时 `ac-php-core.el` 共 5,086 行。下列问题表中的行号指审查基线，修复进展见第 9 节，职责归组与历史 API 清理见第 10 节。
 
 本文记录问题审查、单文件内的职责设计与分阶段整合计划，以及后续修复进展。已完成 Emacs 31.1 的开发环境和第 9 节列出的首批修复；其余目标设计按阶段推进。
 
@@ -102,7 +102,7 @@ idle -> starting -> running -> succeeded
 
 ## 4. 单文件内的职责分区与调用方向
 
-`ac-php-core.el` 继续包含全部核心实现，并提供现有的 `ac-php-core` feature。已有对外函数名、变量和候选项 text properties 保持可用。通过文件内章节、共享辅助函数和内部数据契约组织以下职责；分区名称不对应新增文件，也不新增分区间的 `require` / `load` / `provide`。
+`ac-php-core.el` 继续包含全部核心实现，并提供现有的 `ac-php-core` feature。除第 10 节明确移除的历史 API 外，已有对外函数名、变量和候选项 text properties 保持可用。通过文件内章节、共享辅助函数和内部数据契约组织以下职责；分区名称不对应新增文件，也不新增分区间的 `require` / `load` / `provide`。
 
 | 文件内分区 | 职责 | 现有实现 |
 | --- | --- | --- |
@@ -158,7 +158,7 @@ flowchart TD
 5. **候选构造**：`candidate-other` 多处分支重复设置相同 text properties；用一个候选转换函数并分别表达来源与过滤规则，避免前端靠字符串内容猜测类型。
 6. **请求上下文**：统一 prefix 与 candidate 阶段的 array/literal/named-argument 判断。保留 provider 在无 tags-data 时查询 prefix 的扩展契约，并保持当前优先级。
 7. **文档展示**：`show-tip` 与 ElDoc 共用 resolved symbol 和文档格式化，展示层只决定交互方式。
-8. **遗留功能**：`--cache-files-save`、`--clean-return-type`、`gen-el-func`、`--get-obj-tags-file-list`、`--remake-cscope` 的仓库内调用很少或未发现。先建立调用清单，区分外部兼容 API 与死代码；Cscope 路径先隔离，不仅凭搜索结果删除公开函数。
+8. **遗留功能**：已核对调用清单，并按用户要求移除第 10 节所列的历史函数；`--clean-return-type`、`gen-el-func` 等未列入本次删除范围的函数归回对应类型和签名处理分区。
 
 ## 6. 分阶段整合与验收
 
@@ -247,4 +247,25 @@ PHP 标签生成器的配套修改位于 `/Users/jim/phpctags/bootstrap.php` 和
 - 将核心单文件复制到独立临时安装目录后，`require 'ac-php-core` 成功，确认没有依赖本仓库中新拆出的核心实现文件。
 - 两个仓库的 `git diff --check` 通过。
 
-后续继续进行文件内职责归组、签名与请求上下文复用、文档展示去重等整合；不拆分核心文件，也不把这些尚未完成的整理标记为已完成。
+文件内职责归组见第 10 节；签名与请求上下文复用、文档展示去重等仍待后续整合。
+
+## 10. 职责归组与历史 API 清理（2026-11-04）
+
+本次以代码组织和功能内聚为范围，保留单个核心实现文件，将实现归入以下连续分区：
+
+| 分区 | 归组内容 |
+| --- | --- |
+| 共享工具 | 调试、前端共用 helper、case-fold hash test、文件签名 |
+| Buffer 语法与作用域 | 语言词表、声明正则、函数边界、当前符号、注释处理和参数范围 |
+| 项目与标签 | 项目发现与配置、后端与索引进程生命周期、标签加载与数据访问 |
+| 名称、表达式与类成员 | namespace/imports、继承与成员索引、token/chain 解析和接收者类型推断 |
+| PHPDoc 与类型推断 | PHPDoc 文本、源码 buffer、PHPStan aliases、类型表达式和共享 callable 查询 |
+| 补全 | 数组、字符串、具名参数各自的上下文与候选生成，以及通用补全调度 |
+| 导航与文档 | 位置栈、定义跳转、Cscope 查询、popup/ElDoc 和项目信息 |
+| 初始化 | minor mode 与 ElDoc setup |
+
+配置、索引进程、标签代次、源码 buffer、imports、成员与函数前缀索引的状态变量分别放回所属分区。共享 callable 定位与签名解析从具体补全功能中集中出来；数组键插入 helper 与数组候选生成相邻。
+
+圆括号和尖括号匹配复用 `ac-php--matching-delimiter-in-string`，保留原有两个 wrapper。宏、内联 helper 和共享词表保持在使用者之前，避免重排引入编译时的声明差异。
+
+按用户要求删除仓库内无活动调用的六个历史函数：`ac-php-find-php-files`、`ac-php--cache-files-save`、`ac-php--remake-cscope`、`ac-php--get-obj-tags-dir`、`ac-php--get-obj-tags-file-list`、`ac-php-save-data`；同时删除无调用的旧配置提示 helper `ac-php--get-config-path-noti-str`。当前 Cscope 查询命令仍归在导航分区。

@@ -537,6 +537,13 @@ still requires Cask.
 The core review and proposed refactoring within `ac-php-core.el` are documented in
 [docs/ac-php-core-redesign.md](docs/ac-php-core-redesign.md).
 
+The core remains a single file, organized by buffer syntax, project and tags,
+name and member resolution, PHPDoc and callable types, completion, and navigation.
+State and caches live beside the functions that own them. The unused legacy APIs
+`ac-php-find-php-files`, `ac-php--cache-files-save`, `ac-php--remake-cscope`,
+`ac-php--get-obj-tags-dir`, `ac-php--get-obj-tags-file-list`, `ac-php-save-data`, and
+`ac-php--get-config-path-noti-str` have been removed.
+
 ## FAQ
 
 - **Q:** Something went wrong. It seems I followed all the instructions, but auto completion stopped working

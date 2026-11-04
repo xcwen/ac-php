@@ -164,17 +164,10 @@ When set to `auto', prefer `mago' when
   :group 'ac-php
   :type 'file)
 
-;;; Internal configuration
+;;; Shared utilities
 
-(defconst ac-php-config-file ".ac-php-conf.json"
-  "Per-project configuration file.")
-
-(defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name))
-  "The ac-php package location.")
-
-(defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags")
-  "Set the Phpctags executable path.  Don't change the value of this variable.")
-
+;; Shared diagnostics, frontend metadata helpers and file signatures.
+;; Keep macros and inline helpers before the functions that use them.
 
 (defvar ac-php-debug-flag nil
   "Non-nil means enable verbose mode when processing autocomplete.
@@ -182,25 +175,113 @@ Please notice, enabling this option entails detailed output of debugging
 information to the ‘*Messages*’ buffer.  This feature is designed for
 ac-php developer only.")
 
-(defvar ac-php-gen-tags-flag nil
-  "Non-nil means that remaking tags currently is under process.")
+(defmacro ac-php--debug (format-string &rest args)
+  "Display a debug message at the bottom of the screen.
+The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
+is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
+refer to `message' function."
+  `(when ac-php-debug-flag
+     (message (concat "[DEBUG]: " ,format-string) ,@args)))
 
-(defvar-local ac-php--index-process nil
-  "Index process currently displayed by this buffer.")
+(defun ac-php-toggle-debug ()
+  "Toggle debug mode.
+Please notice, enabling debug mode entails detailed output of debugging
+information to the ‘*Messages*’ buffer.  This feature is designed for
+ac-php developer only."
 
-(defvar ac-php-phptags-index-progress 0
-  "The re-index progress indicator.
-Meant for `ac-php-mode-line-project-status'")
+  (interactive)
+  (let ((debug-p (not ac-php-debug-flag)))
+    (progn
+      (setq ac-php-debug-flag debug-p
+            debug-on-error debug-p)
+      (message "Debug mode was %s in ac-php"
+               (if debug-p "enabled" "disabled")))))
 
-;; The key is an absolute tags filename.  Each value is a plist containing the
-;; file signatures and the merged tags data.  The vendor signature is stored in
-;; the project entry so that changing only tags-vendor.el also invalidates the
-;; merged data.
-(defvar ac-php-tag-last-data-list (make-hash-table :test #'equal)
-  "Hash table holding in-memory tags data, keyed by tags filename.")
+(defun ac-php--get-timestamp (time-spec)
+  "Get UNIX timestamp from the TIME-SPEC."
+  (+ (* (nth 0 time-spec) 65536)
+     (nth 1 time-spec)))
 
-(defvar g-ac-php-tmp-tags nil
-  "Temporary container populated while loading a generated tags file.")
+(defun ac-php--reduce-path (path max-len)
+  "Return a modified version of PATH no longer than MAX-LEN.
+
+This function replaces some components with single characters starting from the
+left to try and get the path down to MAX-LEN"
+  (let* ((components (split-string (abbreviate-file-name path) "/"))
+         (len (+ (1- (length components))
+                 (cl-reduce '+ components :key 'length)))
+         shortened-components)
+    (while (and (> len max-len)
+                (cdr components))
+      (push (if (= 0 (length (car components)))
+                "/"
+              (string (elt (car components) 0) ?/))
+            shortened-components)
+      (setq len (- len (1- (length (car components))))
+            components (cdr components)))
+    (concat (apply #'concat (nreverse shortened-components))
+            (mapconcat #'identity components "/"))))
+
+(defun ac-php--string=-ignore-care(str1 str2)
+  "Doc STR2 STR1."
+  (s-equals?(s-upcase str1) (s-upcase str2))
+  ;; (not (integer-or-marker-p (compare-strings str1 0 nil str2 0 nil t)))
+  )
+
+(defsubst ac-php-clean-document (s)
+  "Doc S."
+  (when s
+    (setq s (replace-regexp-in-string "<#\\|#>\\|\\[#" "" s))
+    (setq s (replace-regexp-in-string "#\\]" " " s)))
+  s)
+
+(defun ac-php--tag-name-is-function (tag-name)
+  "Doc TAG-NAME."
+  (s-matches-p "(" tag-name))
+
+(defun ac-php--get-array-string(arr arr-len index)
+  "Doc ARR-LEN ARR INDEX."
+  (let (v)
+    (if (< index arr-len)
+        (progn
+          (setq v (aref arr index))
+          (if v v ""))
+      "")))
+
+(defun case-fold-string= (a b)
+  "Doc A B."
+  (eq t (compare-strings a nil nil b nil nil t)))
+
+(defun case-fold-string-hash (a)
+  "Doc A."
+  (sxhash (upcase a)))
+
+(define-hash-table-test 'case-fold
+                        'case-fold-string= 'case-fold-string-hash)
+
+(defun ac-php--tags-file-signature (file)
+  "Return a cache signature for FILE, or nil when FILE does not exist."
+  (when file
+    (let ((attributes (file-attributes file)))
+      (when attributes
+        ;; Keep complete times instead of reducing them to whole seconds.  The
+        ;; file identity catches atomic replacement, while size catches common
+        ;; replacements on file systems with coarse timestamp resolution.
+        (list (nth 5 attributes)
+              (nth 6 attributes)
+              (nth 7 attributes)
+              (nth 10 attributes)
+              (nth 11 attributes))))))
+
+;;; Buffer syntax and scope
+
+;; Buffer syntax, declaration boundaries, symbols and argument ranges.
+;; Feature-specific completion contexts are kept with their candidate builders.
+
+(defvar ac-php--php-key-list '("public"
+                               "class" "namespace" "protected"
+                               "private" "function" "while"
+                               "extends" "return" "static" "global" "continue" "abstract" "finally" "instanceof"))
 
 (defconst ac-php-re-classlike-pattern
   (concat
@@ -255,74 +336,6 @@ Meant for `ac-php-mode-line-project-status'")
    "@var"
    "\\s-+\\(" ac-php-re-namespace-unit-pattern "\\)\\>\\s-+")
   "The regular expression for a class inside an annotated variable.")
-
-(defvar ac-php-prefix-str "")
-
-(defvar ac-php-extra-completion-functions nil
-  "Functions providing project-specific completion at point.
-
-Each function is called with TAGS-DATA, which is nil while a frontend asks
-only for a prefix.  It should return nil when inactive, or a plist containing
-`:prefix' and, when TAGS-DATA is non-nil, `:candidates'.  Candidate strings
-may carry the same text properties as regular ac-php candidates.")
-
-(defun ac-php-extra-completion-at-point (&optional tags-data)
-  "Return the first extra completion result at point using TAGS-DATA."
-  (save-excursion
-    (run-hook-with-args-until-success
-     'ac-php-extra-completion-functions tags-data)))
-
-(defvar ac-php-location-stack-index 0)
-
-(defvar ac-php-location-stack nil)
-
-(defvar ac-php--php-key-list '("public"
-                               "class" "namespace" "protected"
-                               "private" "function" "while"
-                               "extends" "return" "static" "global" "continue" "abstract" "finally" "instanceof"))
-
-(defvar ac-php-rebuild-tmp-error-msg nil)
-
-(defvar ac-php-max-bookmark-count 500)
-
-;;; Utils
-
-(defmacro ac-php--debug (format-string &rest args)
-  "Display a debug message at the bottom of the screen.
-The message also goes into the ‘*Messages*’ buffer, if ‘message-log-max’
-is non-nil.  Return the debug message.  For FORMAT-STRING and ARGS explanation
-refer to `message' function."
-  `(when ac-php-debug-flag
-     (message (concat "[DEBUG]: " ,format-string) ,@args)))
-
-(defun ac-php--get-timestamp (time-spec)
-  "Get UNIX timestamp from the TIME-SPEC."
-  (+ (* (nth 0 time-spec) 65536)
-     (nth 1 time-spec)))
-
-(defun ac-php--reduce-path (path max-len)
-  "Return a modified version of PATH no longer than MAX-LEN.
-
-This function replaces some components with single characters starting from the
-left to try and get the path down to MAX-LEN"
-  (let* ((components (split-string (abbreviate-file-name path) "/"))
-         (len (+ (1- (length components))
-                 (cl-reduce '+ components :key 'length)))
-         shortened-components)
-    (while (and (> len max-len)
-                (cdr components))
-      (push (if (= 0 (length (car components)))
-                "/"
-              (string (elt (car components) 0) ?/))
-            shortened-components)
-      (setq len (- len (1- (length (car components))))
-            components (cdr components)))
-    (concat (apply #'concat (nreverse shortened-components))
-            (mapconcat #'identity components "/"))))
-
-(defun ac-php-g--project-root-dir (tags-data)
-  "Return a project path using the TAGS-DATA list."
-  (nth 4 tags-data))
 
 (defsubst ac-php--in-comment-p (&optional pos)
   "Determine whether POS is inside a comment."
@@ -381,19 +394,434 @@ See `ac-php--beginning-of-defun'."
           ;; unbalanced.  Its beginning is still a useful scope boundary.
           (scan-error (> pos bof)))))))
 
-(defun ac-php-toggle-debug ()
-  "Toggle debug mode.
-Please notice, enabling debug mode entails detailed output of debugging
-information to the ‘*Messages*’ buffer.  This feature is designed for
-ac-php developer only."
+(defun ac-php-get-syntax-backward (regexp &rest args)
+  "Search backward from current point for regular expression REGEXP.
 
-  (interactive)
-  (let ((debug-p (not ac-php-debug-flag)))
-    (progn
-      (setq ac-php-debug-flag debug-p
-            debug-on-error debug-p)
-      (message "Debug mode was %s in ac-php"
-               (if debug-p "enabled" "disabled")))))
+Possible additional ARGS:
+
+    :sexp       Specifies which parenthesized expression in the REGEXP
+                should be returned.
+
+    :comment    Indicates should we search inside a comment or not.
+
+    :defun      Indicates should we search inside a defun or not.
+
+    :bound      A buffer position that bounds the search.  The match found must
+                not end after that position.  A value of nil means search to the
+                end of the accessible portion of the buffer.
+
+Return a propertized string in a format:
+
+  #(\"some string\" 0 11 (pos POINT))
+
+where POINT is a point position that bounds the search.  Return nil in case of
+unsuccessful search."
+  (let ((found-p nil)
+        ret-str
+        search-pos
+        (sexp (plist-get args :sexp))
+        (in-comment-p (plist-get args :comment))
+        (in-defun-p (plist-get args :defun))
+        (bound (plist-get args :bound)))
+    (save-excursion
+      (ac-php--debug "Search backward from current point up to %s"
+                     (if bound (format "point: %d" bound)
+                       "accessible portion of the buffer"))
+      (ac-php--debug "Used regular expression: \"%s\"" regexp)
+      (while (not found-p)
+        (setq search-pos (re-search-backward regexp bound t 1))
+        (if search-pos
+            ;; Save match data before syntax and defun checks perform their own
+            ;; searches.  Re-matching the whole line could otherwise return an
+            ;; earlier occurrence than `re-search-backward' found.
+            (let ((matched-text (match-string-no-properties sexp))
+                  (match-pos (match-beginning 0))
+                  (comment-context-ok
+                   (if in-comment-p
+                       (ac-php--in-comment-p (point))
+                     (not (ac-php--in-string-or-comment-p (point))))))
+              ;; Rejecting a comment/string match must not trigger an expensive
+              ;; function-boundary scan.
+              (when (and comment-context-ok
+                         (if in-defun-p
+                             (ac-php--in-function-p (point))
+                           (not (ac-php--in-function-p (point)))))
+                (setq ret-str (propertize matched-text 'pos match-pos)
+                      found-p t)))
+          (setq found-p t))))
+    (ac-php--debug "Search result: %s" ret-str)
+    ret-str))
+
+(defun ac-php-get-cur-class-name ()
+  "Get current class name.
+
+Tries to retrieve current class name if it is possible.
+Returns the name of the current class as a string or nil if the search failed."
+  (ac-php-get-syntax-backward
+   ac-php-re-classlike-pattern
+   :sexp 1))
+
+(defun ac-php-get-cur-namespace-name (&optional trim-trailing-backslash-p)
+  "Get fully qualified namespace.
+
+Tries to retrieve current fully qualified namespace if it is possible.
+TRIM-TRAILING-BACKSLASH-P is used to indicate whether we should trim trailng
+backslash or not.  Always returns a string, even if the namespace was not found."
+  (let (namespace (not-found ""))
+    (setq namespace (ac-php-get-syntax-backward
+                     ac-php-re-namespace-pattern
+                     :sexp 1))
+    (if namespace
+        (progn
+          ;; Concatenate leading backslash
+          (unless (string= (substring namespace 0 1) "\\")
+            (setq namespace (concat "\\" namespace)))
+          ;; Trim trailng backslash
+          (setq namespace (replace-regexp-in-string "\\\\$" "" namespace))
+          ;; Add trailing backslash only if needed
+          (if (not trim-trailing-backslash-p)
+              (setq namespace (concat namespace "\\"))
+            namespace))
+      not-found)))
+
+(defun ac-php-clean-namespace-name (namespace-name)
+  "Doc NAMESPACE-NAME."
+  (if (and (stringp namespace-name)
+           (> (length namespace-name) 1)
+           (string=  (substring-no-properties namespace-name 0 1) "\\"))
+      (substring-no-properties namespace-name 1)
+    namespace-name))
+
+(defun ac-php-get-cur-full-class-name ()
+  "Get current class name in a fully qualified form.
+Returns nil if could not find class name in current buffer."
+  (let (class-name namespace)
+    (setq class-name (ac-php-get-cur-class-name)
+          namespace (ac-php-get-cur-namespace-name))
+    (if class-name
+        (progn
+          (when (string= "" namespace)
+            (setq namespace "\\"))
+          (concat namespace class-name))
+      nil)))
+
+;; "Return a 'word' before current point.
+
+;; The word 'word' means a combination of characters that forms a valid identifier
+;; in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+;; Examples:
+
+;;   :-------------------------:--------------------:
+;;   | If the point at the end | Will return        |
+;;   :-------------------------:--------------------:
+;;   | $someVariable           | someWariable       |
+;;   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
+;;   | foo()->bar              | bar                |
+;;   | foo()?->bar             | bar                |
+;;   | foo()                   |                    |
+;;   | 'some string'           |                    |
+;;   :-------------------------:--------------------:
+
+;; Return empty string if there is no valid sequence of characters.
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
+(defun ac-php--get-cur-word ()
+  "Return a `word' before current point.
+
+The word `word' means a combination of characters that forms a valid identifier
+in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+Examples:
+
+Return empty string if there is no valid sequence of characters.
+
+Note: To conveniently describe in the documentation, double quotes (\") have
+been replaced by '."
+  (let (start-pos)
+    (save-excursion
+      (skip-chars-backward "a-z0-9A-Z_\\\\")
+      (setq start-pos (point))
+      (skip-chars-forward "a-z0-9A-Z_\\\\")
+      (buffer-substring-no-properties start-pos (point)))))
+
+;; Return empty string if there is no valid sequence of characters."
+
+(defun ac-php--get-cur-word-with-function-flag ()
+  "Return a `function' name before current point.
+
+The word `function' means a combination of characters that forms a valid
+function name.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+Examples:
+
+  :-------------------------:--------------------:
+  | If the point at #       | Will return        |
+  :-------------------------:--------------------:
+  | function foo()#         |                    |
+  | function foo(#          |                    |
+  | function foo#()         | foo(               |
+  | foo()?->bar# ();         | bar(              |
+  | fo#o()->bar ();         | foo(               |
+  :-------------------------:--------------------:
+
+Return empty string if there is no valid sequence of characters."
+  (let (start-pos)
+    (save-excursion
+      (skip-chars-backward "a-z0-9A-Z_\\\\")
+      (setq start-pos (point))
+      (skip-chars-forward "a-z0-9A-Z_\\\\")
+      (skip-chars-forward " \t")
+      (skip-chars-forward "(")
+      (s-replace-all '((" " . "")
+                       ("\t" . ""))
+                     (buffer-substring-no-properties start-pos (point))))))
+
+(defun ac-php-get-cur-word-with-dollar ()
+  "Doc."
+  (let (start-pos)
+    (save-excursion
+      (skip-chars-backward "\\$a-z0-9A-Z_")
+      (setq start-pos (point))
+      (skip-chars-forward "\\$a-z0-9A-Z_")
+      (buffer-substring-no-properties start-pos (point)))))
+
+(defun ac-php-get-cur-word-without-clean ()
+  "Doc."
+  (let (start-pos)
+    (save-excursion
+      (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
+      (setq start-pos (point))
+      (skip-chars-forward "\\$a-z0-9A-Z_\\\\"))
+    (buffer-substring-no-properties start-pos (point))))
+
+(defun ac-php--code-without-comments (start end)
+  "Return buffer text from START to END with PHP comments replaced by spaces."
+  (save-excursion
+    (goto-char start)
+    (let ((cursor start)
+          chunks)
+      (while (re-search-forward "#\\|//\\|/\\*" end t)
+        (let* ((comment-start (match-beginning 0))
+               (state (syntax-ppss (match-end 0)))
+               (syntax-start (nth 8 state)))
+          (cond
+           ((nth 4 state)
+            (push (buffer-substring-no-properties cursor comment-start) chunks)
+            (goto-char comment-start)
+            (forward-comment 1)
+            (setq cursor (min (point) end))
+            (goto-char cursor)
+            ;; Keep adjacent tokens separate after removing a comment.
+            (unless (or (and (> comment-start start)
+                             (memq (char-before comment-start)
+                                   '(?\s ?\t ?\n ?\r)))
+                        (and (< cursor end)
+                             (memq (char-after cursor)
+                                   '(?\s ?\t ?\n ?\r))))
+              (push " " chunks)))
+           ((nth 3 state)
+            ;; The regexp may occur many times in a URL or literal.  Skip the
+            ;; complete string while leaving it in the returned substring.
+            (goto-char syntax-start)
+            (condition-case nil
+                (forward-sexp 1)
+              (scan-error (goto-char end)))
+            (when (> (point) end)
+              (goto-char end))))))
+      (push (buffer-substring-no-properties cursor end) chunks)
+      (apply #'concat (nreverse chunks)))))
+
+(defun ac-php--argument-ranges (start end)
+  "Split arguments between START and END at top-level commas.
+Return a list of (START . END) buffer positions, preserving empty arguments."
+  (save-excursion
+    (goto-char start)
+    (let ((depth (car (syntax-ppss start)))
+          (argument-start start)
+          ranges)
+      (while (search-forward "," end t)
+        (let* ((comma (1- (point)))
+               (state (save-excursion (syntax-ppss comma))))
+          (when (and (= (car state) depth)
+                     (not (nth 3 state)) (not (nth 4 state)))
+            (push (cons argument-start comma) ranges)
+            (setq argument-start (1+ comma)))))
+      (nreverse (cons (cons argument-start end) ranges)))))
+
+;;; Project and tags
+
+;;;; Project discovery, configuration and paths
+
+;; Configuration state belongs to project discovery; tag generations and
+;; active indexing processes have their own state below.
+
+(defconst ac-php-config-file ".ac-php-conf.json"
+  "Per-project configuration file.")
+
+(defvar ac-php-root-directory (file-name-directory (or load-file-name buffer-file-name))
+  "The ac-php package location.")
+
+(defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags")
+  "Set the Phpctags executable path.  Don't change the value of this variable.")
+
+(defvar ac-php--config-cache (make-hash-table :test #'equal)
+  "Parsed project configuration, keyed by filename and file signature.")
+
+(defun ac-php--get-project-root-dir ()
+  "Get the project root directory of the curent opened buffer."
+  (ac-php--debug "Lookup for the project root...")
+  (let (project-root-dir (file-name buffer-file-name))
+
+    ;; 1. Get working directory using `buffer-file-name' or `default-directory'
+    (if file-name
+        (setq project-root-dir (file-name-directory file-name))
+      (setq project-root-dir (expand-file-name default-directory)))
+
+    ;; 2. Expand real path of the obtained working directory (if enabled)
+    (when ac-php-project-root-dir-use-truename
+      (setq project-root-dir (file-truename project-root-dir)))
+
+    ;; 3. Scan for the real project root of the opend file
+    ;; We're looking either for the `ac-php-config-file' file
+    ;; or the '.projectile' file, or the 'vendor/autoload.php' file
+    (let (last-dir)
+      (while
+          (not (or
+                (file-exists-p (concat project-root-dir ac-php-config-file))
+                (file-exists-p (concat project-root-dir ".projectile"))
+                (file-exists-p (concat project-root-dir "vendor/autoload.php"))
+                (string= project-root-dir "/")))
+        (setq last-dir project-root-dir
+              project-root-dir (file-name-directory
+                                (directory-file-name project-root-dir)))
+        (when (string= last-dir project-root-dir)
+          (setq project-root-dir "/"))))
+
+    (when (string= project-root-dir "/")
+      (progn
+        (message "ac-php: Unable to resolve project root")
+        (setq project-root-dir nil)))
+
+    project-root-dir))
+
+(defun ac-php--json-save-data (conf-file data-list)
+  "Creating configuration by populating CONF-FILE using DATA-LIST."
+  (ac-php--debug "Populate configuration file")
+
+  (let ((old-pp-value json-encoding-pretty-print) json-data)
+    (setq json-encoding-pretty-print t
+          json-data (json-encode data-list))
+
+    (f-write-text json-data 'utf-8 conf-file)
+    (setq json-encoding-pretty-print old-pp-value)))
+
+(defun ac-php--get-config (project-root-dir)
+  "Get configuration related to a project.
+
+Reads the configuration located at PROJECT-ROOT-DIR and returns it.
+This function tries to recreate and / or populate configuration
+file in case of its absence, or if it is empty."
+  (ac-php--debug "Lookup for per-project configuration file...")
+  (let (config-file-name)
+    (setq config-file-name (f-join project-root-dir ac-php-config-file))
+
+    ;; Lookup for `ac-php-config-file'
+    (when (and
+           (not (s-starts-with-p "/ssh:" config-file-name))
+           (not (s-starts-with-p "/server:" config-file-name))
+           (or (not (f-exists? config-file-name))
+               (= (f-size config-file-name) 0)
+               ;; Use case for "echo '' > `config-file-name'"
+               (= (f-size config-file-name) 1)))
+      (ac-php--debug "Configuration file either empty or absent. Creating...")
+      (ac-php--json-save-data
+       config-file-name
+       '(:use-cscope nil
+                     :tag-dir nil
+                     :filter (
+                              :php-file-ext-list ("php")
+                              :php-path-list (".")
+                              :ignore-ruleset (
+                                               "# like .gitignore file "
+                                               "/vendor/**/[tT]ests/**/*.php"
+                                               "/vendor/**/[Ee]xamples/**/*.php"
+                                               "/vendor/composer/*.php"
+                                               "/vendor/*.php"
+
+                                               "# not need php_codesniffer"
+                                               "/vendor/squizlabs/php_codesniffer/**/*.php"
+
+                                               "#  -- end -- "
+
+                                               )))))
+    (let* ((key (expand-file-name config-file-name))
+           (signature (ac-php--tags-file-signature key))
+           (cached (gethash key ac-php--config-cache)))
+      (if (and cached (equal signature (car cached)))
+          (cdr cached)
+        (let ((config (json-read-file key)))
+          (puthash key (cons signature config) ac-php--config-cache)
+          config)))))
+
+(defun ac-php--get-use-cscope-from-config-file (project-root-dir)
+  "Doc PROJECT-ROOT-DIR."
+  (let (conf-list)
+    (setq conf-list (ac-php--get-config project-root-dir))
+    (cdr (assoc-string "use-cscope" conf-list))))
+
+(defun  ac-php--get-common-json-file ()
+  "Doc LINE COLUMN."
+  (concat ac-php-tags-path "/common.el"  )
+  )
+
+(defun ac-php--get-tags-save-dir (project-root-dir)
+  "Get an absolute path to directory where tags should be saved.
+
+This function uses PROJECT-ROOT-DIR as an of path to the directory,
+where tags should be saved.  If the directory does not exist, it will
+be created."
+  (ac-php--debug "Lookup for tags directory...")
+  (let (ret tag-dir conf-list)
+    (setq conf-list (ac-php--get-config project-root-dir)
+          tag-dir (cdr (assoc-string "tag-dir" conf-list)))
+
+    (if tag-dir
+        (progn
+          (ac-php--debug "Found tags directory")
+          (let ((default-directory (file-name-as-directory project-root-dir)))
+            (setq ret (file-truename tag-dir))))
+      ;; Legacy separator replacement mapped distinct projects to one cache.
+      ;; Start a fresh index rather than trusting potentially mixed old tags.
+      (let* ((root (directory-file-name (expand-file-name project-root-dir)))
+             (identity (if ac-php-project-root-dir-use-truename
+                           (file-truename root) root)))
+        (setq ret (expand-file-name
+                   (concat "tags-" (secure-hash 'sha256 identity))
+                   ac-php-tags-path))))
+
+    (unless (f-exists? ret)
+      (mkdir ret t))
+    (f-full ret)))
+
+;;;; Tag backends and index process lifecycle
+
+(defvar ac-php-gen-tags-flag nil
+  "Non-nil means that remaking tags currently is under process.")
+
+(defvar-local ac-php--index-process nil
+  "Index process currently displayed by this buffer.")
+
+(defvar ac-php-phptags-index-progress 0
+  "The re-index progress indicator.
+Meant for `ac-php-mode-line-project-status'")
+
+(defvar ac-php-rebuild-tmp-error-msg nil)
+
+(defvar ac-php--index-processes (make-hash-table :test #'equal)
+  "Active tag generator processes, keyed by normalized project root.")
 
 (defun ac-php-mode-line-project-status ()
   "Report status of current project index."
@@ -402,101 +830,880 @@ ac-php developer only."
               (or (process-get ac-php--index-process 'ac-php-progress) 0)
             ac-php-phptags-index-progress)))
 
-(defun ac-php-location-stack-push ()
-  "Doc."
-  (let ((bm (ac-php-current-location)))
-    (if (and (require 'xref nil t) (functionp 'xref-push-marker-stack))
-        (xref-push-marker-stack)
-      (require 'etags)
-      (ring-insert (with-no-warnings find-tag-marker-ring) (point-marker)))
-    (while (> ac-php-location-stack-index 0)
-      (cl-decf ac-php-location-stack-index)
-      (pop ac-php-location-stack))
-    (unless (string= bm (nth 0 ac-php-location-stack))
-      (push bm ac-php-location-stack)
-      (when (> (length ac-php-location-stack) ac-php-max-bookmark-count)
-        (nbutlast ac-php-location-stack
-                  (- (length ac-php-location-stack)
-                     ac-php-max-bookmark-count))))))
+(defun ac-php--ctags-opts (project-root-dir rebuild)
+  "Create phpctags command options.
 
-;; function
-(defun ac-php-goto-line-col (line column)
-  "Doc LINE COLUMN."
-  (goto-char (point-min))
-  (forward-line (1- line))
-  (beginning-of-line)
-  (forward-char (1- column)))
+This function uses PROJECT-ROOT-DIR as a base path for the project files.  In
+addition this function takes into account REBUILD flag which means that the
+files should be processed even though they were recently processed (so-called
+force rebuild)."
+  `(,(concat "--config-file=" (f-join project-root-dir "./" ac-php-config-file))
+    ,(concat "--tags_dir=" ac-php-tags-path)
+    ,(concat "--output-dir=" (ac-php--get-tags-save-dir project-root-dir))
+    ,(concat "--rebuild=" (if rebuild "yes" "no"))
+    ,(concat "--realpath_flag="
+             (if ac-php-project-root-dir-use-truename "yes" "no"))))
+
+(defun ac-php--mago-tags-executable ()
+  "Return the executable path for the configured Mago tag generator.
+Return nil when `ac-php-mago-tags-executable' cannot be executed."
+  (let ((configured ac-php-mago-tags-executable))
+    (cond
+     ((or (null configured) (s-blank? configured)) nil)
+     ((file-name-absolute-p configured)
+      (and (file-executable-p configured) configured))
+     ((file-name-directory configured)
+      (let ((expanded (expand-file-name configured)))
+        (and (file-executable-p expanded) expanded)))
+     (t (executable-find configured)))))
+
+(defun ac-php--effective-tags-backend ()
+  "Return the tag generator backend to use for the current rebuild."
+  (pcase ac-php-tags-backend
+    ('auto (if (ac-php--mago-tags-executable) 'mago 'phpctags))
+    ((or 'mago 'phpctags) ac-php-tags-backend)
+    (_ (user-error "Unsupported ac-php tags backend: %S"
+                   ac-php-tags-backend))))
+
+(defun ac-php--tags-process-command (project-root-dir rebuild backend)
+  "Build the tag generator command for PROJECT-ROOT-DIR.
+REBUILD requests a full rebuild and BACKEND selects the generator."
+  (pcase backend
+    ('mago
+     (let ((executable (ac-php--mago-tags-executable)))
+       (unless executable
+         (user-error "Unable to locate Mago tag generator: %s"
+                     ac-php-mago-tags-executable))
+       (append
+        (list executable
+              "--workspace" project-root-dir
+              "--config-file" (f-join project-root-dir ac-php-config-file)
+              "--output-dir" (ac-php--get-tags-save-dir project-root-dir))
+        (when rebuild (list "--rebuild")))))
+    ('phpctags
+     (append (list ac-php-php-executable ac-php-ctags-executable)
+             (ac-php--ctags-opts project-root-dir rebuild)))
+    (_ (user-error "Unsupported ac-php tags backend: %S" backend))))
+
+(defun ac-php--index-attach-buffer (process)
+  "Display PROCESS in the current buffer while it is indexing."
+  (process-put process 'ac-php-buffers
+               (cons (current-buffer)
+                     (delq (current-buffer)
+                           (process-get process 'ac-php-buffers))))
+  (setq ac-php--index-process process)
+  (ac-php-mode 1))
+
+(defun ac-php-phptags-index-process-filter (process strings)
+  "Parse complete output lines from PROCESS, retaining partial STRINGS."
+  (let* ((text (concat (process-get process 'ac-php-pending) strings))
+         (start 0))
+    (while (string-match "[\r\n]" text start)
+      (let ((line (substring text start (match-beginning 0))))
+        (setq start (match-end 0))
+        (ac-php--debug "%s" line)
+        (cond
+         ((string-match "PHPParser:" line)
+          (process-put process 'ac-php-errors
+                       (concat (process-get process 'ac-php-errors) "\n" line))
+          (setq ac-php-rebuild-tmp-error-msg
+                (process-get process 'ac-php-errors)))
+         ((string-match "\\([0-9]+\\)%" line)
+          (let ((progress (string-to-number (match-string 1 line))))
+            (process-put process 'ac-php-progress progress)
+            (setq ac-php-phptags-index-progress progress)
+            (force-mode-line-update t))))))
+    (process-put process 'ac-php-pending
+                 (and (< start (length text)) (substring text start)))))
+
+(defun ac-php--index-finished (process event)
+  "Release PROCESS and its buffer indicators after terminal EVENT."
+  (when (memq (process-status process) '(exit signal failed closed))
+    ;; An unterminated final line is still part of the generator's output.
+    (when (process-get process 'ac-php-pending)
+      (ac-php-phptags-index-process-filter process "\n"))
+    (let ((root (process-get process 'ac-php-root)))
+      (when (eq process (gethash root ac-php--index-processes))
+        (remhash root ac-php--index-processes)))
+    (dolist (buffer (process-get process 'ac-php-buffers))
+      (when (buffer-live-p buffer)
+        (with-current-buffer buffer
+          (when (eq ac-php--index-process process)
+            (setq ac-php--index-process nil)
+            (ac-php-mode 0)))))
+    (process-put process 'ac-php-buffers nil)
+    (setq ac-php-gen-tags-flag (> (hash-table-count ac-php--index-processes) 0))
+    (if (and (eq (process-status process) 'exit)
+             (= (process-exit-status process) 0)
+             (not (process-get process 'ac-php-errors)))
+        (message "ac-php: The project has been successfully re-indexed")
+      (message "ac-php: Re-indexing %s: %s"
+               (s-trim event)
+               (or (process-get process 'ac-php-errors) "generator failed")))
+    (force-mode-line-update t)))
+
+(defun ac-php--rebuild-file-list (project-root-dir rebuild)
+  "Start a tag generator for PROJECT-ROOT-DIR, respecting REBUILD."
+  (let* ((backend (ac-php--effective-tags-backend))
+         (command (ac-php--tags-process-command project-root-dir rebuild backend))
+         (process (apply #'start-process "ac-phptags" "*AC-PHPTAGS*" command))
+         (root (file-name-as-directory (expand-file-name project-root-dir))))
+    (process-put process 'ac-php-root root)
+    (process-put process 'ac-php-progress 0)
+    (puthash root process ac-php--index-processes)
+    (setq ac-php-gen-tags-flag t
+          ac-php-rebuild-tmp-error-msg nil
+          ac-php-phptags-index-progress 0)
+    (ac-php--index-attach-buffer process)
+    (set-process-filter process #'ac-php-phptags-index-process-filter)
+    (set-process-sentinel process #'ac-php--index-finished)
+    (ac-php--debug "Tag backend: %s; command: %S" backend command)
+    (force-mode-line-update t)
+    process))
+
+(defun ac-php--remake-tags (project-root-dir force)
+  "Re-index PROJECT-ROOT-DIR with FORCE, reusing its active process."
+  (unless project-root-dir
+    (user-error "Unable to resolve PHP project root"))
+  (let* ((root (file-name-as-directory (expand-file-name project-root-dir)))
+         (process (gethash root ac-php--index-processes)))
+    (if (and process (process-live-p process))
+        (progn (ac-php--index-attach-buffer process) process)
+      (remhash root ac-php--index-processes)
+      ;; No global lock is acquired until a process actually starts.  Invalid
+      ;; configuration and start-process errors leave other projects usable.
+      (unwind-protect
+          (ac-php--remake-tags-ex project-root-dir force)
+        (setq ac-php-gen-tags-flag
+              (> (hash-table-count ac-php--index-processes) 0))))))
+
+(defun ac-php--remake-tags-ex (project-root-dir force)
+  "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
+This function is used internally by the function `ac-php--remake-tags'."
+  (let ((file-name (buffer-file-name))
+        (backend (ac-php--effective-tags-backend)))
+
+    ;; Always rebuild tags if currently opened file is from vendor directory
+    (when (and file-name (s-match "/vendor/" file-name))
+      (setq force t))
+
+    (message "ac-php: Starting to re-index the project located at %s%s"
+             (ac-php--reduce-path project-root-dir 60)
+             (if force "with a forced rebuilding of all tags" ""))
+
+    (pcase backend
+      ('mago
+       (unless (ac-php--mago-tags-executable)
+         (message "ac-php: Unable to locate Mago tag generator at %s"
+                  ac-php-mago-tags-executable)))
+      ('phpctags
+       (unless (f-exists? ac-php-ctags-executable)
+         (message (concat "ac-php: Unable to locate phpctags executable at %s\n"
+                          "ac-php: Restarting GNU Emacs might help")
+                  ac-php-ctags-executable))
+
+       (unless (and (not (s-blank? ac-php-php-executable))
+                    (f-exists? ac-php-php-executable))
+         (message (concat "ac-php: Unable to locate PHP executable at %s\n"
+                          "ac-php: You need to install PHP CLI and restart GNU Emacs")
+                  ac-php-php-executable))))
+
+    (unless project-root-dir
+      (message "ac-php: The per-project configuration file '%s' doesn't exist at %s"
+               ac-php-config-file
+               (file-name-directory (buffer-file-name))))
+
+    (if (and project-root-dir
+             (pcase backend
+               ('mago (ac-php--mago-tags-executable))
+               ('phpctags
+                (and (f-exists? ac-php-ctags-executable)
+                     (not (s-blank? ac-php-php-executable))
+                     (f-exists? ac-php-php-executable)))))
+        (progn
+          (ac-php--get-tags-save-dir project-root-dir)
+          (ac-php--rebuild-file-list project-root-dir force))
+      (setq ac-php-gen-tags-flag nil))))
+
+(defun ac-php-remake-tags ()
+  "Reset tags, if php source is changed."
+  (interactive)
+  (ac-php--remake-tags (ac-php--get-project-root-dir) nil))
+
+(defun ac-php-remake-tags-all ()
+  "Remake tags without check modify time."
+  (interactive)
+  (ac-php--remake-tags (ac-php--get-project-root-dir) t))
+
+;;;; Tag data, generation cache and accessors
+
+;; Tag data is (CLASS-MAP FUNCTION-MAP INHERIT-MAP FILE-LIST ROOT).
+;; Loading merges vendor files before project files and caches the generation.
+
+;; The key is an absolute tags filename.  Each value is a plist containing the
+;; file signatures and the merged tags data.  The vendor signature is stored in
+;; the project entry so that changing only tags-vendor.el also invalidates the
+;; merged data.
+(defvar ac-php-tag-last-data-list (make-hash-table :test #'equal)
+  "Hash table holding in-memory tags data, keyed by tags filename.")
+
+(defvar g-ac-php-tmp-tags nil
+  "Temporary container populated while loading a generated tags file.")
+
+(defun ac-php--tags-cache ()
+  "Return the tags cache, resetting data stored in the legacy alist format."
+  (unless (and (hash-table-p ac-php-tag-last-data-list)
+               (eq (hash-table-test ac-php-tag-last-data-list) 'equal))
+    ;; Entries from the old alist do not contain the vendor signature and are
+    ;; therefore unsafe to reuse.  They will be loaded lazily into the new cache.
+    (setq ac-php-tag-last-data-list (make-hash-table :test #'equal)))
+  ac-php-tag-last-data-list)
+
+(defun ac-php-load-data (tags-file tags-vendor-file project-root-dir)
+  "Return the autocompleted data for the project.
+
+This function tries to use the `ac-php-tag-last-data-list' variable to query the
+necessary data.  The `ac-php-tag-last-data-list' is used as a temporary
+in-memory storage of all the tags.
+
+TAGS-FILE and TAGS-VENDOR-FILE are both checked for changes.  If either file
+changes, the merged data for PROJECT-ROOT-DIR is rebuilt and cached."
+  (let* ((cache (ac-php--tags-cache))
+         (cache-key (expand-file-name tags-file))
+         (vendor-key (and tags-vendor-file
+                          (expand-file-name tags-vendor-file)))
+         (tags-signature (ac-php--tags-file-signature cache-key))
+         (vendor-signature (ac-php--tags-file-signature vendor-key))
+         (cached-entry (gethash cache-key cache))
+         file-data
+         vendor-tags-data
+         class-map
+         function-map
+         inherit-map
+         tags-data
+         g-ac-php-tmp-tags)
+    (if (not tags-signature)
+        (progn
+          (remhash cache-key cache)
+          nil)
+      (if (and cached-entry
+               (equal tags-signature (plist-get cached-entry :signature))
+               (equal vendor-key (plist-get cached-entry :vendor-file))
+               (equal vendor-signature
+                      (plist-get cached-entry :vendor-signature))
+               (equal project-root-dir
+                      (plist-get cached-entry :project-root-dir)))
+          (plist-get cached-entry :data)
+        (message (concat "ac-php: Reloading the autocompletion "
+                         "data from the tags file..."))
+
+        ;; `g-ac-php-tmp-tags' will be populated from the generated file.
+        (setq vendor-tags-data
+              (list (make-hash-table :test 'case-fold)
+                    (make-hash-table :test 'case-fold)
+                    (make-hash-table :test 'case-fold)
+                    []))
+        (when vendor-signature
+          (setq vendor-tags-data
+                (ac-php-load-data vendor-key nil project-root-dir)))
+
+        (load cache-key nil t)
+        (setq file-data g-ac-php-tmp-tags
+              class-map
+              (copy-hash-table (ac-php-g--class-map vendor-tags-data))
+              function-map
+              (copy-hash-table (ac-php-g--function-map vendor-tags-data))
+              inherit-map
+              (copy-hash-table (ac-php-g--inherit-map vendor-tags-data)))
+
+        ;; The generated `file-data' is an array containing class, function and
+        ;; inheritance entries followed by the indexed file list.
+        (mapc
+         (lambda (class-item)
+           (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
+         (aref file-data 0))
+
+        (mapc
+         (lambda (function-item)
+           (ac-php--debug "add function: %s" (aref function-item 1))
+           (puthash (aref function-item 1) function-item function-map))
+         (aref file-data 1))
+
+        (mapc
+         (lambda (inherit-item)
+           (puthash (format "%s" (car inherit-item))
+                    (cdr inherit-item) inherit-map))
+         (aref file-data 2))
+
+        (setq tags-data
+              (list class-map
+                    function-map
+                    inherit-map
+                    (vconcat (ac-php-g--file-list vendor-tags-data)
+                             (aref file-data 3))
+                    project-root-dir))
+        (puthash cache-key
+                 (list :signature tags-signature
+                       :vendor-file vendor-key
+                       :vendor-signature vendor-signature
+                       :project-root-dir project-root-dir
+                       :data tags-data)
+                 cache)
+        (message "ac-php: Reloading has been successfully finished")
+        tags-data))))
+
+(defun ac-php-g--class-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 0 tags-data))
+
+(defun ac-php-g--function-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 1 tags-data))
+
+(defun ac-php-g--inherit-map (tags-data)
+  "Doc TAGS-DATA."
+  (nth 2 tags-data))
+
+(defun ac-php-g--file-list (tags-data)
+  "Doc TAGS-DATA."
+  (nth 3 tags-data))
+
+(defun ac-php-g--project-root-dir (tags-data)
+  "Return a project path using the TAGS-DATA list."
+  (nth 4 tags-data))
+
+(defun ac-php--get-item-from-funtion-map (key-word function-map)
+  "DOCSTRING KEY-WORD, FUNCTION-MAP."
+  (gethash key-word function-map))
+
+(defun ac-php-get-tags-file ()
+  "Get the actual project's tag file.
+
+Returns a list where the 1st element will be a real path to the project,
+and the 2nd element will be the a real path to the tags file.  Will return
+nil when unable to read tags file.
+
+This function checks for modification time of the procject's tags file.
+If it is outdated, a re-index process will be performed."
+  (ac-php--debug "Retrieving tags file...")
+  (let ((project-root-dir (ac-php--get-project-root-dir))
+        tags-file
+        tags-vendor-file
+        file-attr
+        file-last-time
+        tags-save-dir
+        now)
+    (if project-root-dir
+        (progn
+          (setq
+           tags-save-dir  (ac-php--get-tags-save-dir project-root-dir)
+           tags-file (concat tags-save-dir "tags.el")
+           tags-vendor-file (concat tags-save-dir "tags-vendor.el")
+           file-attr (file-attributes tags-file)
+           )
+
+          (when file-attr
+            (progn
+              (ac-php--debug "Found tags file")
+              (setq file-last-time (ac-php--get-timestamp (nth 5 file-attr))
+                    now (ac-php--get-timestamp (current-time))))
+
+            (when (and (> (- now file-last-time) ac-php-auto-update-intval))
+              (progn
+                (ac-php--debug "The tags file is out of date")
+                (ac-php--remake-tags project-root-dir nil))))
+
+          (list project-root-dir tags-file tags-vendor-file ))
+      nil)))
+
+(defun ac-php-get-tags-data ()
+  "Load a tags data for the particular project."
+  (let (tags-file tags-vendor-file project-root-dir (tags-definition (ac-php-get-tags-file)))
+    (if tags-definition
+        (progn
+          (setq
+           project-root-dir (nth 0 tags-definition)
+           tags-file (nth 1 tags-definition)
+           tags-vendor-file (nth 2 tags-definition)
+           ))
+      (setq tags-file (ac-php--get-common-json-file))
+      (unless(f-exists?  tags-file )
+        ;;gen
+        (shell-command-to-string
+         (concat  ac-php-php-executable " " ac-php-ctags-executable " "
+                  "--save-common-el=" tags-file
+                  )
+         ))
+      )
+    (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
+    (if (and  (file-exists-p tags-file )
+              (or (not tags-vendor-file) (file-exists-p tags-vendor-file ) ) )
+        (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
+      (progn
+        (ac-php--debug (concat "The per-project tags file doesn't exist. "
+                               "Starting create a new one..."))
+        (when tags-definition (ac-php-remake-tags))
+        ;; A running process is not a loaded tags generation.
+        nil))))
+
+;;; Names, expressions and class members
+
+;;;; Namespace imports and name resolution
+
+(defun ac-php--check-global-name(name)
+  "Doc NAME."
+  (s-prefix-p "\\" name))
+
+(defun ac-php--as-global-name(name)
+  "Doc NAME."
+  (if (ac-php--check-global-name name)
+      name
+    (concat "\\" name)))
+
+(defun ac-php--get-namespace-from-classname (classname)
+  "D CLASSNAME."
+  (nth 1 (s-match "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname)))
+
+(defvar-local ac-php--use-import-cache nil
+  "Imports in the current namespace, with the buffer revision and bounds.")
+
+(defun ac-php--use-imports ()
+  "Return (TARGET ALIAS KIND) imports in point's PHP namespace scope."
+  (save-match-data
+    (save-excursion
+      (let* ((namespace (ac-php-get-syntax-backward
+                         ac-php-re-namespace-pattern :sexp 1))
+             (start (or (and namespace (get-text-property 0 'pos namespace))
+                        (point-min)))
+             (end (save-excursion
+                    (goto-char start)
+                    (when namespace (forward-char))
+                    (catch 'boundary
+                      (while (re-search-forward ac-php-re-namespace-pattern nil t)
+                        (unless (ac-php--in-string-or-comment-p (match-beginning 0))
+                          (throw 'boundary (match-beginning 0)))))))
+             (end (or end (point-max)))
+             (key (list (buffer-chars-modified-tick) start end major-mode)))
+        (if (equal key (car ac-php--use-import-cache))
+            (cdr ac-php--use-import-cache)
+          (goto-char start)
+          (let (imports)
+            (while (re-search-forward "\\_<use[ \t\n\r]+" end t)
+              (let ((use-start (match-beginning 0)))
+                (unless (or (ac-php--in-string-or-comment-p use-start)
+                            (ac-php--phpstan-current-class-name)
+                            (ac-php--in-function-p use-start))
+                  (let ((body (save-excursion
+                                (when (search-forward ";" end t)
+                                  (s-trim (replace-regexp-in-string
+                                           "[ \t\n\r]+" " "
+                                           (ac-php--code-without-comments
+                                            use-start (1- (point))))))))
+                        (kind 'class) prefix entries)
+                    (when body
+                      (setq body (replace-regexp-in-string "\\`use +" "" body))
+                      (when (string-match "\\`\\(function\\|const\\) +" body)
+                        (setq kind (intern (match-string 1 body))
+                              body (substring body (match-end 0))))
+                      (if (string-match "\\`\\([^{}]+\\){\\([^{}]+\\)} *\\'" body)
+                          (setq prefix (s-trim (match-string 1 body))
+                                entries (split-string (match-string 2 body) ","))
+                        (setq entries (split-string body ",")))
+                      (dolist (raw entries)
+                        (let ((entry (s-trim raw)) (entry-kind kind))
+                          (when (string-match "\\`\\(function\\|const\\) +" entry)
+                            (setq entry-kind (intern (match-string 1 entry))
+                                  entry (substring entry (match-end 0))))
+                          (when (string-match
+                                 (concat "\\`\\(" ac-php-re-namespace-unit-pattern
+                                         "\\)\\(?: +as +\\([[:alnum:]_]+\\)\\)?\\'")
+                                 entry)
+                            (let* ((target (concat prefix (match-string 1 entry)))
+                                   (alias (or (match-string 2 entry)
+                                              (car (last (split-string target "\\\\" t))))))
+                              (cl-pushnew (list (ac-php--as-global-name target)
+                                                alias entry-kind)
+                                          imports :test #'equal))))))))))
+            (setq ac-php--use-import-cache (cons key imports))
+            imports))))))
+
+(defun ac-php-get-use-as-name (item-name)
+  "Resolve class or namespace alias ITEM-NAME in the current scope."
+  (let ((name (car (split-string item-name "("))))
+    (car (cl-find-if (lambda (entry)
+                       (and (eq (nth 2 entry) 'class)
+                            (string-equal (downcase name)
+                                          (downcase (nth 1 entry)))))
+                     (ac-php--use-imports)))))
+
+(defun ac-php--get-all-use-as-name-in-cur-buffer ()
+  "Return unique (TARGET ALIAS) class imports in the current namespace."
+  (mapcar (lambda (entry) (list (car entry) (nth 1 entry)))
+          (cl-remove-if-not (lambda (entry) (eq (nth 2 entry) 'class))
+                            (ac-php--use-imports))))
+
+(defun ac-php--get-class-full-name-in-cur-buffer (first-key function-map get-return-type-flag)
+  "DOCSTRING FIRST-KEY FUNCTION-MAP GET-RETURN-TYPE-FLAG."
+  (let (cur-namespace tmp-name ret-name tmp-ret)
+    (let (split-arr cur-class-name)
+      (ac-php--debug "ac-php--get-class-full-name-in-cur-buffer first-key:%s" first-key)
+      (when (string= "this" first-key)
+        (setq  first-key  (ac-php-get-cur-full-class-name)))
 
 
-(defun  ac-php--get-common-json-file ()
-  "Doc LINE COLUMN."
-  (concat ac-php-tags-path "/common.el"  )
-  )
-
-(defun ac-php-current-location (&optional offset)
-  "Doc OFFSET."
-  (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
-          (line-number-at-pos offset) (1+ (- (or offset (point)) (line-beginning-position)))))
-(defun ac-php--string=-ignore-care(str1 str2)
-  "Doc STR2 STR1."
-  (s-equals?(s-upcase str1) (s-upcase str2))
-  ;; (not (integer-or-marker-p (compare-strings str1 0 nil str2 0 nil t)))
-  )
-
-(defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
-  "Doc FILE-OR-BUFFER OTHER-WINDOW."
-  (if (file-exists-p file-or-buffer)
-      (if other-window
-          (find-file-other-window file-or-buffer)
-        (find-file file-or-buffer))
-    (let ((buf (get-buffer file-or-buffer)))
-      (cond ((not buf) (message "No buffer named %s; you can M-x: ac-php-remake-tags-all fix it" file-or-buffer))
-            (other-window (switch-to-buffer-other-window file-or-buffer))
-            (t (switch-to-buffer file-or-buffer))))))
 
 
-(defun ac-php-goto-location (location &optional other-window)
-  "Go to a location passed in.
-It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
-  ;; (message (format "ac-php-goto-location \"%s\"" location))
-  (when (> (length location) 0)
-    (cond ((string-match "\\(.*\\):\\([0-9]+\\):\\([0-9]+\\)" location)
-           (let ((line (string-to-number (match-string-no-properties 2 location)))
-                 (column (string-to-number (match-string-no-properties 3 location))))
-             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;; (run-hooks ac-php-after-find-file-hook)
-             (ac-php-goto-line-col line column)
-             t))
-          ((string-match "\\(.*\\):\\([0-9]+\\)" location)
-           (let ((line (string-to-number (match-string-no-properties 2 location))))
-             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;; (run-hooks ac-php-after-find-file-hook)
-             (goto-char (point-min))
-             (forward-line (1- line))
-             t))
-          ((string-match "\\(.*\\),\\([0-9]+\\)" location)
-           (let ((offset (string-to-number (match-string-no-properties 2 location))))
-             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
-             ;; (run-hooks ac-php-after-find-file-hook)
-             (goto-char (1+ offset))
-             t))
-          (t
-           (if (string-match "^ +\\(.*\\)$" location)
-               (setq location (match-string-no-properties 1 location)))
-           (ac-php-find-file-or-buffer location other-window)))
-    ;; (ac-php-location-stack-push)
-    ))
 
-(defsubst ac-php-clean-document (s)
-  "Doc S."
-  (when s
-    (setq s (replace-regexp-in-string "<#\\|#>\\|\\[#" "" s))
-    (setq s (replace-regexp-in-string "#\\]" " " s)))
-  s)
+      (if (ac-php--check-global-name first-key)
+          (setq tmp-name first-key)
+        (progn
+          (setq split-arr (s-split-up-to "\\\\" first-key 1))
+          (ac-php--debug " split-arr 22 len:%d " (length split-arr))
 
-(defun ac-php--tag-name-is-function (tag-name)
-  "Doc TAG-NAME."
-  (s-matches-p "(" tag-name))
+          ;; check for use
+          (cond
+           ((= 2 (length split-arr))
+
+            (setq cur-namespace (nth 0 split-arr))
+            (setq cur-class-name (nth 1 split-arr))
+            (setq tmp-name (ac-php-get-use-as-name cur-namespace))
+            (ac-php--debug "tmp-name 22 %s" tmp-name)
+            (if tmp-name
+                (setq tmp-name (concat tmp-name "\\" cur-class-name))
+              (setq tmp-name first-key)))
+
+           ((= 1 (length split-arr))
+            ;; check use as
+            (setq cur-class-name (nth 0 split-arr))
+            (setq tmp-name (ac-php-get-use-as-name cur-class-name))
+            (unless tmp-name (setq tmp-name first-key))
+            (ac-php--debug "XXXX %s " tmp-name)))
+          (unless (ac-php--check-global-name tmp-name)
+            (let ((tmp-name-as-global (concat "\\" tmp-name))
+                  (cur-namepace-tmp-name (concat (ac-php-get-cur-namespace-name) tmp-name)))
+              (ac-php--debug " check as cur namespace %s "  cur-namepace-tmp-name )
+              (if (ac-php--get-item-from-funtion-map cur-namepace-tmp-name function-map)
+                  (setq tmp-name cur-namepace-tmp-name)
+                (setq tmp-name tmp-name-as-global))))
+
+          (ac-php--debug "22222 %s " tmp-name))))
+
+    (when tmp-name
+      (setq tmp-name (ac-php--as-global-name tmp-name))
+
+      (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
+      (ac-php--debug "11 tmp-re %s=> %S" tmp-name tmp-ret)
+      (if tmp-ret
+          (if get-return-type-flag
+              (setq ret-name (aref tmp-ret 4))
+            (setq ret-name (aref tmp-ret 1)))))
+
+    (unless ret-name
+      (setq tmp-name (if (ac-php--check-global-name first-key) first-key (concat "\\" first-key)))
+      (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
+
+      (ac-php--debug "22 tmp-ret %S" tmp-ret)
+      (if tmp-ret
+          (if get-return-type-flag
+              (setq ret-name (aref tmp-ret 4))
+            (setq ret-name (aref tmp-ret 1)))))
+    ret-name))
+
+;;;; Inheritance and class member indexes
+
+(defconst ac-php--class-cache-miss (make-symbol "ac-php-class-cache-miss")
+  "Sentinel used for class lookup cache misses.")
+
+(defvar ac-php--class-lookup-caches
+  (make-hash-table :test #'eq :weakness 'key)
+  "Weak cache of class lookup data, keyed by a tags data generation.")
+
+(defun ac-php--get-class-lookup-cache (tags-data)
+  "Return the lazy class lookup cache for TAGS-DATA.
+
+The cache is scoped to the identity of TAGS-DATA.  Loading a new tags
+generation creates a new data object, while the weak key lets obsolete
+generations be reclaimed.  The cache vector contains inheritance orders,
+direct member indexes, and flattened member lists, respectively."
+  (when tags-data
+    (or (gethash tags-data ac-php--class-lookup-caches)
+        (let ((cache (vector (make-hash-table :test #'equal)
+                             (make-hash-table :test #'equal)
+                             (make-hash-table :test #'equal))))
+          (puthash tags-data cache ac-php--class-lookup-caches)
+          cache))))
+
+(defun ac-php--resolve-inherited-class-name
+    (class-name parent-namespace class-map)
+  "Resolve CLASS-NAME relative to PARENT-NAMESPACE using CLASS-MAP."
+  (when (stringp class-name)
+    (if (ac-php--check-global-name class-name)
+        class-name
+      (let ((qualified-name
+             (concat (or parent-namespace "") "\\" class-name))
+            (global-name (concat "\\" class-name)))
+        (cond
+         ((gethash qualified-name class-map) qualified-name)
+         ((gethash global-name class-map) global-name))))))
+
+(defun ac-php--get-check-class-list
+    (class-name inherit-map class-map &optional tags-data)
+  "Return the depth-first class order for CLASS-NAME.
+
+INHERIT-MAP and CLASS-MAP provide the graph.  Each resolved class occurs at
+most once, so cycles and shared ancestors cannot expand the result.  When
+TAGS-DATA is supplied, cache the result for that tags generation."
+  (let* ((namespace (ac-php-get-cur-namespace-name t))
+         (cache (ac-php--get-class-lookup-cache tags-data))
+         (order-cache (and cache (aref cache 0)))
+         (cache-key (cons (downcase (or class-name ""))
+                          (downcase (or namespace ""))))
+         (cached (and order-cache
+                      (gethash cache-key order-cache
+                               ac-php--class-cache-miss))))
+    (if (and order-cache (not (eq cached ac-php--class-cache-miss)))
+        cached
+      (let ((stack (list (list 'enter class-name namespace)))
+            (states (make-hash-table :test #'equal))
+            result)
+        (while stack
+          (let ((entry (pop stack)))
+            (if (eq (car entry) 'exit)
+                (let ((resolved-name (nth 1 entry))
+                      (visited-key (nth 2 entry)))
+                  (puthash visited-key 'done states)
+                  ;; Reverse postorder keeps every descendant before its
+                  ;; ancestors while retaining declared branch priority.
+                  (push resolved-name result))
+              (let* ((resolved-name
+                      (ac-php--resolve-inherited-class-name
+                       (nth 1 entry) (nth 2 entry) class-map))
+                     (visited-key
+                      (and resolved-name (downcase resolved-name))))
+                (when (and resolved-name
+                           (not (gethash visited-key states)))
+                  (puthash visited-key 'visiting states)
+                  (push (list 'exit resolved-name visited-key) stack)
+                  (let ((parents (gethash resolved-name inherit-map))
+                        (parent-namespace
+                         (ac-php--get-namespace-from-classname resolved-name)))
+                    ;; Stack order is reversed again by postorder, preserving
+                    ;; the order in which parents were declared.
+                    (dotimes (index (length parents))
+                      (push (list 'enter (aref parents index)
+                                  parent-namespace)
+                            stack))))))))
+        (when order-cache
+          (puthash cache-key result order-cache))
+        (ac-php--debug "XXXX check-class list:%S" result)
+        result))))
+
+(defun ac-php--get-item-info (member)
+  "Recognize current MEMBER type.
+
+This function tries to determine whether passed MEMBER is a method or a
+property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
+\"m\" (method) or \"p\" (property).
+
+Note that this function does not perform in-depth analysis and its main task is
+to determine whether the current MEMBER is a \"method call\".
+All other cases are considered at this stage as a \"property usage\",
+although in fact they may not be."
+  (ac-php--debug "Recognize current member type")
+  (let (type-str)
+    (if (and (> (length member) 1) (string= "(" (substring member -1)))
+        (progn
+          (setq type-str "m"))
+      (setq type-str "p"))
+    (list member type-str)))
+
+(defun ac-php--class-member-key (member-info)
+  "Return the override key for MEMBER-INFO.
+
+PHP method names are case-insensitive.  Property and constant names are
+case-sensitive, and the tag kind remains part of the key so different member
+kinds can coexist."
+  (let ((kind (aref member-info 0))
+        (name (aref member-info 1)))
+    (cons kind (if (string= kind "m") (downcase name) name))))
+
+(defun ac-php--class-member-lookup-key (kind name)
+  "Return a lookup key for member KIND and NAME."
+  (if (string= kind "m")
+      (cons "m" (downcase name))
+    (cons "value" name)))
+
+(defun ac-php--get-direct-member-index (class-map class-name cache)
+  "Return direct member indexes for CLASS-NAME in CLASS-MAP.
+
+CACHE is the optional generation-scoped direct-index cache.  The returned
+cons contains a lookup index and an exact override index.  Later definitions
+in one class replace earlier definitions."
+  (let ((cached (and cache
+                     (gethash class-name cache ac-php--class-cache-miss))))
+    (if (and cache (not (eq cached ac-php--class-cache-miss)))
+        cached
+      (let* ((members (gethash class-name class-map))
+             (member-count (length members))
+             (lookup-index
+              (make-hash-table :test #'equal :size (max 1 member-count)))
+             (override-index
+              (make-hash-table :test #'equal :size (max 1 member-count))))
+        (dotimes (index (length members))
+          (let* ((member-info (aref members index))
+                 (kind (aref member-info 0))
+                 (name (aref member-info 1)))
+            (puthash (ac-php--class-member-lookup-key kind name)
+                     member-info lookup-index)
+            (puthash (ac-php--class-member-key member-info)
+                     member-info override-index)))
+        (setq cached (cons lookup-index override-index))
+        (when cache
+          (puthash class-name cached cache))
+        cached))))
+
+(defun ac-php-get-class-member-info
+    (class-map inherit-map class-name member &optional tags-data)
+  "Return MEMBER information for CLASS-NAME.
+
+CLASS-MAP and INHERIT-MAP provide the class graph.  TAGS-DATA enables lazy
+indexes scoped to the loaded tags generation."
+  (let* ((class-order
+          (ac-php--get-check-class-list
+           class-name inherit-map class-map tags-data))
+         (item-info (ac-php--get-item-info member))
+         (member-name (nth 0 item-info))
+         (member-kind (nth 1 item-info))
+         (lookup-key
+          (ac-php--class-member-lookup-key member-kind member-name))
+         (cache (ac-php--get-class-lookup-cache tags-data))
+         (direct-cache (and cache (aref cache 1)))
+         result)
+    (while (and class-order (not result))
+      (let ((indexes
+             (ac-php--get-direct-member-index
+              class-map (pop class-order) direct-cache)))
+        (setq result (gethash lookup-key (car indexes)))))
+    (ac-php--debug "ac-php-get-class-member-info ret=%S" result)
+    result))
+
+(defun ac-php-get-class-member-list
+    (class-map inherit-map class-name &optional tags-data)
+  "Return effective members for CLASS-NAME.
+
+Child definitions override inherited definitions with the same kind and name.
+Method names compare case-insensitively; other member names compare exactly.
+TAGS-DATA enables generation-scoped lazy indexes and result caching."
+  (let* ((class-order
+          (ac-php--get-check-class-list
+           class-name inherit-map class-map tags-data))
+         (cache (ac-php--get-class-lookup-cache tags-data))
+         (direct-cache (and cache (aref cache 1)))
+         (member-list-cache (and cache (aref cache 2)))
+         (cache-key (downcase (or (car class-order) class-name "")))
+         (cached (and member-list-cache
+                      (gethash cache-key member-list-cache
+                               ac-php--class-cache-miss))))
+    (if (and member-list-cache
+             (not (eq cached ac-php--class-cache-miss)))
+        cached
+      (let ((seen (make-hash-table :test #'equal))
+            result)
+        (dolist (current-class class-order)
+          (let* ((members (gethash current-class class-map))
+                 (indexes
+                  (ac-php--get-direct-member-index
+                   class-map current-class direct-cache))
+                 (override-index (cdr indexes)))
+            (dotimes (index (length members))
+              (let* ((member-info (aref members index))
+                     (member-key (ac-php--class-member-key member-info)))
+                (when (and (eq member-info (gethash member-key override-index))
+                           (not (gethash member-key seen)))
+                  (puthash member-key t seen)
+                  (push member-info result))))))
+        (setq result (nreverse result))
+        (when member-list-cache
+          (puthash cache-key result member-list-cache))
+        result))))
+
+(defun ac-php--get-class-name-from-parent-define(parent-list-str)
+  "D '\\Class1,interface1' => Class1 PARENT-LIST-STR."
+  (s-trim (aref (s-split "," parent-list-str) 1)))
+
+(defun ac-php--resolve-member-return-type (return-type receiver-class)
+  "Resolve RETURN-TYPE relative to RECEIVER-CLASS.
+
+`self', `static', and PHPDoc's `$this' describe the object on which the
+member was resolved.  They can also occur inside compound types such as
+`ServiceBase&static'.  The completion engine follows one class at a time, so
+keep the receiver class when any of these late-bound types is present."
+  (if (and (stringp return-type)
+           (stringp receiver-class)
+           (or (string-match-p
+                "\\b\\(?:self\\|static\\)\\b" return-type)
+               (string-match-p "\\$this\\b" return-type)))
+      receiver-class
+    return-type))
+
+(defun ac-php-get-class-name-by-key-list(tags-data key-list-str)
+  "D TAGS-DATA KEY-LIST-STR."
+  (let (temp-class (cur-class "")
+                   (class-map (ac-php-g--class-map tags-data))
+                   (inherit-map (ac-php-g--inherit-map tags-data))
+                   (key-list (split-string key-list-str "\\.")))
+    (ac-php--debug "====XXKK:%S" key-list)
+    (cl-loop for item in key-list do
+             (if (string= cur-class "")
+                 (if (or (gethash item inherit-map) (gethash item class-map))
+                     (setq cur-class item)
+                   (cl-return))
+               (progn
+                 (setq temp-class cur-class)
+
+                 (if (string= item "__parent__")
+                     (let (parent-list)
+                       (setq parent-list (gethash cur-class inherit-map))
+
+                       (ac-php--debug "XXKK:%S " parent-list)
+
+                       (if parent-list
+                           (setq cur-class (aref parent-list 0))
+                         (setq cur-class "")))
+
+                   (let (member-info)
+                     (setq member-info
+                           (ac-php-get-class-member-info
+                            class-map inherit-map cur-class item tags-data))
+                     (setq cur-class (if member-info
+                                         (let (tmp-class cur-namespace relative-classname member-local-class-name)
+                                           (setq tmp-class
+                                                 (ac-php--resolve-member-return-type
+                                                  (aref member-info 4)
+                                                  cur-class))
+                                           (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info)
+                                           (when (stringp tmp-class)
+                                             (if (ac-php--check-global-name tmp-class)
+                                                 ;;  global name, like \test\ss
+                                                 tmp-class
+                                               (progn;; tmp-class like test\ss
+                                                 ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
+                                                 (setq member-local-class-name (aref member-info 5))
+                                                 (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
+                                                 (setq relative-classname (concat cur-namespace "\\" tmp-class))
+                                                 (ac-php--debug " 2 relative-classname %s " relative-classname)
+                                                 relative-classname))))
+                                       ""))))
+
+                 (when (string= cur-class "")
+                   (message (concat " class[" temp-class "]'s member[" item "] not define type "))
+                   (cl-return)))))
+    cur-class))
+
+;;;; Expression tokens and structured chains
+
+;; Retain the token parser for existing callers; structured chains share
+;; the same buffer syntax helpers and feed receiver inference below.
 
 ;; "Split STR into substrings bounded by REGEXP.
 
@@ -694,72 +1901,6 @@ been replaced by '."
     (ac-php--debug "The list after removing unnecessary items is: %S" ret)
     ret))
 
-(defun ac-php--get-class-full-name-in-cur-buffer (first-key function-map get-return-type-flag)
-  "DOCSTRING FIRST-KEY FUNCTION-MAP GET-RETURN-TYPE-FLAG."
-  (let (cur-namespace tmp-name ret-name tmp-ret)
-    (let (split-arr cur-class-name)
-      (ac-php--debug "ac-php--get-class-full-name-in-cur-buffer first-key:%s" first-key)
-      (when (string= "this" first-key)
-        (setq  first-key  (ac-php-get-cur-full-class-name)))
-
-
-
-
-
-      (if (ac-php--check-global-name first-key)
-          (setq tmp-name first-key)
-        (progn
-          (setq split-arr (s-split-up-to "\\\\" first-key 1))
-          (ac-php--debug " split-arr 22 len:%d " (length split-arr))
-
-          ;; check for use
-          (cond
-           ((= 2 (length split-arr))
-
-            (setq cur-namespace (nth 0 split-arr))
-            (setq cur-class-name (nth 1 split-arr))
-            (setq tmp-name (ac-php-get-use-as-name cur-namespace))
-            (ac-php--debug "tmp-name 22 %s" tmp-name)
-            (if tmp-name
-                (setq tmp-name (concat tmp-name "\\" cur-class-name))
-              (setq tmp-name first-key)))
-
-           ((= 1 (length split-arr))
-            ;; check use as
-            (setq cur-class-name (nth 0 split-arr))
-            (setq tmp-name (ac-php-get-use-as-name cur-class-name))
-            (unless tmp-name (setq tmp-name first-key))
-            (ac-php--debug "XXXX %s " tmp-name)))
-          (unless (ac-php--check-global-name tmp-name)
-            (let ((tmp-name-as-global (concat "\\" tmp-name))
-                  (cur-namepace-tmp-name (concat (ac-php-get-cur-namespace-name) tmp-name)))
-              (ac-php--debug " check as cur namespace %s "  cur-namepace-tmp-name )
-              (if (ac-php--get-item-from-funtion-map cur-namepace-tmp-name function-map)
-                  (setq tmp-name cur-namepace-tmp-name)
-                (setq tmp-name tmp-name-as-global))))
-
-          (ac-php--debug "22222 %s " tmp-name))))
-
-    (when tmp-name
-      (setq tmp-name (ac-php--as-global-name tmp-name))
-
-      (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
-      (ac-php--debug "11 tmp-re %s=> %S" tmp-name tmp-ret)
-      (if tmp-ret
-          (if get-return-type-flag
-              (setq ret-name (aref tmp-ret 4))
-            (setq ret-name (aref tmp-ret 1)))))
-
-    (unless ret-name
-      (setq tmp-name (if (ac-php--check-global-name first-key) first-key (concat "\\" first-key)))
-      (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
-
-      (ac-php--debug "22 tmp-ret %S" tmp-ret)
-      (if tmp-ret
-          (if get-return-type-flag
-              (setq ret-name (aref tmp-ret 4))
-            (setq ret-name (aref tmp-ret 1)))))
-    ret-name))
 ;; "This function is used to tokinize PHP string.
 
 ;; First this function will split LINE-STRING to small items.
@@ -884,280 +2025,6 @@ been replaced by '."
         (setq stack-list tmp-list))
 
       stack-list)))
-
-(defun ac-php-get-syntax-backward (regexp &rest args)
-  "Search backward from current point for regular expression REGEXP.
-
-Possible additional ARGS:
-
-    :sexp       Specifies which parenthesized expression in the REGEXP
-                should be returned.
-
-    :comment    Indicates should we search inside a comment or not.
-
-    :defun      Indicates should we search inside a defun or not.
-
-    :bound      A buffer position that bounds the search.  The match found must
-                not end after that position.  A value of nil means search to the
-                end of the accessible portion of the buffer.
-
-Return a propertized string in a format:
-
-  #(\"some string\" 0 11 (pos POINT))
-
-where POINT is a point position that bounds the search.  Return nil in case of
-unsuccessful search."
-  (let ((found-p nil)
-        ret-str
-        search-pos
-        (sexp (plist-get args :sexp))
-        (in-comment-p (plist-get args :comment))
-        (in-defun-p (plist-get args :defun))
-        (bound (plist-get args :bound)))
-    (save-excursion
-      (ac-php--debug "Search backward from current point up to %s"
-                     (if bound (format "point: %d" bound)
-                       "accessible portion of the buffer"))
-      (ac-php--debug "Used regular expression: \"%s\"" regexp)
-      (while (not found-p)
-        (setq search-pos (re-search-backward regexp bound t 1))
-        (if search-pos
-            ;; Save match data before syntax and defun checks perform their own
-            ;; searches.  Re-matching the whole line could otherwise return an
-            ;; earlier occurrence than `re-search-backward' found.
-            (let ((matched-text (match-string-no-properties sexp))
-                  (match-pos (match-beginning 0))
-                  (comment-context-ok
-                   (if in-comment-p
-                       (ac-php--in-comment-p (point))
-                     (not (ac-php--in-string-or-comment-p (point))))))
-              ;; Rejecting a comment/string match must not trigger an expensive
-              ;; function-boundary scan.
-              (when (and comment-context-ok
-                         (if in-defun-p
-                             (ac-php--in-function-p (point))
-                           (not (ac-php--in-function-p (point)))))
-                (setq ret-str (propertize matched-text 'pos match-pos)
-                      found-p t)))
-          (setq found-p t))))
-    (ac-php--debug "Search result: %s" ret-str)
-    ret-str))
-
-(defun ac-php-get-cur-class-name ()
-  "Get current class name.
-
-Tries to retrieve current class name if it is possible.
-Returns the name of the current class as a string or nil if the search failed."
-  (ac-php-get-syntax-backward
-   ac-php-re-classlike-pattern
-   :sexp 1))
-
-(defun ac-php-get-cur-namespace-name (&optional trim-trailing-backslash-p)
-  "Get fully qualified namespace.
-
-Tries to retrieve current fully qualified namespace if it is possible.
-TRIM-TRAILING-BACKSLASH-P is used to indicate whether we should trim trailng
-backslash or not.  Always returns a string, even if the namespace was not found."
-  (let (namespace (not-found ""))
-    (setq namespace (ac-php-get-syntax-backward
-                     ac-php-re-namespace-pattern
-                     :sexp 1))
-    (if namespace
-        (progn
-          ;; Concatenate leading backslash
-          (unless (string= (substring namespace 0 1) "\\")
-            (setq namespace (concat "\\" namespace)))
-          ;; Trim trailng backslash
-          (setq namespace (replace-regexp-in-string "\\\\$" "" namespace))
-          ;; Add trailing backslash only if needed
-          (if (not trim-trailing-backslash-p)
-              (setq namespace (concat namespace "\\"))
-            namespace))
-      not-found)))
-
-(defun ac-php-clean-namespace-name (namespace-name)
-  "Doc NAMESPACE-NAME."
-  (if (and (stringp namespace-name)
-           (> (length namespace-name) 1)
-           (string=  (substring-no-properties namespace-name 0 1) "\\"))
-      (substring-no-properties namespace-name 1)
-    namespace-name))
-
-(defun ac-php-get-cur-full-class-name ()
-  "Get current class name in a fully qualified form.
-Returns nil if could not find class name in current buffer."
-  (let (class-name namespace)
-    (setq class-name (ac-php-get-cur-class-name)
-          namespace (ac-php-get-cur-namespace-name))
-    (if class-name
-        (progn
-          (when (string= "" namespace)
-            (setq namespace "\\"))
-          (concat namespace class-name))
-      nil)))
-
-(defvar-local ac-php--use-import-cache nil
-  "Imports in the current namespace, with the buffer revision and bounds.")
-
-(defun ac-php--use-imports ()
-  "Return (TARGET ALIAS KIND) imports in point's PHP namespace scope."
-  (save-match-data
-    (save-excursion
-      (let* ((namespace (ac-php-get-syntax-backward
-                         ac-php-re-namespace-pattern :sexp 1))
-             (start (or (and namespace (get-text-property 0 'pos namespace))
-                        (point-min)))
-             (end (save-excursion
-                    (goto-char start)
-                    (when namespace (forward-char))
-                    (catch 'boundary
-                      (while (re-search-forward ac-php-re-namespace-pattern nil t)
-                        (unless (ac-php--in-string-or-comment-p (match-beginning 0))
-                          (throw 'boundary (match-beginning 0)))))))
-             (end (or end (point-max)))
-             (key (list (buffer-chars-modified-tick) start end major-mode)))
-        (if (equal key (car ac-php--use-import-cache))
-            (cdr ac-php--use-import-cache)
-          (goto-char start)
-          (let (imports)
-            (while (re-search-forward "\\_<use[ \t\n\r]+" end t)
-              (let ((use-start (match-beginning 0)))
-                (unless (or (ac-php--in-string-or-comment-p use-start)
-                            (ac-php--phpstan-current-class-name)
-                            (ac-php--in-function-p use-start))
-                  (let ((body (save-excursion
-                                (when (search-forward ";" end t)
-                                  (s-trim (replace-regexp-in-string
-                                           "[ \t\n\r]+" " "
-                                           (ac-php--code-without-comments
-                                            use-start (1- (point))))))))
-                        (kind 'class) prefix entries)
-                    (when body
-                      (setq body (replace-regexp-in-string "\\`use +" "" body))
-                      (when (string-match "\\`\\(function\\|const\\) +" body)
-                        (setq kind (intern (match-string 1 body))
-                              body (substring body (match-end 0))))
-                      (if (string-match "\\`\\([^{}]+\\){\\([^{}]+\\)} *\\'" body)
-                          (setq prefix (s-trim (match-string 1 body))
-                                entries (split-string (match-string 2 body) ","))
-                        (setq entries (split-string body ",")))
-                      (dolist (raw entries)
-                        (let ((entry (s-trim raw)) (entry-kind kind))
-                          (when (string-match "\\`\\(function\\|const\\) +" entry)
-                            (setq entry-kind (intern (match-string 1 entry))
-                                  entry (substring entry (match-end 0))))
-                          (when (string-match
-                                 (concat "\\`\\(" ac-php-re-namespace-unit-pattern
-                                         "\\)\\(?: +as +\\([[:alnum:]_]+\\)\\)?\\'")
-                                 entry)
-                            (let* ((target (concat prefix (match-string 1 entry)))
-                                   (alias (or (match-string 2 entry)
-                                              (car (last (split-string target "\\\\" t))))))
-                              (cl-pushnew (list (ac-php--as-global-name target)
-                                                alias entry-kind)
-                                          imports :test #'equal))))))))))
-            (setq ac-php--use-import-cache (cons key imports))
-            imports))))))
-
-(defun ac-php-get-use-as-name (item-name)
-  "Resolve class or namespace alias ITEM-NAME in the current scope."
-  (let ((name (car (split-string item-name "("))))
-    (car (cl-find-if (lambda (entry)
-                       (and (eq (nth 2 entry) 'class)
-                            (string-equal (downcase name)
-                                          (downcase (nth 1 entry)))))
-                     (ac-php--use-imports)))))
-
-(defun ac-php--get-all-use-as-name-in-cur-buffer ()
-  "Return unique (TARGET ALIAS) class imports in the current namespace."
-  (mapcar (lambda (entry) (list (car entry) (nth 1 entry)))
-          (cl-remove-if-not (lambda (entry) (eq (nth 2 entry) 'class))
-                            (ac-php--use-imports))))
-
-(defun ac-php-get-annotated-var-class (variable &optional pos)
-  "Get a class name for an annotated VARIABLE.
-
-The optional second argument POS specifies current point.  Returns a class
-name as a string or nil if the search failed.  At this time doesn't aimed to
-work for multi class hint:
-
-/** @var Foo|Bar $baz */"
-  (ac-php--debug "Scan for annotated variable")
-  ;; TODO: Doesn't aimed to work for multi class hint:
-  ;;  /** @var Foo|Bar $baz */
-  (let ((in-defun-p (ac-php--in-function-p pos)))
-    (ac-php-get-syntax-backward
-     (concat ac-php-re-annotated-var-pattern "$" variable "\\b")
-     :sexp 1
-     :comment t
-     :defun in-defun-p
-     :bound (when in-defun-p
-              (save-excursion (ac-php--beginning-of-defun) (beginning-of-line) (point))))))
-
-(defun ac-php--get-type-hinted-variable-class (variable &optional pos)
-  "Return the declared class for VARIABLE at POS.
-
-Recognize typed function parameters, closure imports, and catch variables
-within the current function."
-  (save-match-data
-    (save-excursion
-      (goto-char (or pos (point)))
-      (when (ac-php--in-function-p)
-        (let ((bound (save-excursion
-                       (ac-php--beginning-of-defun)
-                       (point)))
-              (regexp
-               (concat "\\(?:^\\|[^a-zA-Z0-9_-ÿ\\\\]\\)"
-                       "\\(" ac-php-re-namespace-unit-pattern "\\)"
-                       "\\s-+&?\\$" (regexp-quote variable)
-                       "\\(?:\\'\\|[^a-zA-Z0-9_-ÿ]\\)"))
-              result)
-          (while (and (not result) (re-search-backward regexp bound t))
-            (let ((type (match-string-no-properties 1))
-                  (type-pos (match-beginning 1)))
-              ;; The preceding delimiter can be the signature's opening
-              ;; parenthesis.  Check scope at the type itself instead.
-              (when (and (not (ac-php--in-string-or-comment-p type-pos))
-                         (ac-php--in-function-p type-pos))
-                (setq result (propertize type 'pos type-pos)))))
-          result)))))
-
-(defun ac-php--code-without-comments (start end)
-  "Return buffer text from START to END with PHP comments replaced by spaces."
-  (save-excursion
-    (goto-char start)
-    (let ((cursor start)
-          chunks)
-      (while (re-search-forward "#\\|//\\|/\\*" end t)
-        (let* ((comment-start (match-beginning 0))
-               (state (syntax-ppss (match-end 0)))
-               (syntax-start (nth 8 state)))
-          (cond
-           ((nth 4 state)
-            (push (buffer-substring-no-properties cursor comment-start) chunks)
-            (goto-char comment-start)
-            (forward-comment 1)
-            (setq cursor (min (point) end))
-            (goto-char cursor)
-            ;; Keep adjacent tokens separate after removing a comment.
-            (unless (or (and (> comment-start start)
-                             (memq (char-before comment-start)
-                                   '(?\s ?\t ?\n ?\r)))
-                        (and (< cursor end)
-                             (memq (char-after cursor)
-                                   '(?\s ?\t ?\n ?\r))))
-              (push " " chunks)))
-           ((nth 3 state)
-            ;; The regexp may occur many times in a URL or literal.  Skip the
-            ;; complete string while leaving it in the returned substring.
-            (goto-char syntax-start)
-            (condition-case nil
-                (forward-sexp 1)
-              (scan-error (goto-char end)))
-            (when (> (point) end)
-              (goto-char end))))))
-      (push (buffer-substring-no-properties cursor end) chunks)
-      (apply #'concat (nreverse chunks)))))
 
 (defun ac-php--expression-bounds-before-point (&optional pos)
   "Return the bounds of the PHP expression ending at POS.
@@ -1387,6 +2254,61 @@ resolve the receiver independently from the text currently being completed."
       (concat (match-string 1 expression) "->" (match-string 2 expression)))
      (t expression))))
 
+;;;; Receiver and member-chain type inference
+
+(defun ac-php--clean-return-type (return-type)
+  "Doc RETURN-TYPE."
+  (when return-type
+    (s-trim (replace-regexp-in-string "|.*" "" return-type))))
+
+(defun ac-php-get-annotated-var-class (variable &optional pos)
+  "Get a class name for an annotated VARIABLE.
+
+The optional second argument POS specifies current point.  Returns a class
+name as a string or nil if the search failed.  At this time doesn't aimed to
+work for multi class hint:
+
+/** @var Foo|Bar $baz */"
+  (ac-php--debug "Scan for annotated variable")
+  ;; TODO: Doesn't aimed to work for multi class hint:
+  ;;  /** @var Foo|Bar $baz */
+  (let ((in-defun-p (ac-php--in-function-p pos)))
+    (ac-php-get-syntax-backward
+     (concat ac-php-re-annotated-var-pattern "$" variable "\\b")
+     :sexp 1
+     :comment t
+     :defun in-defun-p
+     :bound (when in-defun-p
+              (save-excursion (ac-php--beginning-of-defun) (beginning-of-line) (point))))))
+
+(defun ac-php--get-type-hinted-variable-class (variable &optional pos)
+  "Return the declared class for VARIABLE at POS.
+
+Recognize typed function parameters, closure imports, and catch variables
+within the current function."
+  (save-match-data
+    (save-excursion
+      (goto-char (or pos (point)))
+      (when (ac-php--in-function-p)
+        (let ((bound (save-excursion
+                       (ac-php--beginning-of-defun)
+                       (point)))
+              (regexp
+               (concat "\\(?:^\\|[^a-zA-Z0-9_-ÿ\\\\]\\)"
+                       "\\(" ac-php-re-namespace-unit-pattern "\\)"
+                       "\\s-+&?\\$" (regexp-quote variable)
+                       "\\(?:\\'\\|[^a-zA-Z0-9_-ÿ]\\)"))
+              result)
+          (while (and (not result) (re-search-backward regexp bound t))
+            (let ((type (match-string-no-properties 1))
+                  (type-pos (match-beginning 1)))
+              ;; The preceding delimiter can be the signature's opening
+              ;; parenthesis.  Check scope at the type itself instead.
+              (when (and (not (ac-php--in-string-or-comment-p type-pos))
+                         (ac-php--in-function-p type-pos))
+                (setq result (propertize type 'pos type-pos)))))
+          result)))))
+
 (defun ac-php-get-class-at-point (tags-data &optional pos)
   "Resolve the completion chain at POS using TAGS-DATA."
   (save-excursion
@@ -1612,1334 +2534,9 @@ resolve the receiver independently from the text currently being completed."
          (apply #'concat first-class-name (cdr key-list)))
       (if (>(length key-list) 1) "null" nil))))
 
+;;; PHPDoc and type inference
 
-(defun ac-php-candidate-class (tags-data key-str-list)
-  "Doc TAGS-DATA KEY-STR-LIST."
-  ;; 得到变量
-  (let (ret-list output-list class-name
-                 (class-map (ac-php-g--class-map tags-data))
-                 (inherit-map (ac-php-g--inherit-map tags-data)))
-    (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list))
-    (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
-
-    (setq output-list
-          (ac-php-get-class-member-list
-           class-map inherit-map class-name tags-data))
-    (ac-php--debug "22 class-name:%s output-list= %S" class-name output-list)
-    (dolist (member output-list)
-      (let* ((member-length (length member))
-             (member-kind
-              (ac-php--get-array-string member member-length 0))
-             (key-word (aref member 1)))
-        (when (and (string= member-kind "p")
-                   (string=
-                    (ac-php--get-array-string member member-length 7) "1"))
-          (setq key-word (concat "$" key-word)))
-
-        (ac-php--debug "ITEM:%S" member)
-        (push
-         (propertize
-          key-word
-          'ac-php-help (ac-php--get-array-string member member-length 2)
-          'ac-php-return-type (ac-php--get-array-string member member-length 4)
-          'ac-php-tag-type member-kind
-          'ac-php-access (ac-php--get-array-string member member-length 6)
-          'ac-php-static (ac-php--get-array-string member member-length 7)
-          'ac-php-from (ac-php--get-array-string member member-length 5)
-          'summary (ac-php--get-array-string member member-length 4))
-         ret-list)))
-
-    (ac-php--debug "ret-list = %S" ret-list)
-    ret-list))
-
-(defun ac-php--get-item-from-funtion-map (key-word function-map)
-  "DOCSTRING KEY-WORD, FUNCTION-MAP."
-  (gethash key-word function-map))
-
-(defvar ac-php--function-prefix-indexes
-  (make-hash-table :test #'eq :weakness 'key)
-  "Sorted symbol indexes keyed weakly by tags generation.")
-
-(defun ac-php--function-prefix-matches (tags-data prefix &optional ignore-case)
-  "Return indexed tags matching PREFIX in TAGS-DATA.
-IGNORE-CASE controls exact filtering.  Preserve the original tag order."
-  (let* ((functions (ac-php-g--function-map tags-data))
-         (count (hash-table-count functions))
-         (cached (gethash tags-data ac-php--function-prefix-indexes))
-         (normalized (downcase prefix)))
-    (unless (and (eq functions (nth 0 cached)) (= count (or (nth 1 cached) -1)))
-      (let ((rank 0) entries)
-        (maphash (lambda (_ tag)
-                   (push (list (downcase (aref tag 1)) tag rank) entries)
-                   (setq rank (1+ rank)))
-                 functions)
-        (setq cached
-              (list functions count
-                    (vconcat (sort entries
-                                   (lambda (a b) (string-lessp (car a) (car b)))))))
-        (puthash tags-data cached ac-php--function-prefix-indexes)))
-    (let* ((index (nth 2 cached)) (low 0) (high (length index)) matches)
-      (while (< low high)
-        (let ((middle (/ (+ low high) 2)))
-          (if (string-lessp (car (aref index middle)) normalized)
-              (setq low (1+ middle))
-            (setq high middle))))
-      (while (and (< low (length index))
-                  (string-prefix-p normalized (car (aref index low))))
-        (let* ((entry (aref index low)) (tag (nth 1 entry)))
-          (when (or ignore-case (string-prefix-p prefix (aref tag 1)))
-            (push entry matches)))
-        (setq low (1+ low)))
-      (mapcar (lambda (entry) (nth 1 entry))
-              (sort matches (lambda (a b) (< (nth 2 a) (nth 2 b))))))))
-
-(defun ac-php--completion-string (text kind help return-type)
-  "Build completion TEXT with KIND, HELP and RETURN-TYPE metadata."
-  (propertize text 'ac-php-tag-type kind 'ac-php-help help
-              'ac-php-return-type return-type 'summary return-type))
-
-(defun ac-php--function-candidate (tag text)
-  "Convert TAG to a candidate inserting TEXT using the shared metadata."
-  (let ((length (length tag)))
-    (ac-php--completion-string
-     text (ac-php--get-array-string tag length 0)
-     (ac-php--get-array-string tag length 2)
-     (ac-php--get-array-string tag length 4))))
-
-(defun ac-php-candidate-other (tags-data)
-  "Return global, imported, namespace and local candidates from TAGS-DATA."
-  (let* ((word (ac-php-get-cur-word-without-clean))
-         (offset (- (length word) (length ac-php-prefix-str))) candidates)
-    (unless (string= word "")
-      (if (string-prefix-p "\\" word)
-          (dolist (tag (ac-php--function-prefix-matches tags-data word t))
-            (push (ac-php--function-candidate tag (aref tag 1)) candidates))
-        (let ((first (car (split-string word "\\\\"))))
-          (dolist (import (ac-php--get-all-use-as-name-in-cur-buffer))
-            (let ((target (car import)) (alias (nth 1 import)))
-              (if (string= first word)
-                  (when (string-prefix-p word alias t)
-                    (push (ac-php--completion-string
-                           (substring alias offset) target alias target)
-                          candidates))
-                (when (string= first alias)
-                  (let ((prefix (concat target (substring word (length first)))))
-                    (dolist (tag (ac-php--function-prefix-matches tags-data prefix t))
-                      (push (ac-php--function-candidate
-                             tag (concat word (substring (aref tag 1) (length prefix))))
-                            candidates)))))))
-          (dolist (keyword ac-php--php-key-list)
-            (when (and (string-prefix-p word keyword) (not (string= word keyword)))
-              (push (ac-php--completion-string keyword "k" "" "") candidates)))
-          (dolist (namespace (list (ac-php-get-cur-namespace-name) "\\"))
-            (dolist (tag (ac-php--function-prefix-matches
-                         tags-data (concat namespace word)))
-              (push (ac-php--function-candidate
-                     tag (substring (aref tag 1) (+ offset (length namespace))))
-                    candidates)))
-          (maphash (lambda (name _)
-                     (when (and (string-prefix-p word name) (not (string= name word)))
-                       (push (ac-php--completion-string name "v" "" "") candidates)))
-                   (ac-php--get-cur-function-vars)))))
-    candidates))
-
-(defun ac-php--get-cur-function-vars()
-  "Doc ."
-  (let (txt start-pos end-pos var-list ret-map var-name first-char)
-    (save-excursion
-      (setq end-pos (- (point) 1))
-      (ac-php--beginning-of-defun)
-      (setq start-pos (point))
-      (setq txt (buffer-substring-no-properties start-pos end-pos))
-      (setq var-list (s-match-strings-all "[$\"'][0-9_a-z]*" txt))
-      (setq ret-map (make-hash-table :test 'case-fold))
-      (dolist (item var-list)
-        (setq var-name (nth 0 item))
-        (setq first-char (aref var-name 0))
-        (when (or (= first-char ?\") (= first-char ?'))
-          (setq var-name (substring var-name 1)))
-
-        (puthash var-name nil ret-map))
-      ret-map)))
-
-;;; ==============BEGIN
-(defun ac-php-find-php-files (project-root-dir regex also-find-subdir)
-  "Doc PROJECT-ROOT-DIR. REGEX, ALSO-FIND-SUBDIR get all php file list."
-  (let (results sub-results files file-name file-dir-flag file-change-time file-change-unixtime)
-    (setq files (directory-files-and-attributes project-root-dir t))
-    (dolist (file-item files)
-      (setq file-name (nth 0 file-item))
-      (setq file-dir-flag (nth 1 file-item))
-      (setq file-change-time (nth 6 file-item))
-
-      (if (stringp file-dir-flag);; link
-          (setq file-dir-flag (file-directory-p file-dir-flag)))
-
-
-      (when (and (not file-dir-flag) ;; file
-                 (string-match regex file-name))
-
-        (setq file-change-unixtime (+ (* (nth 0 file-change-time) 65536) (nth 1 file-change-time)))
-        (if results
-            (nconc results (list (list file-name file-change-unixtime)))
-          (setq results (list (list file-name file-change-unixtime)))))
-
-      (when (and file-dir-flag
-                 ;; (not (string= "." (file-name-base file-name)))
-                 ;; (not (string= ".." (file-name-base file-name)))
-                 (not (string= "." (substring (file-name-base file-name) 0 1))) ;; not start with "."
-                 )
-        (when (and also-find-subdir
-                   ;; no find in vendor tests
-                   (not (s-matches-p "/vendor/.*/tests/" file-name)))
-          (setq sub-results (ac-php-find-php-files file-name regex also-find-subdir))
-
-          (if results
-              (nconc results sub-results)
-            (setq results sub-results)))))
-    results))
-
-(defun ac-php--clean-return-type (return-type)
-  "Doc RETURN-TYPE."
-  (when return-type
-    (s-trim (replace-regexp-in-string "|.*" "" return-type))))
-
-(defun ac-php--json-save-data (conf-file data-list)
-  "Creating configuration by populating CONF-FILE using DATA-LIST."
-  (ac-php--debug "Populate configuration file")
-
-  (let ((old-pp-value json-encoding-pretty-print) json-data)
-    (setq json-encoding-pretty-print t
-          json-data (json-encode data-list))
-
-    (f-write-text json-data 'utf-8 conf-file)
-    (setq json-encoding-pretty-print old-pp-value)))
-
-(defun ac-php--cache-files-save (file-path cache1-files)
-  "Doc FILE-PATH CACHE1-FILES."
-  (ac-php--json-save-data file-path (list :cache1-files cache1-files)))
-
-
-
-(defun ac-php--ctags-opts (project-root-dir rebuild)
-  "Create phpctags command options.
-
-This function uses PROJECT-ROOT-DIR as a base path for the project files.  In
-addition this function takes into account REBUILD flag which means that the
-files should be processed even though they were recently processed (so-called
-force rebuild)."
-  `(,(concat "--config-file=" (f-join project-root-dir "./" ac-php-config-file))
-    ,(concat "--tags_dir=" ac-php-tags-path)
-    ,(concat "--output-dir=" (ac-php--get-tags-save-dir project-root-dir))
-    ,(concat "--rebuild=" (if rebuild "yes" "no"))
-    ,(concat "--realpath_flag="
-             (if ac-php-project-root-dir-use-truename "yes" "no"))))
-
-(defun ac-php--mago-tags-executable ()
-  "Return the executable path for the configured Mago tag generator.
-Return nil when `ac-php-mago-tags-executable' cannot be executed."
-  (let ((configured ac-php-mago-tags-executable))
-    (cond
-     ((or (null configured) (s-blank? configured)) nil)
-     ((file-name-absolute-p configured)
-      (and (file-executable-p configured) configured))
-     ((file-name-directory configured)
-      (let ((expanded (expand-file-name configured)))
-        (and (file-executable-p expanded) expanded)))
-     (t (executable-find configured)))))
-
-(defun ac-php--effective-tags-backend ()
-  "Return the tag generator backend to use for the current rebuild."
-  (pcase ac-php-tags-backend
-    ('auto (if (ac-php--mago-tags-executable) 'mago 'phpctags))
-    ((or 'mago 'phpctags) ac-php-tags-backend)
-    (_ (user-error "Unsupported ac-php tags backend: %S"
-                   ac-php-tags-backend))))
-
-(defun ac-php--tags-process-command (project-root-dir rebuild backend)
-  "Build the tag generator command for PROJECT-ROOT-DIR.
-REBUILD requests a full rebuild and BACKEND selects the generator."
-  (pcase backend
-    ('mago
-     (let ((executable (ac-php--mago-tags-executable)))
-       (unless executable
-         (user-error "Unable to locate Mago tag generator: %s"
-                     ac-php-mago-tags-executable))
-       (append
-        (list executable
-              "--workspace" project-root-dir
-              "--config-file" (f-join project-root-dir ac-php-config-file)
-              "--output-dir" (ac-php--get-tags-save-dir project-root-dir))
-        (when rebuild (list "--rebuild")))))
-    ('phpctags
-     (append (list ac-php-php-executable ac-php-ctags-executable)
-             (ac-php--ctags-opts project-root-dir rebuild)))
-    (_ (user-error "Unsupported ac-php tags backend: %S" backend))))
-
-(defvar ac-php--index-processes (make-hash-table :test #'equal)
-  "Active tag generator processes, keyed by normalized project root.")
-
-(defun ac-php--index-attach-buffer (process)
-  "Display PROCESS in the current buffer while it is indexing."
-  (process-put process 'ac-php-buffers
-               (cons (current-buffer)
-                     (delq (current-buffer)
-                           (process-get process 'ac-php-buffers))))
-  (setq ac-php--index-process process)
-  (ac-php-mode 1))
-
-(defun ac-php--index-finished (process event)
-  "Release PROCESS and its buffer indicators after terminal EVENT."
-  (when (memq (process-status process) '(exit signal failed closed))
-    ;; An unterminated final line is still part of the generator's output.
-    (when (process-get process 'ac-php-pending)
-      (ac-php-phptags-index-process-filter process "\n"))
-    (let ((root (process-get process 'ac-php-root)))
-      (when (eq process (gethash root ac-php--index-processes))
-        (remhash root ac-php--index-processes)))
-    (dolist (buffer (process-get process 'ac-php-buffers))
-      (when (buffer-live-p buffer)
-        (with-current-buffer buffer
-          (when (eq ac-php--index-process process)
-            (setq ac-php--index-process nil)
-            (ac-php-mode 0)))))
-    (process-put process 'ac-php-buffers nil)
-    (setq ac-php-gen-tags-flag (> (hash-table-count ac-php--index-processes) 0))
-    (if (and (eq (process-status process) 'exit)
-             (= (process-exit-status process) 0)
-             (not (process-get process 'ac-php-errors)))
-        (message "ac-php: The project has been successfully re-indexed")
-      (message "ac-php: Re-indexing %s: %s"
-               (s-trim event)
-               (or (process-get process 'ac-php-errors) "generator failed")))
-    (force-mode-line-update t)))
-
-(defun ac-php--rebuild-file-list (project-root-dir rebuild)
-  "Start a tag generator for PROJECT-ROOT-DIR, respecting REBUILD."
-  (let* ((backend (ac-php--effective-tags-backend))
-         (command (ac-php--tags-process-command project-root-dir rebuild backend))
-         (process (apply #'start-process "ac-phptags" "*AC-PHPTAGS*" command))
-         (root (file-name-as-directory (expand-file-name project-root-dir))))
-    (process-put process 'ac-php-root root)
-    (process-put process 'ac-php-progress 0)
-    (puthash root process ac-php--index-processes)
-    (setq ac-php-gen-tags-flag t
-          ac-php-rebuild-tmp-error-msg nil
-          ac-php-phptags-index-progress 0)
-    (ac-php--index-attach-buffer process)
-    (set-process-filter process #'ac-php-phptags-index-process-filter)
-    (set-process-sentinel process #'ac-php--index-finished)
-    (ac-php--debug "Tag backend: %s; command: %S" backend command)
-    (force-mode-line-update t)
-    process))
-
-(defun ac-php-phptags-index-process-filter (process strings)
-  "Parse complete output lines from PROCESS, retaining partial STRINGS."
-  (let* ((text (concat (process-get process 'ac-php-pending) strings))
-         (start 0))
-    (while (string-match "[\r\n]" text start)
-      (let ((line (substring text start (match-beginning 0))))
-        (setq start (match-end 0))
-        (ac-php--debug "%s" line)
-        (cond
-         ((string-match "PHPParser:" line)
-          (process-put process 'ac-php-errors
-                       (concat (process-get process 'ac-php-errors) "\n" line))
-          (setq ac-php-rebuild-tmp-error-msg
-                (process-get process 'ac-php-errors)))
-         ((string-match "\\([0-9]+\\)%" line)
-          (let ((progress (string-to-number (match-string 1 line))))
-            (process-put process 'ac-php-progress progress)
-            (setq ac-php-phptags-index-progress progress)
-            (force-mode-line-update t))))))
-    (process-put process 'ac-php-pending
-                 (and (< start (length text)) (substring text start)))))
-
-(defun ac-php--remake-tags (project-root-dir force)
-  "Re-index PROJECT-ROOT-DIR with FORCE, reusing its active process."
-  (unless project-root-dir
-    (user-error "Unable to resolve PHP project root"))
-  (let* ((root (file-name-as-directory (expand-file-name project-root-dir)))
-         (process (gethash root ac-php--index-processes)))
-    (if (and process (process-live-p process))
-        (progn (ac-php--index-attach-buffer process) process)
-      (remhash root ac-php--index-processes)
-      ;; No global lock is acquired until a process actually starts.  Invalid
-      ;; configuration and start-process errors leave other projects usable.
-      (unwind-protect
-          (ac-php--remake-tags-ex project-root-dir force)
-        (setq ac-php-gen-tags-flag
-              (> (hash-table-count ac-php--index-processes) 0))))))
-
-(defun ac-php--remake-tags-ex (project-root-dir force)
-  "Re-index project located at PROJECT-ROOT-DIR taking into account FORCE flag.
-This function is used internally by the function `ac-php--remake-tags'."
-  (let ((file-name (buffer-file-name))
-        (backend (ac-php--effective-tags-backend)))
-
-    ;; Always rebuild tags if currently opened file is from vendor directory
-    (when (and file-name (s-match "/vendor/" file-name))
-      (setq force t))
-
-    (message "ac-php: Starting to re-index the project located at %s%s"
-             (ac-php--reduce-path project-root-dir 60)
-             (if force "with a forced rebuilding of all tags" ""))
-
-    (pcase backend
-      ('mago
-       (unless (ac-php--mago-tags-executable)
-         (message "ac-php: Unable to locate Mago tag generator at %s"
-                  ac-php-mago-tags-executable)))
-      ('phpctags
-       (unless (f-exists? ac-php-ctags-executable)
-         (message (concat "ac-php: Unable to locate phpctags executable at %s\n"
-                          "ac-php: Restarting GNU Emacs might help")
-                  ac-php-ctags-executable))
-
-       (unless (and (not (s-blank? ac-php-php-executable))
-                    (f-exists? ac-php-php-executable))
-         (message (concat "ac-php: Unable to locate PHP executable at %s\n"
-                          "ac-php: You need to install PHP CLI and restart GNU Emacs")
-                  ac-php-php-executable))))
-
-    (unless project-root-dir
-      (message "ac-php: The per-project configuration file '%s' doesn't exist at %s"
-               ac-php-config-file
-               (file-name-directory (buffer-file-name))))
-
-    (if (and project-root-dir
-             (pcase backend
-               ('mago (ac-php--mago-tags-executable))
-               ('phpctags
-                (and (f-exists? ac-php-ctags-executable)
-                     (not (s-blank? ac-php-php-executable))
-                     (f-exists? ac-php-php-executable)))))
-        (progn
-          (ac-php--get-tags-save-dir project-root-dir)
-          (ac-php--rebuild-file-list project-root-dir force))
-      (setq ac-php-gen-tags-flag nil))))
-
-(defun ac-php-gen-el-func (doc)
-  "Example doc \"xxx($x1,$x2)\" => $x1 , $x2 DOC."
-  (let (func-str)
-    (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
-        (progn
-          (setq func-str (s-trim (match-string 1 doc)))
-          (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "," func-str))
-          (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str)))
-      "")))
-
-(defun ac-php--get-tags-save-dir (project-root-dir)
-  "Get an absolute path to directory where tags should be saved.
-
-This function uses PROJECT-ROOT-DIR as an of path to the directory,
-where tags should be saved.  If the directory does not exist, it will
-be created."
-  (ac-php--debug "Lookup for tags directory...")
-  (let (ret tag-dir conf-list)
-    (setq conf-list (ac-php--get-config project-root-dir)
-          tag-dir (cdr (assoc-string "tag-dir" conf-list)))
-
-    (if tag-dir
-        (progn
-          (ac-php--debug "Found tags directory")
-          (let ((default-directory (file-name-as-directory project-root-dir)))
-            (setq ret (file-truename tag-dir))))
-      ;; Legacy separator replacement mapped distinct projects to one cache.
-      ;; Start a fresh index rather than trusting potentially mixed old tags.
-      (let* ((root (directory-file-name (expand-file-name project-root-dir)))
-             (identity (if ac-php-project-root-dir-use-truename
-                           (file-truename root) root)))
-        (setq ret (expand-file-name
-                   (concat "tags-" (secure-hash 'sha256 identity))
-                   ac-php-tags-path))))
-
-    (unless (f-exists? ret)
-      (mkdir ret t))
-    (f-full ret)))
-
-(defun ac-php-get-tags-file ()
-  "Get the actual project's tag file.
-
-Returns a list where the 1st element will be a real path to the project,
-and the 2nd element will be the a real path to the tags file.  Will return
-nil when unable to read tags file.
-
-This function checks for modification time of the procject's tags file.
-If it is outdated, a re-index process will be performed."
-  (ac-php--debug "Retrieving tags file...")
-  (let ((project-root-dir (ac-php--get-project-root-dir))
-        tags-file
-        tags-vendor-file
-        file-attr
-        file-last-time
-        tags-save-dir
-        now)
-    (if project-root-dir
-        (progn
-          (setq
-           tags-save-dir  (ac-php--get-tags-save-dir project-root-dir)
-           tags-file (concat tags-save-dir "tags.el")
-           tags-vendor-file (concat tags-save-dir "tags-vendor.el")
-           file-attr (file-attributes tags-file)
-           )
-
-          (when file-attr
-            (progn
-              (ac-php--debug "Found tags file")
-              (setq file-last-time (ac-php--get-timestamp (nth 5 file-attr))
-                    now (ac-php--get-timestamp (current-time))))
-
-            (when (and (> (- now file-last-time) ac-php-auto-update-intval))
-              (progn
-                (ac-php--debug "The tags file is out of date")
-                (ac-php--remake-tags project-root-dir nil))))
-
-          (list project-root-dir tags-file tags-vendor-file ))
-      nil)))
-
-(defun ac-php--get-config-path-noti-str (project-root-dir path-str)
-  "Doc PATH-STR PROJECT-ROOT-DIR."
-  (if (s-ends-with? "*.php" path-str)
-      (format "php-path-list-without-subdir->%s" (f-relative (f-parent path-str) project-root-dir))
-    (format "php-path-list->%s" (f-relative path-str project-root-dir))))
-
-(defvar ac-php--config-cache (make-hash-table :test #'equal)
-  "Parsed project configuration, keyed by filename and file signature.")
-
-(defun ac-php--get-config (project-root-dir)
-  "Get configuration related to a project.
-
-Reads the configuration located at PROJECT-ROOT-DIR and returns it.
-This function tries to recreate and / or populate configuration
-file in case of its absence, or if it is empty."
-  (ac-php--debug "Lookup for per-project configuration file...")
-  (let (config-file-name)
-    (setq config-file-name (f-join project-root-dir ac-php-config-file))
-
-    ;; Lookup for `ac-php-config-file'
-    (when (and
-           (not (s-starts-with-p "/ssh:" config-file-name))
-           (not (s-starts-with-p "/server:" config-file-name))
-           (or (not (f-exists? config-file-name))
-               (= (f-size config-file-name) 0)
-               ;; Use case for "echo '' > `config-file-name'"
-               (= (f-size config-file-name) 1)))
-      (ac-php--debug "Configuration file either empty or absent. Creating...")
-      (ac-php--json-save-data
-       config-file-name
-       '(:use-cscope nil
-                     :tag-dir nil
-                     :filter (
-                              :php-file-ext-list ("php")
-                              :php-path-list (".")
-                              :ignore-ruleset (
-                                               "# like .gitignore file "
-                                               "/vendor/**/[tT]ests/**/*.php"
-                                               "/vendor/**/[Ee]xamples/**/*.php"
-                                               "/vendor/composer/*.php"
-                                               "/vendor/*.php"
-
-                                               "# not need php_codesniffer"
-                                               "/vendor/squizlabs/php_codesniffer/**/*.php"
-
-                                               "#  -- end -- "
-
-                                               )))))
-    (let* ((key (expand-file-name config-file-name))
-           (signature (ac-php--tags-file-signature key))
-           (cached (gethash key ac-php--config-cache)))
-      (if (and cached (equal signature (car cached)))
-          (cdr cached)
-        (let ((config (json-read-file key)))
-          (puthash key (cons signature config) ac-php--config-cache)
-          config)))))
-
-(defun ac-php--get-use-cscope-from-config-file (project-root-dir)
-  "Doc PROJECT-ROOT-DIR."
-  (let (conf-list)
-    (setq conf-list (ac-php--get-config project-root-dir))
-    (cdr (assoc-string "use-cscope" conf-list))))
-
-
-(defun ac-php-remake-tags ()
-  "Reset tags, if php source is changed."
-  (interactive)
-  (ac-php--remake-tags (ac-php--get-project-root-dir) nil))
-
-(defun ac-php-remake-tags-all ()
-  "Remake tags without check modify time."
-  (interactive)
-  (ac-php--remake-tags (ac-php--get-project-root-dir) t))
-
-(defun ac-php--remake-cscope (project-root-dir all-file-list)
-  "DOCSTRING, PROJECT-ROOT-DIR, ALL-FILE-LIST."
-  (let (tags-dir-len save-dir)
-    (when (and ac-php-cscope
-               (or (ac-php--get-use-cscope-from-config-file project-root-dir)
-                   ac-php-use-cscope-flag))
-      (ac-php--debug "ac-php--remake-cscope %d" (length all-file-list))
-      (message "rebuild cscope data file ")
-      (setq tags-dir-len (length project-root-dir))
-      ;; write cscope.files
-      (setq save-dir (ac-php--get-tags-save-dir project-root-dir))
-      (let ((file-name-list) cscope-file-name)
-        (dolist (file-item all-file-list)
-          (setq cscope-file-name (concat project-root-dir (substring (nth 0 file-item) tags-dir-len)))
-          (push cscope-file-name file-name-list))
-        (f-write
-         (s-join "\n" file-name-list)
-         'utf-8
-         (concat save-dir "cscope.files")))
-      (shell-command-to-string
-       (concat " cd " save-dir " &&  cscope -bkq -i cscope.files ")))))
-
-(defun ac-php--get-obj-tags-dir(save-tags-dir)
-  "Doc SAVE-TAGS-DIR."
-  (concat save-tags-dir "/tags_dir_" (getenv "USER") "/"))
-
-(defun ac-php--get-obj-tags-file-list(save-tags-dir)
-  "DOCSTRING SAVE-TAGS-DIR."
-  (let ((obj-tags-dir (ac-php--get-obj-tags-dir save-tags-dir)))
-    (if (not (file-directory-p obj-tags-dir))
-        (mkdir obj-tags-dir t))
-    (ac-php-find-php-files obj-tags-dir "\\.el$" t)))
-
-(defun ac-php-save-data (file data)
-  "Doc FILE. DATA."
-  (message "save to %s ..." file)
-  ;; (f-write (format "%S" data) 'utf-8 file)
-  (with-temp-file file
-    (let ((standard-output (current-buffer))
-          (print-circle t) ; Allow circular data
-          )
-      (prin1 data))))
-(defun case-fold-string= (a b)
-  "Doc A B."
-  (eq t (compare-strings a nil nil b nil nil t)))
-(defun case-fold-string-hash (a)
-  "Doc A."
-  (sxhash (upcase a)))
-
-(define-hash-table-test 'case-fold
-                        'case-fold-string= 'case-fold-string-hash)
-
-(defun ac-php--tags-cache ()
-  "Return the tags cache, resetting data stored in the legacy alist format."
-  (unless (and (hash-table-p ac-php-tag-last-data-list)
-               (eq (hash-table-test ac-php-tag-last-data-list) 'equal))
-    ;; Entries from the old alist do not contain the vendor signature and are
-    ;; therefore unsafe to reuse.  They will be loaded lazily into the new cache.
-    (setq ac-php-tag-last-data-list (make-hash-table :test #'equal)))
-  ac-php-tag-last-data-list)
-
-(defun ac-php--tags-file-signature (file)
-  "Return a cache signature for FILE, or nil when FILE does not exist."
-  (when file
-    (let ((attributes (file-attributes file)))
-      (when attributes
-        ;; Keep complete times instead of reducing them to whole seconds.  The
-        ;; file identity catches atomic replacement, while size catches common
-        ;; replacements on file systems with coarse timestamp resolution.
-        (list (nth 5 attributes)
-              (nth 6 attributes)
-              (nth 7 attributes)
-              (nth 10 attributes)
-              (nth 11 attributes))))))
-
-(defun ac-php-load-data (tags-file tags-vendor-file project-root-dir)
-  "Return the autocompleted data for the project.
-
-This function tries to use the `ac-php-tag-last-data-list' variable to query the
-necessary data.  The `ac-php-tag-last-data-list' is used as a temporary
-in-memory storage of all the tags.
-
-TAGS-FILE and TAGS-VENDOR-FILE are both checked for changes.  If either file
-changes, the merged data for PROJECT-ROOT-DIR is rebuilt and cached."
-  (let* ((cache (ac-php--tags-cache))
-         (cache-key (expand-file-name tags-file))
-         (vendor-key (and tags-vendor-file
-                          (expand-file-name tags-vendor-file)))
-         (tags-signature (ac-php--tags-file-signature cache-key))
-         (vendor-signature (ac-php--tags-file-signature vendor-key))
-         (cached-entry (gethash cache-key cache))
-         file-data
-         vendor-tags-data
-         class-map
-         function-map
-         inherit-map
-         tags-data
-         g-ac-php-tmp-tags)
-    (if (not tags-signature)
-        (progn
-          (remhash cache-key cache)
-          nil)
-      (if (and cached-entry
-               (equal tags-signature (plist-get cached-entry :signature))
-               (equal vendor-key (plist-get cached-entry :vendor-file))
-               (equal vendor-signature
-                      (plist-get cached-entry :vendor-signature))
-               (equal project-root-dir
-                      (plist-get cached-entry :project-root-dir)))
-          (plist-get cached-entry :data)
-        (message (concat "ac-php: Reloading the autocompletion "
-                         "data from the tags file..."))
-
-        ;; `g-ac-php-tmp-tags' will be populated from the generated file.
-        (setq vendor-tags-data
-              (list (make-hash-table :test 'case-fold)
-                    (make-hash-table :test 'case-fold)
-                    (make-hash-table :test 'case-fold)
-                    []))
-        (when vendor-signature
-          (setq vendor-tags-data
-                (ac-php-load-data vendor-key nil project-root-dir)))
-
-        (load cache-key nil t)
-        (setq file-data g-ac-php-tmp-tags
-              class-map
-              (copy-hash-table (ac-php-g--class-map vendor-tags-data))
-              function-map
-              (copy-hash-table (ac-php-g--function-map vendor-tags-data))
-              inherit-map
-              (copy-hash-table (ac-php-g--inherit-map vendor-tags-data)))
-
-        ;; The generated `file-data' is an array containing class, function and
-        ;; inheritance entries followed by the indexed file list.
-        (mapc
-         (lambda (class-item)
-           (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
-         (aref file-data 0))
-
-        (mapc
-         (lambda (function-item)
-           (ac-php--debug "add function: %s" (aref function-item 1))
-           (puthash (aref function-item 1) function-item function-map))
-         (aref file-data 1))
-
-        (mapc
-         (lambda (inherit-item)
-           (puthash (format "%s" (car inherit-item))
-                    (cdr inherit-item) inherit-map))
-         (aref file-data 2))
-
-        (setq tags-data
-              (list class-map
-                    function-map
-                    inherit-map
-                    (vconcat (ac-php-g--file-list vendor-tags-data)
-                             (aref file-data 3))
-                    project-root-dir))
-        (puthash cache-key
-                 (list :signature tags-signature
-                       :vendor-file vendor-key
-                       :vendor-signature vendor-signature
-                       :project-root-dir project-root-dir
-                       :data tags-data)
-                 cache)
-        (message "ac-php: Reloading has been successfully finished")
-        tags-data))))
-
-(defun ac-php-g--class-map (tags-data)
-  "Doc TAGS-DATA."
-  (nth 0 tags-data))
-(defun ac-php-g--function-map (tags-data)
-  "Doc TAGS-DATA."
-  (nth 1 tags-data))
-(defun ac-php-g--inherit-map (tags-data)
-  "Doc TAGS-DATA."
-  (nth 2 tags-data))
-(defun ac-php-g--file-list (tags-data)
-  "Doc TAGS-DATA."
-  (nth 3 tags-data))
-
-(defun ac-php-get-tags-data ()
-  "Load a tags data for the particular project."
-  (let (tags-file tags-vendor-file project-root-dir (tags-definition (ac-php-get-tags-file)))
-    (if tags-definition
-        (progn
-          (setq
-           project-root-dir (nth 0 tags-definition)
-           tags-file (nth 1 tags-definition)
-           tags-vendor-file (nth 2 tags-definition)
-           ))
-      (setq tags-file (ac-php--get-common-json-file))
-      (unless(f-exists?  tags-file )
-        ;;gen
-        (shell-command-to-string
-         (concat  ac-php-php-executable " " ac-php-ctags-executable " "
-                  "--save-common-el=" tags-file
-                  )
-         ))
-      )
-    (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
-    (if (and  (file-exists-p tags-file )
-              (or (not tags-vendor-file) (file-exists-p tags-vendor-file ) ) )
-        (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
-      (progn
-        (ac-php--debug (concat "The per-project tags file doesn't exist. "
-                               "Starting create a new one..."))
-        (when tags-definition (ac-php-remake-tags))
-        ;; A running process is not a loaded tags generation.
-        nil))))
-
-(defun ac-php--get-project-root-dir ()
-  "Get the project root directory of the curent opened buffer."
-  (ac-php--debug "Lookup for the project root...")
-  (let (project-root-dir (file-name buffer-file-name))
-
-    ;; 1. Get working directory using `buffer-file-name' or `default-directory'
-    (if file-name
-        (setq project-root-dir (file-name-directory file-name))
-      (setq project-root-dir (expand-file-name default-directory)))
-
-    ;; 2. Expand real path of the obtained working directory (if enabled)
-    (when ac-php-project-root-dir-use-truename
-      (setq project-root-dir (file-truename project-root-dir)))
-
-    ;; 3. Scan for the real project root of the opend file
-    ;; We're looking either for the `ac-php-config-file' file
-    ;; or the '.projectile' file, or the 'vendor/autoload.php' file
-    (let (last-dir)
-      (while
-          (not (or
-                (file-exists-p (concat project-root-dir ac-php-config-file))
-                (file-exists-p (concat project-root-dir ".projectile"))
-                (file-exists-p (concat project-root-dir "vendor/autoload.php"))
-                (string= project-root-dir "/")))
-        (setq last-dir project-root-dir
-              project-root-dir (file-name-directory
-                                (directory-file-name project-root-dir)))
-        (when (string= last-dir project-root-dir)
-          (setq project-root-dir "/"))))
-
-    (when (string= project-root-dir "/")
-      (progn
-        (message "ac-php: Unable to resolve project root")
-        (setq project-root-dir nil)))
-
-    project-root-dir))
-
-(defconst ac-php--class-cache-miss (make-symbol "ac-php-class-cache-miss")
-  "Sentinel used for class lookup cache misses.")
-
-(defvar ac-php--class-lookup-caches
-  (make-hash-table :test #'eq :weakness 'key)
-  "Weak cache of class lookup data, keyed by a tags data generation.")
-
-(defun ac-php--get-class-lookup-cache (tags-data)
-  "Return the lazy class lookup cache for TAGS-DATA.
-
-The cache is scoped to the identity of TAGS-DATA.  Loading a new tags
-generation creates a new data object, while the weak key lets obsolete
-generations be reclaimed.  The cache vector contains inheritance orders,
-direct member indexes, and flattened member lists, respectively."
-  (when tags-data
-    (or (gethash tags-data ac-php--class-lookup-caches)
-        (let ((cache (vector (make-hash-table :test #'equal)
-                             (make-hash-table :test #'equal)
-                             (make-hash-table :test #'equal))))
-          (puthash tags-data cache ac-php--class-lookup-caches)
-          cache))))
-
-(defun ac-php--resolve-inherited-class-name
-    (class-name parent-namespace class-map)
-  "Resolve CLASS-NAME relative to PARENT-NAMESPACE using CLASS-MAP."
-  (when (stringp class-name)
-    (if (ac-php--check-global-name class-name)
-        class-name
-      (let ((qualified-name
-             (concat (or parent-namespace "") "\\" class-name))
-            (global-name (concat "\\" class-name)))
-        (cond
-         ((gethash qualified-name class-map) qualified-name)
-         ((gethash global-name class-map) global-name))))))
-
-(defun ac-php--get-check-class-list
-    (class-name inherit-map class-map &optional tags-data)
-  "Return the depth-first class order for CLASS-NAME.
-
-INHERIT-MAP and CLASS-MAP provide the graph.  Each resolved class occurs at
-most once, so cycles and shared ancestors cannot expand the result.  When
-TAGS-DATA is supplied, cache the result for that tags generation."
-  (let* ((namespace (ac-php-get-cur-namespace-name t))
-         (cache (ac-php--get-class-lookup-cache tags-data))
-         (order-cache (and cache (aref cache 0)))
-         (cache-key (cons (downcase (or class-name ""))
-                          (downcase (or namespace ""))))
-         (cached (and order-cache
-                      (gethash cache-key order-cache
-                               ac-php--class-cache-miss))))
-    (if (and order-cache (not (eq cached ac-php--class-cache-miss)))
-        cached
-      (let ((stack (list (list 'enter class-name namespace)))
-            (states (make-hash-table :test #'equal))
-            result)
-        (while stack
-          (let ((entry (pop stack)))
-            (if (eq (car entry) 'exit)
-                (let ((resolved-name (nth 1 entry))
-                      (visited-key (nth 2 entry)))
-                  (puthash visited-key 'done states)
-                  ;; Reverse postorder keeps every descendant before its
-                  ;; ancestors while retaining declared branch priority.
-                  (push resolved-name result))
-              (let* ((resolved-name
-                      (ac-php--resolve-inherited-class-name
-                       (nth 1 entry) (nth 2 entry) class-map))
-                     (visited-key
-                      (and resolved-name (downcase resolved-name))))
-                (when (and resolved-name
-                           (not (gethash visited-key states)))
-                  (puthash visited-key 'visiting states)
-                  (push (list 'exit resolved-name visited-key) stack)
-                  (let ((parents (gethash resolved-name inherit-map))
-                        (parent-namespace
-                         (ac-php--get-namespace-from-classname resolved-name)))
-                    ;; Stack order is reversed again by postorder, preserving
-                    ;; the order in which parents were declared.
-                    (dotimes (index (length parents))
-                      (push (list 'enter (aref parents index)
-                                  parent-namespace)
-                            stack))))))))
-        (when order-cache
-          (puthash cache-key result order-cache))
-        (ac-php--debug "XXXX check-class list:%S" result)
-        result))))
-
-(defun ac-php--check-global-name(name)
-  "Doc NAME."
-  (s-prefix-p "\\" name))
-
-
-(defun ac-php--as-global-name(name)
-  "Doc NAME."
-  (if (ac-php--check-global-name name)
-      name
-    (concat "\\" name)))
-
-(defun ac-php--get-item-info (member)
-  "Recognize current MEMBER type.
-
-This function tries to determine whether passed MEMBER is a method or a
-property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
-\"m\" (method) or \"p\" (property).
-
-Note that this function does not perform in-depth analysis and its main task is
-to determine whether the current MEMBER is a \"method call\".
-All other cases are considered at this stage as a \"property usage\",
-although in fact they may not be."
-  (ac-php--debug "Recognize current member type")
-  (let (type-str)
-    (if (and (> (length member) 1) (string= "(" (substring member -1)))
-        (progn
-          (setq type-str "m"))
-      (setq type-str "p"))
-    (list member type-str)))
-
-
-(defun ac-php--class-member-key (member-info)
-  "Return the override key for MEMBER-INFO.
-
-PHP method names are case-insensitive.  Property and constant names are
-case-sensitive, and the tag kind remains part of the key so different member
-kinds can coexist."
-  (let ((kind (aref member-info 0))
-        (name (aref member-info 1)))
-    (cons kind (if (string= kind "m") (downcase name) name))))
-
-(defun ac-php--class-member-lookup-key (kind name)
-  "Return a lookup key for member KIND and NAME."
-  (if (string= kind "m")
-      (cons "m" (downcase name))
-    (cons "value" name)))
-
-(defun ac-php--get-direct-member-index (class-map class-name cache)
-  "Return direct member indexes for CLASS-NAME in CLASS-MAP.
-
-CACHE is the optional generation-scoped direct-index cache.  The returned
-cons contains a lookup index and an exact override index.  Later definitions
-in one class replace earlier definitions."
-  (let ((cached (and cache
-                     (gethash class-name cache ac-php--class-cache-miss))))
-    (if (and cache (not (eq cached ac-php--class-cache-miss)))
-        cached
-      (let* ((members (gethash class-name class-map))
-             (member-count (length members))
-             (lookup-index
-              (make-hash-table :test #'equal :size (max 1 member-count)))
-             (override-index
-              (make-hash-table :test #'equal :size (max 1 member-count))))
-        (dotimes (index (length members))
-          (let* ((member-info (aref members index))
-                 (kind (aref member-info 0))
-                 (name (aref member-info 1)))
-            (puthash (ac-php--class-member-lookup-key kind name)
-                     member-info lookup-index)
-            (puthash (ac-php--class-member-key member-info)
-                     member-info override-index)))
-        (setq cached (cons lookup-index override-index))
-        (when cache
-          (puthash class-name cached cache))
-        cached))))
-
-(defun ac-php-get-class-member-info
-    (class-map inherit-map class-name member &optional tags-data)
-  "Return MEMBER information for CLASS-NAME.
-
-CLASS-MAP and INHERIT-MAP provide the class graph.  TAGS-DATA enables lazy
-indexes scoped to the loaded tags generation."
-  (let* ((class-order
-          (ac-php--get-check-class-list
-           class-name inherit-map class-map tags-data))
-         (item-info (ac-php--get-item-info member))
-         (member-name (nth 0 item-info))
-         (member-kind (nth 1 item-info))
-         (lookup-key
-          (ac-php--class-member-lookup-key member-kind member-name))
-         (cache (ac-php--get-class-lookup-cache tags-data))
-         (direct-cache (and cache (aref cache 1)))
-         result)
-    (while (and class-order (not result))
-      (let ((indexes
-             (ac-php--get-direct-member-index
-              class-map (pop class-order) direct-cache)))
-        (setq result (gethash lookup-key (car indexes)))))
-    (ac-php--debug "ac-php-get-class-member-info ret=%S" result)
-    result))
-
-(defun ac-php-get-class-member-list
-    (class-map inherit-map class-name &optional tags-data)
-  "Return effective members for CLASS-NAME.
-
-Child definitions override inherited definitions with the same kind and name.
-Method names compare case-insensitively; other member names compare exactly.
-TAGS-DATA enables generation-scoped lazy indexes and result caching."
-  (let* ((class-order
-          (ac-php--get-check-class-list
-           class-name inherit-map class-map tags-data))
-         (cache (ac-php--get-class-lookup-cache tags-data))
-         (direct-cache (and cache (aref cache 1)))
-         (member-list-cache (and cache (aref cache 2)))
-         (cache-key (downcase (or (car class-order) class-name "")))
-         (cached (and member-list-cache
-                      (gethash cache-key member-list-cache
-                               ac-php--class-cache-miss))))
-    (if (and member-list-cache
-             (not (eq cached ac-php--class-cache-miss)))
-        cached
-      (let ((seen (make-hash-table :test #'equal))
-            result)
-        (dolist (current-class class-order)
-          (let* ((members (gethash current-class class-map))
-                 (indexes
-                  (ac-php--get-direct-member-index
-                   class-map current-class direct-cache))
-                 (override-index (cdr indexes)))
-            (dotimes (index (length members))
-              (let* ((member-info (aref members index))
-                     (member-key (ac-php--class-member-key member-info)))
-                (when (and (eq member-info (gethash member-key override-index))
-                           (not (gethash member-key seen)))
-                  (puthash member-key t seen)
-                  (push member-info result))))))
-        (setq result (nreverse result))
-        (when member-list-cache
-          (puthash cache-key result member-list-cache))
-        result))))
-
-(defun ac-php--get-class-name-from-parent-define(parent-list-str)
-  "D '\\Class1,interface1' => Class1 PARENT-LIST-STR."
-  (s-trim (aref (s-split "," parent-list-str) 1)))
-
-(defun ac-php--resolve-member-return-type (return-type receiver-class)
-  "Resolve RETURN-TYPE relative to RECEIVER-CLASS.
-
-`self', `static', and PHPDoc's `$this' describe the object on which the
-member was resolved.  They can also occur inside compound types such as
-`ServiceBase&static'.  The completion engine follows one class at a time, so
-keep the receiver class when any of these late-bound types is present."
-  (if (and (stringp return-type)
-           (stringp receiver-class)
-           (or (string-match-p
-                "\\b\\(?:self\\|static\\)\\b" return-type)
-               (string-match-p "\\$this\\b" return-type)))
-      receiver-class
-    return-type))
-
-(defun ac-php-get-class-name-by-key-list(tags-data key-list-str)
-  "D TAGS-DATA KEY-LIST-STR."
-  (let (temp-class (cur-class "")
-                   (class-map (ac-php-g--class-map tags-data))
-                   (inherit-map (ac-php-g--inherit-map tags-data))
-                   (key-list (split-string key-list-str "\\.")))
-    (ac-php--debug "====XXKK:%S" key-list)
-    (cl-loop for item in key-list do
-             (if (string= cur-class "")
-                 (if (or (gethash item inherit-map) (gethash item class-map))
-                     (setq cur-class item)
-                   (cl-return))
-               (progn
-                 (setq temp-class cur-class)
-
-                 (if (string= item "__parent__")
-                     (let (parent-list)
-                       (setq parent-list (gethash cur-class inherit-map))
-
-                       (ac-php--debug "XXKK:%S " parent-list)
-
-                       (if parent-list
-                           (setq cur-class (aref parent-list 0))
-                         (setq cur-class "")))
-
-                   (let (member-info)
-                     (setq member-info
-                           (ac-php-get-class-member-info
-                            class-map inherit-map cur-class item tags-data))
-                     (setq cur-class (if member-info
-                                         (let (tmp-class cur-namespace relative-classname member-local-class-name)
-                                           (setq tmp-class
-                                                 (ac-php--resolve-member-return-type
-                                                  (aref member-info 4)
-                                                  cur-class))
-                                           (ac-php--debug "tmp-class %s member-info:%S" tmp-class member-info)
-                                           (when (stringp tmp-class)
-                                             (if (ac-php--check-global-name tmp-class)
-                                                 ;;  global name, like \test\ss
-                                                 tmp-class
-                                               (progn;; tmp-class like test\ss
-                                                 ;; relative name, MUST be resolved relatively as \cur-namespace\test\ss
-                                                 (setq member-local-class-name (aref member-info 5))
-                                                 (setq cur-namespace (ac-php--get-namespace-from-classname member-local-class-name))
-                                                 (setq relative-classname (concat cur-namespace "\\" tmp-class))
-                                                 (ac-php--debug " 2 relative-classname %s " relative-classname)
-                                                 relative-classname))))
-                                       ""))))
-
-                 (when (string= cur-class "")
-                   (message (concat " class[" temp-class "]'s member[" item "] not define type "))
-                   (cl-return)))))
-    cur-class))
-
-(defun ac-php--get-namespace-from-classname (classname)
-  "D CLASSNAME."
-  (nth 1 (s-match "\\(.*\\)\\\\[a-zA-Z0-9_]+$" classname)))
-
-(defun ac-php-find-symbol-at-point-pri (tags-data &optional as-fn-p as-id-p)
-  "Docstring. TAGS-DATA AS-FN-P AS-ID-P."
-  (let (key-str-list
-        cur-word
-        ret)
-
-    ;; TODO: How about new line
-    (if as-id-p
-        (setq cur-word (ac-php--get-cur-word))
-      (if as-fn-p
-          (setq cur-word (concat (ac-php--get-cur-word) "("))
-        (setq cur-word (ac-php--get-cur-word-with-function-flag))))
-
-    (when cur-word
-      (ac-php--debug "Current working string: \"%s\"" cur-word))
-
-    (setq key-str-list (ac-php-get-class-at-point tags-data))
-
-    (ac-php--debug "key-str-list==end:%s" key-str-list)
-
-    (if key-str-list
-        (progn
-          (let (class-name member-info)
-            ;; (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word) key-str-list))
-            (when (string= cur-word "")
-              (let ((key-arr (s-split "\\." key-str-list)))
-                (ac-php--debug "key-arr %S " key-arr)
-                (setq cur-word (nth (1- (length key-arr)) key-arr))))
-
-            (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list))
-            (ac-php--debug "class. key-str-list = %s " key-str-list)
-            (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
-
-            (ac-php--debug "class.member= %s.%s " class-name cur-word)
-            (if (not (string= class-name ""))
-                (progn
-                  (setq member-info
-                        (ac-php-get-class-member-info
-                         (ac-php-g--class-map tags-data)
-                         (ac-php-g--inherit-map tags-data)
-                         class-name cur-word tags-data))
-                  (if member-info
-                      (progn
-                        (let (return-type)
-                          (setq return-type
-                                (ac-php--resolve-member-return-type
-                                 (aref member-info 4) class-name))
-                          (setq ret (list "class_member" (aref member-info 3) return-type member-info)))
-
-                        )
-                    (progn
-                      (message "no find %s.%s " class-name cur-word))))
-              ;; (message "no find class from key-list %s " key-str-list)
-              )))
-      (progn ;; function
-        (let ((function-map (ac-php-g--function-map tags-data))
-              full-name tmp-ret)
-
-          (when (string= "" cur-word) ;; new
-            (setq tmp-ret (ac-php-get-syntax-backward
-                           (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)")
-                           :sexp 1))
-            (when tmp-ret (setq cur-word tmp-ret)))
-          ;; check "namespace" "use as"
-          (setq full-name (ac-php--get-class-full-name-in-cur-buffer
-                           cur-word
-                           function-map nil))
-
-          (when full-name (setq cur-word full-name))
-
-          ;; TODO FIX namespace function like Test\ff()
-          (ac-php--debug "check user function===%s" cur-word)
-          (when (string=  cur-word "self")
-            (setq cur-word (concat (ac-php-get-cur-class-name))))
-
-          (let (function-item)
-            (setq function-item (ac-php--get-item-from-funtion-map cur-word function-map))
-            (when function-item
-              (setq ret (list "user_function" (aref function-item 3) (aref function-item 4) function-item)))))))
-
-    (ac-php--debug "ac-php-find-symbol-at-point-pri :%S " ret)
-    ret))
-
-(defun ac-php--goto-local-var-def (local-var)
-  "D goto LOCAL-VAR like vim - gd."
-  (ac-php--debug "local-var %s " local-var)
-  (ac-php-location-stack-push)
-  (ac-php--beginning-of-defun)
-
-  (re-search-forward (concat "\\" local-var "\\b")) ; => \\$var\\b
-  (while (ac-php--in-string-or-comment-p (point))
-    (re-search-forward (concat "\\" local-var "\\b")))) ; => \\$var\\b
-
-(defun ac-php-find-symbol-at-point (&optional _prefix)
-  "D PREFIX."
-  (interactive "P")
-  ;; 检查是类还是 符号
-  (let ((tags-data (ac-php-get-tags-data))
-        symbol-ret type jump-pos local-var local-var-flag)
-    (setq local-var (ac-php-get-cur-word-with-dollar))
-    (setq local-var-flag (s-matches-p "^\\$" local-var))
-
-    (setq symbol-ret (or (ac-php--phpstan-type-symbol tags-data)
-                         (ac-php--named-argument-symbol tags-data)
-                         (ac-php-find-symbol-at-point-pri tags-data)))
-
-    (ac-php--debug "11goto %s" symbol-ret)
-    (unless symbol-ret
-      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data t)))
-    (ac-php--debug "22goto %s" symbol-ret)
-    (unless symbol-ret
-      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t)))
-    (ac-php--debug "33goto %s %s" symbol-ret local-var-flag)
-
-    (if symbol-ret
-        (progn
-          (ac-php--debug "goto %s" symbol-ret)
-          (setq type (car symbol-ret))
-          (if (and (not (string= type "class_member")) local-var-flag)
-              (let ((item-info (nth 3 symbol-ret)))
-                (if (string=  (nth 0 item-info) "v")
-                    (progn
-                      (setq jump-pos (nth 1 symbol-ret))
-                      (ac-php-location-stack-push)
-                      (ac-php-goto-location jump-pos)
-                      ;; (ac-php-location-stack-push)
-                      )
-                  (ac-php--goto-local-var-def local-var)))
-            (cond
-             ((string= type "phpstan_type")
-              (ac-php-location-stack-push)
-              (ac-php-goto-location (nth 1 symbol-ret)))
-             ((member type '("class_member" "user_function" "named_argument"))
-              (let ((file-pos (nth 1 symbol-ret)) tmp-arr)
-                (setq tmp-arr (s-split ":" file-pos))
-                (ac-php--debug "tmp-arr %S" tmp-arr)
-                (cond
-                 ((s-matches-p "sys" (nth 0 tmp-arr))
-                  (goto-char (1+ (point)))
-                  (message "need install : composer require jetbrains/phpstorm-stubs "))
-                 (t
-                  (let ((file-list (ac-php-g--file-list tags-data)))
-                    ;; from get index
-                    (setq jump-pos
-                          (concat
-                           (aref file-list (string-to-number (nth 0 tmp-arr)))
-                           ":" (nth 1 tmp-arr)))
-                    (ac-php-location-stack-push)
-                    (ac-php-goto-location jump-pos)
-                    (when (string= type "named_argument")
-                      (let ((parameter-pos
-                             (ac-php--parameter-definition-position
-                              (nth 4 symbol-ret))))
-                        (when parameter-pos
-                          (goto-char parameter-pos))))))))))))
-      (when local-var-flag (ac-php--goto-local-var-def local-var)))))
-
-(defun ac-php-gen-def ()
-  "DOCSTRING."
-  (interactive)
-  (let ((tags-data (ac-php-get-tags-data))
-        line-txt
-        (cur-word (ac-php--get-cur-word)))
-    (setq line-txt (buffer-substring-no-properties
-                    (line-beginning-position)
-                    (line-end-position)))
-    (if (string-match (concat "$" cur-word) line-txt)
-        (let ((class-name "<...>"))
-          (when (string-match (concat cur-word"[\t ]*=[^(]*[(;]") line-txt)
-            ;; call function
-            (let (key-str-list pos)
-              (save-excursion
-                (re-search-forward "[;]")
-                (re-search-backward "[^ \t]" nil t)
-                (setq pos (point)))
-
-              (when pos (setq key-str-list (ac-php-get-class-at-point pos)))
-
-              (if key-str-list ;; class-name
-                  (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
-                (progn ;; function TODO
-                  ))))
-
-          (kill-new (concat "\n\t/**  @var " class-name " $" cur-word " */\n")))
-      (kill-new (concat "\n * @property " cur-word " $" cur-word "\n")))))
-
-(defun ac-php-location-stack-forward ()
-  "DEFUN."
-  (interactive)
-  (ac-php-location-stack-jump -1))
-
-(defun ac-php-location-stack-back ()
-  "DEFUN."
-  (interactive)
-  (ac-php-location-stack-jump 1))
-
-(defun ac-php-location-stack-jump (by)
-  "D BY."
-  (let ((instack (nth ac-php-location-stack-index ac-php-location-stack))
-        (cur (ac-php-current-location)))
-    (if (not (string= instack cur))
-        (ac-php-goto-location instack)
-      (let ((target (+ ac-php-location-stack-index by)))
-        (when (and (>= target 0) (< target (length ac-php-location-stack)))
-          (setq ac-php-location-stack-index target)
-          (ac-php-goto-location (nth ac-php-location-stack-index ac-php-location-stack)))))))
-
-(defun ac-php--get-array-string(arr arr-len index)
-  "Doc ARR-LEN ARR INDEX."
-  (let (v)
-    (if (< index arr-len)
-        (progn
-          (setq v (aref arr index))
-          (if v v ""))
-      "")))
+;;;; PHPDoc text and annotations
 
 (defun ac-php--phpdoc-content (start end)
   "Return normalized PHPDoc text between START and END.
@@ -2999,6 +2596,147 @@ A value includes continuation lines up to the next PHPDoc tag."
                          (ac-php--phpdoc-tag-values
                           (ac-php--phpdoc-content start end) tag))))))))
         values))))
+
+(defun ac-php--phpdoc-before-line (pos)
+  "Return normalized PHPDoc immediately preceding the line at POS."
+  (save-excursion
+    (goto-char pos)
+    (beginning-of-line)
+    (skip-chars-backward " \t\n\r")
+    (when (and (>= (- (point) (point-min)) 2)
+               (string= (buffer-substring-no-properties (- (point) 2) (point))
+                        "*/"))
+      (let ((end (point)))
+        (when (search-backward "/**" nil t)
+          (ac-php--phpdoc-content (point) end))))))
+
+(defun ac-php--phpdoc-parameter-types (content)
+  "Return (PARAMETER . TYPE) pairs from normalized PHPDoc CONTENT."
+  (let (parameters)
+    (dolist (value (ac-php--phpdoc-tag-values content "param"))
+      (when (string-match
+             "\\$\\([[:alpha:]_][[:alnum:]_]*\\)\\b" value)
+        (let ((name (match-string 1 value))
+              (type (s-trim (substring value 0 (match-beginning 0)))))
+          (when (not (string= type ""))
+            (push (cons name type) parameters)))))
+    (nreverse parameters)))
+
+(defun ac-php--phpdoc-variable-type-from-value (value variable)
+  "Return VARIABLE's type from a PHPDoc @var VALUE, or nil."
+  (when (string-match
+         (concat "\\$" (regexp-quote variable) "\\b") value)
+    (let ((type (s-trim (substring value 0 (match-beginning 0)))))
+      (unless (string= type "") type))))
+
+(defun ac-php--phpdoc-variable-type-at-point (variable pos)
+  "Return VARIABLE's nearest PHPDoc @var type visible at POS."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let* ((in-function-p (ac-php--in-function-p pos))
+             (bound
+              (if in-function-p
+                  (save-excursion
+                    (goto-char pos)
+                    (ac-php--beginning-of-defun)
+                    (line-beginning-position))
+                (point-min))))
+        (catch 'type
+          (while (re-search-backward "/\\*\\*" bound t)
+            (let ((start (point)))
+              (when (or in-function-p
+                        (not (ac-php--in-function-p start)))
+                (save-excursion
+                  (when (search-forward "*/" pos t)
+                    (let ((end (point)))
+                      (when (nth 4 (syntax-ppss
+                                    (min (1- end) (+ start 3))))
+                        (dolist
+                            (value
+                             (ac-php--phpdoc-tag-values
+                              (ac-php--phpdoc-content start end) "var"))
+                          (let ((type
+                                 (ac-php--phpdoc-variable-type-from-value
+                                  value variable)))
+                            (when type (throw 'type type)))))))))))
+          nil)))))
+
+;;;; Source buffer access
+
+;; Reuse unsaved user buffers or bounded private analysis buffers.
+;; All cross-file PHPDoc reads enter through this source access layer.
+
+(defvar ac-php--source-buffers (make-hash-table :test #'equal)
+  "Bounded cache of private PHP source buffers and their file signatures.")
+
+(defvar ac-php--source-buffers-in-use nil
+  "Private source buffers protected from eviction during nested imports.")
+
+(defun ac-php--call-with-source (file function)
+  "Call FUNCTION in FILE's live user buffer or a cached private PHP buffer.
+Disk changes invalidate private buffers.  Unsaved user buffers take priority.
+Private analysis buffers never execute user major-mode hooks."
+  (when file
+    (let* ((key (expand-file-name file))
+           (user-buffer (get-file-buffer key))
+           (signature (unless user-buffer (ac-php--tags-file-signature key)))
+           (entry (gethash key ac-php--source-buffers))
+           (buffer user-buffer))
+      (unless user-buffer
+        (if (and signature (equal signature (car entry))
+                 (buffer-live-p (cdr entry)))
+            (setq buffer (cdr entry))
+          (when (buffer-live-p (cdr entry)) (kill-buffer (cdr entry)))
+          (remhash key ac-php--source-buffers)
+          (when (and signature (file-readable-p key))
+            (setq buffer (generate-new-buffer " *ac-php-source*"))
+            (condition-case error-data
+                (with-current-buffer buffer
+                  (insert-file-contents key)
+                  (setq default-directory (file-name-directory key))
+                  (unless (fboundp 'php-mode) (require 'php-mode))
+                  (delay-mode-hooks (php-mode))
+                  (set-buffer-modified-p nil)
+                  (puthash key (cons signature buffer) ac-php--source-buffers))
+              (error (kill-buffer buffer)
+                     (signal (car error-data) (cdr error-data)))))))
+      (when (buffer-live-p buffer)
+        (let ((ac-php--source-buffers-in-use
+               (cons buffer ac-php--source-buffers-in-use)))
+          ;; Bound retained source memory without evicting nested import calls.
+          (when (> (hash-table-count ac-php--source-buffers) 32)
+            (let (victim)
+              (maphash (lambda (name cached)
+                         (unless (or victim
+                                     (memq (cdr cached) ac-php--source-buffers-in-use))
+                           (setq victim name)))
+                       ac-php--source-buffers)
+              (when victim
+                (kill-buffer (cdr (gethash victim ac-php--source-buffers)))
+                (remhash victim ac-php--source-buffers))))
+          (with-current-buffer buffer
+            (save-excursion
+              (save-restriction
+                (widen)
+                (let ((buffer-file-name key))
+                  (funcall function))))))))))
+
+(defun ac-php--tag-source-file (tags-data tag)
+  "Return TAG's source filename from TAGS-DATA, or nil."
+  (when (and tag (> (length tag) 3))
+    (let ((location (aref tag 3))
+          (file-list (ac-php-g--file-list tags-data)))
+      (when (and (stringp location)
+                 (string-match "\\`\\([0-9]+\\):" location))
+        (let ((index (string-to-number (match-string 1 location))))
+          (when (< index (length file-list))
+            (let ((file (aref file-list index)))
+              (if (file-name-absolute-p file)
+                  file
+                (expand-file-name file (ac-php-g--project-root-dir tags-data))))))))))
+
+;;;; PHPStan aliases, imports and type references
 
 (defconst ac-php--phpstan-class-pattern
   (concat "\\_<\\(?:class\\|trait\\|interface\\|enum\\)\\_>[ \t\n\r]+"
@@ -3150,61 +2888,6 @@ Quoted literals, shape keys, class names and class constants are preserved."
       (setq index (1+ index)))
     (push (substring type start) parts)
     (apply #'concat (nreverse parts))))
-
-(defvar ac-php--source-buffers (make-hash-table :test #'equal)
-  "Bounded cache of private PHP source buffers and their file signatures.")
-
-(defvar ac-php--source-buffers-in-use nil
-  "Private source buffers protected from eviction during nested imports.")
-
-(defun ac-php--call-with-source (file function)
-  "Call FUNCTION in FILE's live user buffer or a cached private PHP buffer.
-Disk changes invalidate private buffers.  Unsaved user buffers take priority.
-Private analysis buffers never execute user major-mode hooks."
-  (when file
-    (let* ((key (expand-file-name file))
-           (user-buffer (get-file-buffer key))
-           (signature (unless user-buffer (ac-php--tags-file-signature key)))
-           (entry (gethash key ac-php--source-buffers))
-           (buffer user-buffer))
-      (unless user-buffer
-        (if (and signature (equal signature (car entry))
-                 (buffer-live-p (cdr entry)))
-            (setq buffer (cdr entry))
-          (when (buffer-live-p (cdr entry)) (kill-buffer (cdr entry)))
-          (remhash key ac-php--source-buffers)
-          (when (and signature (file-readable-p key))
-            (setq buffer (generate-new-buffer " *ac-php-source*"))
-            (condition-case error-data
-                (with-current-buffer buffer
-                  (insert-file-contents key)
-                  (setq default-directory (file-name-directory key))
-                  (unless (fboundp 'php-mode) (require 'php-mode))
-                  (delay-mode-hooks (php-mode))
-                  (set-buffer-modified-p nil)
-                  (puthash key (cons signature buffer) ac-php--source-buffers))
-              (error (kill-buffer buffer)
-                     (signal (car error-data) (cdr error-data)))))))
-      (when (buffer-live-p buffer)
-        (let ((ac-php--source-buffers-in-use
-               (cons buffer ac-php--source-buffers-in-use)))
-          ;; Bound retained source memory without evicting nested import calls.
-          (when (> (hash-table-count ac-php--source-buffers) 32)
-            (let (victim)
-              (maphash (lambda (name cached)
-                         (unless (or victim
-                                     (memq (cdr cached) ac-php--source-buffers-in-use))
-                           (setq victim name)))
-                       ac-php--source-buffers)
-              (when victim
-                (kill-buffer (cdr (gethash victim ac-php--source-buffers)))
-                (remhash victim ac-php--source-buffers))))
-          (with-current-buffer buffer
-            (save-excursion
-              (save-restriction
-                (widen)
-                (let ((buffer-file-name key))
-                  (funcall function))))))))))
 
 (defun ac-php--phpstan-source-aliases
     (class-name tags-data aliases scopes &optional locations)
@@ -3429,6 +3112,8 @@ variables, qualified class names and class constants."
                     name (gethash name aliases)))
             (when location
               (list "phpstan_type" location (plist-get context :name)))))))))
+
+;;;; Type expressions, array shapes and delimiters
 
 (defun ac-php--split-top-level-type (text delimiter)
   "Split TEXT on top-level DELIMITER characters.
@@ -3671,6 +3356,425 @@ Each field is represented by a cons cell (KEY . TYPE)."
             (puthash (car field) field index)
             (push field fields)))))
     (nreverse fields)))
+
+(defun ac-php--matching-delimiter-in-string (text open opening closing)
+  "Return the CLOSING delimiter in TEXT matching OPEN, or nil.
+OPENING and CLOSING are characters.  Ignore delimiters in quoted strings."
+  (let ((index (1+ open)) (depth 1) (length (length text))
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character opening) (setq depth (1+ depth)))
+         ((eq character closing)
+          (setq depth (1- depth))
+          (when (= depth 0)
+            (setq result index)))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--matching-parenthesis-in-string (text open)
+  "Return the closing parenthesis in TEXT matching OPEN, or nil."
+  (ac-php--matching-delimiter-in-string text open ?\( ?\)))
+
+(defun ac-php--matching-angle-bracket-in-string (text open)
+  "Return the closing angle bracket in TEXT matching OPEN, or nil."
+  (ac-php--matching-delimiter-in-string text open ?< ?>))
+
+(defun ac-php--parameter-type-from-declaration (declaration)
+  "Return the type preceding the parameter variable in DECLARATION."
+  (when (and declaration
+             (string-match
+              "\\$[[:alpha:]_][[:alnum:]_]*\\b" declaration))
+    (let ((type (s-trim (substring declaration 0 (match-beginning 0)))))
+      (setq type
+            (replace-regexp-in-string
+             "[ \t]*\\(?:&\\|[.][.][.]\\)[ \t]*\\'" "" type))
+      (unless (string= type "") type))))
+
+(defun ac-php--string-literals-from-type (type)
+  "Return string literal alternatives declared by PHPDoc TYPE."
+  (let (literals)
+    (when (stringp type)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let ((alternative (s-trim alternative)) value)
+          (cond
+           ((string-match "\\`'\\([^']*\\)'\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match "\\`\"\\([^\"]*\\)\"\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*'\\([^']*\\)'[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*\"\\([^\"]*\\)\"[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative))))
+          (when (and value (not (member value literals)))
+            (push value literals)))))
+    (nreverse literals)))
+
+;;;; Callable declarations, signatures and parameter types
+
+;; These callable queries are shared by array-key, string-literal and
+;; named-argument completion rather than owned by any one completion feature.
+
+(defun ac-php-gen-el-func (doc)
+  "Example doc \"xxx($x1,$x2)\" => $x1 , $x2 DOC."
+  (let (func-str)
+    (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
+        (progn
+          (setq func-str (s-trim (match-string 1 doc)))
+          (setq func-str (replace-regexp-in-string "[\t ]*,[\t ]*" "," func-str))
+          (setq func-str (replace-regexp-in-string "[\t ]+" " " func-str)))
+      "")))
+
+(defun ac-php--callable-tag (tags-data open)
+  "Resolve the function, method or constructor called at OPEN in TAGS-DATA."
+  (save-excursion
+    (goto-char open)
+    (forward-comment (- (buffer-size)))
+    (let ((name-end (point)))
+      (skip-chars-backward "a-zA-Z0-9_\\\\")
+      (let* ((name-start (point))
+             (name (buffer-substring-no-properties name-start name-end))
+             (function-map (ac-php-g--function-map tags-data))
+             (previous-word
+              (save-excursion
+                (forward-comment (- (buffer-size)))
+                (when (eq (char-before) ?&)
+                  (backward-char)
+                  (forward-comment (- (buffer-size))))
+                (let ((word-end (point)))
+                  (skip-chars-backward "a-zA-Z_")
+                  (downcase (buffer-substring-no-properties
+                             (point) word-end)))))
+             (constructor-p (string= previous-word "new")))
+        (when (and (not (string= name ""))
+                   (not (eq (char-before name-start) ?$))
+                   (not (member previous-word '("function" "fn"))))
+          (goto-char name-end)
+          (let ((chain (unless constructor-p
+                         (ac-php-get-class-at-point tags-data))))
+            (if chain
+                (let ((class-name
+                       (ac-php-get-class-name-by-key-list
+                        tags-data (replace-regexp-in-string
+                                   "\\.[^.]*$" "" chain))))
+                  (ac-php-get-class-member-info
+                   (ac-php-g--class-map tags-data)
+                   (ac-php-g--inherit-map tags-data)
+                   class-name (concat name "(") tags-data))
+              (let* ((class-name
+                      (when constructor-p
+                        (if (member (downcase name) '("self" "static" "parent"))
+                            (ac-php-get-class-name-by-key-list
+                             tags-data
+                             (concat (ac-php-get-cur-full-class-name)
+                                     (if (string= (downcase name) "parent")
+                                         ".__parent__" "")))
+                          (ac-php--get-class-full-name-in-cur-buffer
+                           name function-map nil))))
+                     (full-name
+                      (ac-php--get-class-full-name-in-cur-buffer
+                       (concat (or class-name name) "(") function-map nil)))
+                (or (and full-name (gethash full-name function-map))
+                    (and class-name
+                         (ac-php-get-class-member-info
+                          (ac-php-g--class-map tags-data)
+                          (ac-php-g--inherit-map tags-data)
+                          class-name "__construct(" tags-data)))))))))))
+
+(defun ac-php--signature-parameters (signature)
+  "Return (NAME . DECLARATION) pairs from a tagged PHP SIGNATURE."
+  (when (and (stringp signature) (not (string= signature "")))
+    (let ((table (syntax-table)))
+      (with-temp-buffer
+        (set-syntax-table table)
+        (insert (ac-php-clean-document signature))
+        (let (parameters)
+          (dolist (range (ac-php--argument-ranges (point-min) (point-max)))
+            (let ((declaration (s-trim (ac-php--code-without-comments
+                                      (car range) (cdr range)))))
+              (when (string-match
+                     "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" declaration)
+                (push (cons (match-string 1 declaration) declaration)
+                      parameters))))
+          (nreverse parameters))))))
+
+(defun ac-php--phpdoc-template-bounds (declarations)
+  "Return (TEMPLATE . BOUND) pairs from method template DECLARATIONS."
+  (let (bounds)
+    (when declarations
+      (dolist (declaration
+               (ac-php--split-top-level-type declarations ?,))
+        (let ((declaration (s-trim declaration)))
+          (when (string-match
+                 (concat
+                  "\\`\\([[:alpha:]_][[:alnum:]_]*\\)"
+                  "[ \t\n\r]+\\(?:of\\|as\\)[ \t\n\r]+\\(.+\\)\\'")
+                 declaration)
+            (push (cons (match-string 1 declaration)
+                        (s-trim (match-string 2 declaration)))
+                  bounds)))))
+    (nreverse bounds)))
+
+(defun ac-php--phpdoc-method-info-from-value (value name index)
+  "Return parameter INDEX information for @method VALUE named NAME.
+The result contains the parameter type and any inline method template bounds."
+  (let ((pattern (concat "\\_<" (regexp-quote name) "\\_>"))
+        (scan 0))
+    (catch 'info
+      (while (string-match pattern value scan)
+        (let ((cursor (match-end 0)) templates)
+          (setq scan cursor)
+          (while (and (< cursor (length value))
+                      (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+            (setq cursor (1+ cursor)))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?<))
+            (let ((close
+                   (ac-php--matching-angle-bracket-in-string value cursor)))
+              (when close
+                (setq templates (substring value (1+ cursor) close)
+                      cursor (1+ close))
+                (while (and (< cursor (length value))
+                            (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+                  (setq cursor (1+ cursor))))))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?\())
+            (let ((close
+                   (ac-php--matching-parenthesis-in-string value cursor)))
+              (when close
+                (let* ((parameter
+                        (nth index
+                             (ac-php--split-top-level-type
+                              (substring value (1+ cursor) close) ?,)))
+                       (type
+                        (ac-php--parameter-type-from-declaration parameter)))
+                  (when parameter
+                    (throw 'info
+                           (list :type type
+                                 :templates
+                                 (ac-php--phpdoc-template-bounds templates))))))))))
+      nil)))
+
+(defun ac-php--phpdoc-method-parameter-info (name index)
+  "Return @method NAME's parameter information at INDEX in this buffer."
+  (catch 'info
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
+      (let ((info
+             (ac-php--phpdoc-method-info-from-value value name index)))
+        (when info (throw 'info info))))
+    nil))
+
+(defun ac-php--phpdoc-method-parameter-type (name index)
+  "Return @method NAME's parameter type at zero-based INDEX in this buffer."
+  (plist-get (ac-php--phpdoc-method-parameter-info name index) :type))
+
+(defun ac-php--callable-name-before-open (open)
+  "Return the callable identifier immediately before parenthesis OPEN."
+  (save-excursion
+    (goto-char open)
+    (forward-comment (- (buffer-size)))
+    (let ((end (point)))
+      (skip-chars-backward "a-zA-Z0-9_\\")
+      (when (and (< (point) end)
+                 (not (eq (char-before) ?$)))
+        (buffer-substring-no-properties (point) end)))))
+
+(defun ac-php--local-callable-scope (name pos tags-data open)
+  "Return (KIND . OWNER) identifying callable NAME near POS and OPEN."
+  (save-excursion
+    (goto-char (or open pos))
+    (let* ((identifier (and open (ac-php--chain-identifier-before open (point-min))))
+           (operator (and identifier
+                          (ac-php--chain-operator-before
+                           (plist-get identifier :start) (point-min)))))
+      (if operator
+          (let* ((tag (and tags-data (ac-php--callable-tag tags-data open)))
+                 (receiver (ac-php--chain-identifier-before
+                            (cdr operator) (point-min)))
+                 (receiver-name (plist-get receiver :name))
+                 (class
+                  (or (and tag (> (length tag) 5) (aref tag 5))
+                      (and (member receiver-name '("this" "self" "static"))
+                           (ac-php-get-cur-full-class-name))
+                      (and (eq (plist-get receiver :kind) 'variable)
+                           (or (ac-php-get-annotated-var-class receiver-name (point))
+                               (ac-php--get-type-hinted-variable-class
+                                receiver-name (point))))
+                      (and (equal (car operator) "::") receiver-name))))
+            (cons 'method (if class (ac-php--phpstan-import-class-name class)
+                            :unknown)))
+        (let* ((parts (split-string name "\\\\" t))
+               (qualified (or (string-prefix-p "\\" name) (cdr parts)))
+               (namespace (if qualified
+                              (concat "\\" (mapconcat #'identity (butlast parts) "\\")
+                                      (if (cdr parts) "\\" ""))
+                            (ac-php-get-cur-namespace-name))))
+          (cons 'function namespace))))))
+
+(defun ac-php--local-callable-declaration (name pos &optional tags-data open)
+  "Return NAME's declaration in the actual callable scope at POS and OPEN.
+TAGS-DATA can identify an inherited method's declaring class."
+  (save-match-data
+    (save-excursion
+      (let* ((scope (ac-php--local-callable-scope name pos tags-data open))
+             (owner (cdr scope))
+             (short-name (car (last (split-string name "\\\\" t))))
+             (pattern (concat "\\_<function\\_>[ \t\n\r]+&?[ \t\n\r]*"
+                              (regexp-quote short-name) "[ \t\n\r]*("))
+             declaration fallback)
+        (goto-char (point-min))
+        (while (and (not declaration) (re-search-forward pattern nil t))
+          (let ((start (match-beginning 0)))
+            (unless (ac-php--in-string-or-comment-p start)
+              (let ((class (ac-php--phpstan-current-class-name)))
+                (cond
+                 ((eq (car scope) 'method)
+                  (when (and (stringp owner) class
+                             (string-equal (downcase owner) (downcase class)))
+                    (setq declaration start)))
+                 ((not class)
+                  (let ((namespace (ac-php-get-cur-namespace-name)))
+                    (if (equal namespace owner)
+                        (setq declaration start)
+                      (when (string= namespace "") (setq fallback start))))))))))
+        (or declaration
+            (and (eq (car scope) 'function)
+                 (not (string-match-p "\\\\" name)) fallback))))))
+
+(defun ac-php--local-declaration-parameter-names (declaration)
+  "Return parameter names in source order for DECLARATION."
+  (save-match-data
+    (save-excursion
+      (goto-char declaration)
+      (when (re-search-forward "(" nil t)
+        (let* ((open (1- (point)))
+               (close (condition-case nil (scan-sexps open 1)
+                        (scan-error nil)))
+               parameters)
+          (when close
+            (dolist (range
+                     (ac-php--argument-ranges (1+ open) (1- close)))
+              (goto-char (car range))
+              (if (re-search-forward
+                   "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" (cdr range) t)
+                  (push (match-string-no-properties 1) parameters)
+                (push nil parameters)))
+            (nreverse parameters)))))))
+
+(defun ac-php--phpdoc-parameter-type-at-point (variable pos)
+  "Return the PHPDoc type of VARIABLE in the function containing POS."
+  (save-excursion
+    (goto-char pos)
+    (when (ac-php--beginning-of-defun)
+      (cdr (assoc variable
+                  (ac-php--phpdoc-parameter-types
+                   (or (ac-php--phpdoc-before-line (point)) "")))))))
+
+(defun ac-php--local-callable-parameter-type (name index pos &optional tags-data open)
+  "Return local callable NAME's PHPDoc parameter type at zero-based INDEX."
+  (let ((declaration (ac-php--local-callable-declaration name pos tags-data open)))
+    (when declaration
+      (let* ((parameter-name
+              (nth index
+                   (ac-php--local-declaration-parameter-names declaration)))
+             (parameters
+              (ac-php--phpdoc-parameter-types
+               (or (ac-php--phpdoc-before-line declaration) ""))))
+        (cdr (assoc parameter-name parameters))))))
+
+(defun ac-php--phpdoc-method-parameter-type-in-file (file name index)
+  "Return @method NAME's parameter type at INDEX from FILE."
+  (plist-get
+   (ac-php--phpdoc-method-parameter-info-in-file file name index) :type))
+
+(defun ac-php--phpdoc-method-parameter-info-in-file (file name index)
+  "Return @method NAME's parameter information at INDEX from FILE."
+  (ac-php--call-with-source
+   file (lambda () (ac-php--phpdoc-method-parameter-info name index))))
+
+(defun ac-php--tagged-callable-parameter-type (tags-data context)
+  "Return CONTEXT's parameter type from indexed TAGS-DATA or its source."
+  (when (and tags-data (plist-get context :call-open))
+    (let* ((tag (ac-php--callable-tag
+                 tags-data (plist-get context :call-open)))
+           (index (plist-get context :argument-index))
+           (typed-parameter
+            (and tag (> (length tag) 8)
+                 (nth index (ac-php--signature-parameters (aref tag 8)))))
+           (parameter
+            (and tag (> (length tag) 2)
+                 (nth index (ac-php--signature-parameters (aref tag 2)))))
+           (type
+            (ac-php--parameter-type-from-declaration
+             (cdr (or typed-parameter parameter)))))
+      (or type
+          (and tag
+               (ac-php--phpdoc-method-parameter-type-in-file
+                (ac-php--tag-source-file tags-data tag)
+                (plist-get context :callable) index))))))
+
+(defun ac-php--local-callable-return-type (name pos &optional tags-data open)
+  "Return the PHPDoc return type of local callable NAME visible at POS."
+  (let ((declaration (ac-php--local-callable-declaration name pos tags-data open)))
+    (when declaration
+      (car (ac-php--phpdoc-tag-values
+            (or (ac-php--phpdoc-before-line declaration) "")
+            "return")))))
+
+(defun ac-php--assignment-return-type (assignment tags-data)
+  "Infer ASSIGNMENT's result call from its original buffer using TAGS-DATA.
+Inspect the final complete call rather than a nested argument.  Original
+positions remain valid even when comments were removed from :text."
+  (save-match-data
+    (save-excursion
+      (goto-char (plist-get assignment :end))
+      (forward-comment (- (buffer-size)))
+      (let ((bound (plist-get assignment :start)) open name)
+        (while (and (> (point) bound) (eq (char-before) ?\)) (not name))
+          (setq open (condition-case nil (scan-sexps (point) -1)
+                       (scan-error nil)))
+          (if (not open)
+              (goto-char bound)
+            (setq name (ac-php--callable-name-before-open open))
+            (unless name
+              ;; Unwrap a grouped result expression such as (outer(inner())).
+              (backward-char)
+              (forward-comment (- (buffer-size))))))
+        (when name
+          (or (ac-php--local-callable-return-type
+               name open tags-data open)
+              (and tags-data
+                   (let ((tag (ac-php--callable-tag tags-data open)))
+                     (and tag (aref tag 4))))))))))
+
+(defun ac-php--tagged-phpdoc-method-parameter-info (tags-data context)
+  "Return source PHPDoc method information for indexed call CONTEXT."
+  (when (and tags-data (plist-get context :call-open))
+    (let ((tag (ac-php--callable-tag
+                tags-data (plist-get context :call-open))))
+      (and tag
+           (ac-php--phpdoc-method-parameter-info-in-file
+            (ac-php--tag-source-file tags-data tag)
+            (plist-get context :callable)
+            (plist-get context :argument-index))))))
+
+;;; Completion
+
+;;;; Array contexts, variable types and key insertion
+
+;; Keep context discovery, type inference, candidate metadata and the
+;; corresponding insertion helper together for each completion feature.
 
 (defun ac-php--array-literal-key-position-p (open string-start)
   "Return non-nil when STRING-START begins a key slot in array OPEN."
@@ -3952,387 +4056,6 @@ The result records both the right-hand-side text and its buffer start."
                 (goto-char assignment-start)))))
         result))))
 
-(defun ac-php--phpdoc-before-line (pos)
-  "Return normalized PHPDoc immediately preceding the line at POS."
-  (save-excursion
-    (goto-char pos)
-    (beginning-of-line)
-    (skip-chars-backward " \t\n\r")
-    (when (and (>= (- (point) (point-min)) 2)
-               (string= (buffer-substring-no-properties (- (point) 2) (point))
-                        "*/"))
-      (let ((end (point)))
-        (when (search-backward "/**" nil t)
-          (ac-php--phpdoc-content (point) end))))))
-
-(defun ac-php--phpdoc-parameter-types (content)
-  "Return (PARAMETER . TYPE) pairs from normalized PHPDoc CONTENT."
-  (let (parameters)
-    (dolist (value (ac-php--phpdoc-tag-values content "param"))
-      (when (string-match
-             "\\$\\([[:alpha:]_][[:alnum:]_]*\\)\\b" value)
-        (let ((name (match-string 1 value))
-              (type (s-trim (substring value 0 (match-beginning 0)))))
-          (when (not (string= type ""))
-            (push (cons name type) parameters)))))
-    (nreverse parameters)))
-
-(defun ac-php--matching-parenthesis-in-string (text open)
-  "Return the closing parenthesis in TEXT matching OPEN, or nil."
-  (let ((index (1+ open)) (depth 1) (length (length text))
-        quote escaped result)
-    (while (and (< index length) (not result))
-      (let ((character (aref text index)))
-        (cond
-         (quote
-          (cond
-           (escaped (setq escaped nil))
-           ((eq character ?\\) (setq escaped t))
-           ((eq character quote) (setq quote nil))))
-         ((memq character '(?\' ?\")) (setq quote character))
-         ((eq character ?\() (setq depth (1+ depth)))
-         ((eq character ?\))
-          (setq depth (1- depth))
-          (when (= depth 0)
-            (setq result index)))))
-      (setq index (1+ index)))
-    result))
-
-(defun ac-php--matching-angle-bracket-in-string (text open)
-  "Return the closing angle bracket in TEXT matching OPEN, or nil."
-  (let ((index (1+ open)) (depth 1) (length (length text))
-        quote escaped result)
-    (while (and (< index length) (not result))
-      (let ((character (aref text index)))
-        (cond
-         (quote
-          (cond
-           (escaped (setq escaped nil))
-           ((eq character ?\\) (setq escaped t))
-           ((eq character quote) (setq quote nil))))
-         ((memq character '(?\' ?\")) (setq quote character))
-         ((eq character ?<) (setq depth (1+ depth)))
-         ((eq character ?>)
-          (setq depth (1- depth))
-          (when (= depth 0)
-            (setq result index)))))
-      (setq index (1+ index)))
-    result))
-
-(defun ac-php--phpdoc-template-bounds (declarations)
-  "Return (TEMPLATE . BOUND) pairs from method template DECLARATIONS."
-  (let (bounds)
-    (when declarations
-      (dolist (declaration
-               (ac-php--split-top-level-type declarations ?,))
-        (let ((declaration (s-trim declaration)))
-          (when (string-match
-                 (concat
-                  "\\`\\([[:alpha:]_][[:alnum:]_]*\\)"
-                  "[ \t\n\r]+\\(?:of\\|as\\)[ \t\n\r]+\\(.+\\)\\'")
-                 declaration)
-            (push (cons (match-string 1 declaration)
-                        (s-trim (match-string 2 declaration)))
-                  bounds)))))
-    (nreverse bounds)))
-
-(defun ac-php--phpdoc-method-info-from-value (value name index)
-  "Return parameter INDEX information for @method VALUE named NAME.
-The result contains the parameter type and any inline method template bounds."
-  (let ((pattern (concat "\\_<" (regexp-quote name) "\\_>"))
-        (scan 0))
-    (catch 'info
-      (while (string-match pattern value scan)
-        (let ((cursor (match-end 0)) templates)
-          (setq scan cursor)
-          (while (and (< cursor (length value))
-                      (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
-            (setq cursor (1+ cursor)))
-          (when (and (< cursor (length value))
-                     (eq (aref value cursor) ?<))
-            (let ((close
-                   (ac-php--matching-angle-bracket-in-string value cursor)))
-              (when close
-                (setq templates (substring value (1+ cursor) close)
-                      cursor (1+ close))
-                (while (and (< cursor (length value))
-                            (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
-                  (setq cursor (1+ cursor))))))
-          (when (and (< cursor (length value))
-                     (eq (aref value cursor) ?\())
-            (let ((close
-                   (ac-php--matching-parenthesis-in-string value cursor)))
-              (when close
-                (let* ((parameter
-                        (nth index
-                             (ac-php--split-top-level-type
-                              (substring value (1+ cursor) close) ?,)))
-                       (type
-                        (ac-php--parameter-type-from-declaration parameter)))
-                  (when parameter
-                    (throw 'info
-                           (list :type type
-                                 :templates
-                                 (ac-php--phpdoc-template-bounds templates))))))))))
-      nil)))
-
-(defun ac-php--parameter-type-from-declaration (declaration)
-  "Return the type preceding the parameter variable in DECLARATION."
-  (when (and declaration
-             (string-match
-              "\\$[[:alpha:]_][[:alnum:]_]*\\b" declaration))
-    (let ((type (s-trim (substring declaration 0 (match-beginning 0)))))
-      (setq type
-            (replace-regexp-in-string
-             "[ \t]*\\(?:&\\|[.][.][.]\\)[ \t]*\\'" "" type))
-      (unless (string= type "") type))))
-
-(defun ac-php--phpdoc-method-parameter-info (name index)
-  "Return @method NAME's parameter information at INDEX in this buffer."
-  (catch 'info
-    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
-      (let ((info
-             (ac-php--phpdoc-method-info-from-value value name index)))
-        (when info (throw 'info info))))
-    nil))
-
-(defun ac-php--phpdoc-method-parameter-type (name index)
-  "Return @method NAME's parameter type at zero-based INDEX in this buffer."
-  (plist-get (ac-php--phpdoc-method-parameter-info name index) :type))
-
-(defun ac-php--local-callable-scope (name pos tags-data open)
-  "Return (KIND . OWNER) identifying callable NAME near POS and OPEN."
-  (save-excursion
-    (goto-char (or open pos))
-    (let* ((identifier (and open (ac-php--chain-identifier-before open (point-min))))
-           (operator (and identifier
-                          (ac-php--chain-operator-before
-                           (plist-get identifier :start) (point-min)))))
-      (if operator
-          (let* ((tag (and tags-data (ac-php--callable-tag tags-data open)))
-                 (receiver (ac-php--chain-identifier-before
-                            (cdr operator) (point-min)))
-                 (receiver-name (plist-get receiver :name))
-                 (class
-                  (or (and tag (> (length tag) 5) (aref tag 5))
-                      (and (member receiver-name '("this" "self" "static"))
-                           (ac-php-get-cur-full-class-name))
-                      (and (eq (plist-get receiver :kind) 'variable)
-                           (or (ac-php-get-annotated-var-class receiver-name (point))
-                               (ac-php--get-type-hinted-variable-class
-                                receiver-name (point))))
-                      (and (equal (car operator) "::") receiver-name))))
-            (cons 'method (if class (ac-php--phpstan-import-class-name class)
-                            :unknown)))
-        (let* ((parts (split-string name "\\\\" t))
-               (qualified (or (string-prefix-p "\\" name) (cdr parts)))
-               (namespace (if qualified
-                              (concat "\\" (mapconcat #'identity (butlast parts) "\\")
-                                      (if (cdr parts) "\\" ""))
-                            (ac-php-get-cur-namespace-name))))
-          (cons 'function namespace))))))
-
-(defun ac-php--local-callable-declaration (name pos &optional tags-data open)
-  "Return NAME's declaration in the actual callable scope at POS and OPEN.
-TAGS-DATA can identify an inherited method's declaring class."
-  (save-match-data
-    (save-excursion
-      (let* ((scope (ac-php--local-callable-scope name pos tags-data open))
-             (owner (cdr scope))
-             (short-name (car (last (split-string name "\\\\" t))))
-             (pattern (concat "\\_<function\\_>[ \t\n\r]+&?[ \t\n\r]*"
-                              (regexp-quote short-name) "[ \t\n\r]*("))
-             declaration fallback)
-        (goto-char (point-min))
-        (while (and (not declaration) (re-search-forward pattern nil t))
-          (let ((start (match-beginning 0)))
-            (unless (ac-php--in-string-or-comment-p start)
-              (let ((class (ac-php--phpstan-current-class-name)))
-                (cond
-                 ((eq (car scope) 'method)
-                  (when (and (stringp owner) class
-                             (string-equal (downcase owner) (downcase class)))
-                    (setq declaration start)))
-                 ((not class)
-                  (let ((namespace (ac-php-get-cur-namespace-name)))
-                    (if (equal namespace owner)
-                        (setq declaration start)
-                      (when (string= namespace "") (setq fallback start))))))))))
-        (or declaration
-            (and (eq (car scope) 'function)
-                 (not (string-match-p "\\\\" name)) fallback))))))
-
-(defun ac-php--callable-name-before-open (open)
-  "Return the callable identifier immediately before parenthesis OPEN."
-  (save-excursion
-    (goto-char open)
-    (forward-comment (- (buffer-size)))
-    (let ((end (point)))
-      (skip-chars-backward "a-zA-Z0-9_\\")
-      (when (and (< (point) end)
-                 (not (eq (char-before) ?$)))
-        (buffer-substring-no-properties (point) end)))))
-
-(defun ac-php--local-declaration-parameter-names (declaration)
-  "Return parameter names in source order for DECLARATION."
-  (save-match-data
-    (save-excursion
-      (goto-char declaration)
-      (when (re-search-forward "(" nil t)
-        (let* ((open (1- (point)))
-               (close (condition-case nil (scan-sexps open 1)
-                        (scan-error nil)))
-               parameters)
-          (when close
-            (dolist (range
-                     (ac-php--argument-ranges (1+ open) (1- close)))
-              (goto-char (car range))
-              (if (re-search-forward
-                   "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" (cdr range) t)
-                  (push (match-string-no-properties 1) parameters)
-                (push nil parameters)))
-            (nreverse parameters)))))))
-
-(defun ac-php--phpdoc-parameter-type-at-point (variable pos)
-  "Return the PHPDoc type of VARIABLE in the function containing POS."
-  (save-excursion
-    (goto-char pos)
-    (when (ac-php--beginning-of-defun)
-      (cdr (assoc variable
-                  (ac-php--phpdoc-parameter-types
-                   (or (ac-php--phpdoc-before-line (point)) "")))))))
-
-(defun ac-php--phpdoc-variable-type-from-value (value variable)
-  "Return VARIABLE's type from a PHPDoc @var VALUE, or nil."
-  (when (string-match
-         (concat "\\$" (regexp-quote variable) "\\b") value)
-    (let ((type (s-trim (substring value 0 (match-beginning 0)))))
-      (unless (string= type "") type))))
-
-(defun ac-php--phpdoc-variable-type-at-point (variable pos)
-  "Return VARIABLE's nearest PHPDoc @var type visible at POS."
-  (save-match-data
-    (save-excursion
-      (goto-char pos)
-      (let* ((in-function-p (ac-php--in-function-p pos))
-             (bound
-              (if in-function-p
-                  (save-excursion
-                    (goto-char pos)
-                    (ac-php--beginning-of-defun)
-                    (line-beginning-position))
-                (point-min))))
-        (catch 'type
-          (while (re-search-backward "/\\*\\*" bound t)
-            (let ((start (point)))
-              (when (or in-function-p
-                        (not (ac-php--in-function-p start)))
-                (save-excursion
-                  (when (search-forward "*/" pos t)
-                    (let ((end (point)))
-                      (when (nth 4 (syntax-ppss
-                                    (min (1- end) (+ start 3))))
-                        (dolist
-                            (value
-                             (ac-php--phpdoc-tag-values
-                              (ac-php--phpdoc-content start end) "var"))
-                          (let ((type
-                                 (ac-php--phpdoc-variable-type-from-value
-                                  value variable)))
-                            (when type (throw 'type type)))))))))))
-          nil)))))
-
-(defun ac-php--local-callable-parameter-type (name index pos &optional tags-data open)
-  "Return local callable NAME's PHPDoc parameter type at zero-based INDEX."
-  (let ((declaration (ac-php--local-callable-declaration name pos tags-data open)))
-    (when declaration
-      (let* ((parameter-name
-              (nth index
-                   (ac-php--local-declaration-parameter-names declaration)))
-             (parameters
-              (ac-php--phpdoc-parameter-types
-               (or (ac-php--phpdoc-before-line declaration) ""))))
-        (cdr (assoc parameter-name parameters))))))
-
-(defun ac-php--tag-source-file (tags-data tag)
-  "Return TAG's source filename from TAGS-DATA, or nil."
-  (when (and tag (> (length tag) 3))
-    (let ((location (aref tag 3))
-          (file-list (ac-php-g--file-list tags-data)))
-      (when (and (stringp location)
-                 (string-match "\\`\\([0-9]+\\):" location))
-        (let ((index (string-to-number (match-string 1 location))))
-          (when (< index (length file-list))
-            (let ((file (aref file-list index)))
-              (if (file-name-absolute-p file)
-                  file
-                (expand-file-name file (ac-php-g--project-root-dir tags-data))))))))))
-
-(defun ac-php--phpdoc-method-parameter-type-in-file (file name index)
-  "Return @method NAME's parameter type at INDEX from FILE."
-  (plist-get
-   (ac-php--phpdoc-method-parameter-info-in-file file name index) :type))
-
-(defun ac-php--phpdoc-method-parameter-info-in-file (file name index)
-  "Return @method NAME's parameter information at INDEX from FILE."
-  (ac-php--call-with-source
-   file (lambda () (ac-php--phpdoc-method-parameter-info name index))))
-
-(defun ac-php--tagged-callable-parameter-type (tags-data context)
-  "Return CONTEXT's parameter type from indexed TAGS-DATA or its source."
-  (when (and tags-data (plist-get context :call-open))
-    (let* ((tag (ac-php--callable-tag
-                 tags-data (plist-get context :call-open)))
-           (index (plist-get context :argument-index))
-           (typed-parameter
-            (and tag (> (length tag) 8)
-                 (nth index (ac-php--signature-parameters (aref tag 8)))))
-           (parameter
-            (and tag (> (length tag) 2)
-                 (nth index (ac-php--signature-parameters (aref tag 2)))))
-           (type
-            (ac-php--parameter-type-from-declaration
-             (cdr (or typed-parameter parameter)))))
-      (or type
-          (and tag
-               (ac-php--phpdoc-method-parameter-type-in-file
-                (ac-php--tag-source-file tags-data tag)
-                (plist-get context :callable) index))))))
-
-(defun ac-php--local-callable-return-type (name pos &optional tags-data open)
-  "Return the PHPDoc return type of local callable NAME visible at POS."
-  (let ((declaration (ac-php--local-callable-declaration name pos tags-data open)))
-    (when declaration
-      (car (ac-php--phpdoc-tag-values
-            (or (ac-php--phpdoc-before-line declaration) "")
-            "return")))))
-
-(defun ac-php--assignment-return-type (assignment tags-data)
-  "Infer ASSIGNMENT's result call from its original buffer using TAGS-DATA.
-Inspect the final complete call rather than a nested argument.  Original
-positions remain valid even when comments were removed from :text."
-  (save-match-data
-    (save-excursion
-      (goto-char (plist-get assignment :end))
-      (forward-comment (- (buffer-size)))
-      (let ((bound (plist-get assignment :start)) open name)
-        (while (and (> (point) bound) (eq (char-before) ?\)) (not name))
-          (setq open (condition-case nil (scan-sexps (point) -1)
-                       (scan-error nil)))
-          (if (not open)
-              (goto-char bound)
-            (setq name (ac-php--callable-name-before-open open))
-            (unless name
-              ;; Unwrap a grouped result expression such as (outer(inner())).
-              (backward-char)
-              (forward-comment (- (buffer-size))))))
-        (when name
-          (or (ac-php--local-callable-return-type
-               name open tags-data open)
-              (and tags-data
-                   (let ((tag (ac-php--callable-tag tags-data open)))
-                     (and tag (aref tag 4))))))))))
-
 (defun ac-php--array-expression-type
     (expression pos tags-data aliases seen)
   "Infer the type of variable offset EXPRESSION visible at POS."
@@ -4473,22 +4196,42 @@ CONTEXT may be supplied from `ac-php--array-key-context'."
                   candidates))))
       (nreverse candidates))))
 
-(defun ac-php--argument-ranges (start end)
-  "Split arguments between START and END at top-level commas.
-Return a list of (START . END) buffer positions, preserving empty arguments."
-  (save-excursion
-    (goto-char start)
-    (let ((depth (car (syntax-ppss start)))
-          (argument-start start)
-          ranges)
-      (while (search-forward "," end t)
-        (let* ((comma (1- (point)))
-               (state (save-excursion (syntax-ppss comma))))
-          (when (and (= (car state) depth)
-                     (not (nth 3 state)) (not (nth 4 state)))
-            (push (cons argument-start comma) ranges)
-            (setq argument-start (1+ comma)))))
-      (nreverse (cons (cons argument-start end) ranges)))))
+(defun ac-php--array-key-post-completion (candidate)
+  "Quote a bare array-key CANDIDATE just inserted before point.
+Add an array entry arrow unless one already follows the completed key.
+Replace an adjacent identifier suffix only when it precedes an existing arrow.
+Return non-nil when the candidate was handled."
+  (when (and (stringp candidate)
+             (> (length candidate) 0)
+             (eq (get-text-property 0 'ac-php-array-key-style candidate) 'bare)
+             (equal (get-text-property 0 'ac-php-tag-type candidate) "a"))
+    (let* ((key (substring-no-properties candidate))
+           (start (- (point) (length key))))
+      (when (and (>= start (point-min))
+                 (string= (buffer-substring-no-properties start (point)) key))
+        (let ((suffix-end
+               (save-excursion
+                 (let ((suffix-start (point)))
+                   (skip-chars-forward "a-zA-Z0-9_")
+                   (when (> (point) suffix-start)
+                     (let ((end (point)))
+                       (forward-comment (buffer-size))
+                       (when (looking-at "=>") end)))))))
+          (when suffix-end (delete-region (point) suffix-end)))
+        (delete-region start (point))
+        (insert "'" (s-replace "'" "\\'" (s-replace "\\" "\\\\" key)) "'")
+        (let ((arrow-end
+               (save-excursion
+                 (forward-comment (buffer-size))
+                 (when (looking-at "=>") (match-end 0)))))
+          (if arrow-end
+              (progn
+                (goto-char arrow-end)
+                (skip-chars-forward " \t"))
+            (insert " => ")))
+        t))))
+
+;;;; String literal arguments
 
 (defun ac-php--string-literal-argument-context (&optional pos)
   "Return direct string argument completion context at POS, or nil."
@@ -4521,40 +4264,6 @@ Return a list of (START . END) buffer positions, preserving empty arguments."
                     (buffer-substring-no-properties
                      (1+ string-start) target)
                     :call-open call-open))))))))
-
-(defun ac-php--string-literals-from-type (type)
-  "Return string literal alternatives declared by PHPDoc TYPE."
-  (let (literals)
-    (when (stringp type)
-      (dolist (alternative (ac-php--split-top-level-type type ?|))
-        (let ((alternative (s-trim alternative)) value)
-          (cond
-           ((string-match "\\`'\\([^']*\\)'\\'" alternative)
-            (setq value (match-string 1 alternative)))
-           ((string-match "\\`\"\\([^\"]*\\)\"\\'" alternative)
-            (setq value (match-string 1 alternative)))
-           ((string-match
-             "\\`string([ \t\n\r]*'\\([^']*\\)'[ \t\n\r]*)\\'"
-             alternative)
-            (setq value (match-string 1 alternative)))
-           ((string-match
-             "\\`string([ \t\n\r]*\"\\([^\"]*\\)\"[ \t\n\r]*)\\'"
-             alternative)
-            (setq value (match-string 1 alternative))))
-          (when (and value (not (member value literals)))
-            (push value literals)))))
-    (nreverse literals)))
-
-(defun ac-php--tagged-phpdoc-method-parameter-info (tags-data context)
-  "Return source PHPDoc method information for indexed call CONTEXT."
-  (when (and tags-data (plist-get context :call-open))
-    (let ((tag (ac-php--callable-tag
-                tags-data (plist-get context :call-open))))
-      (and tag
-           (ac-php--phpdoc-method-parameter-info-in-file
-            (ac-php--tag-source-file tags-data tag)
-            (plist-get context :callable)
-            (plist-get context :argument-index))))))
 
 (defun ac-php-candidate-string-literal (tags-data &optional context)
   "Return string literal argument candidates using TAGS-DATA.
@@ -4593,6 +4302,8 @@ CONTEXT may be supplied from `ac-php--string-literal-argument-context'."
             candidates))
     (nreverse candidates)))
 
+;;;; Named arguments and parameter definitions
+
 (defun ac-php--named-argument-context ()
   "Return the argument-name context at point, or nil.
 Only the beginning of an argument in the innermost parenthesized expression
@@ -4620,79 +4331,6 @@ is eligible; argument values, strings, comments and arrays are excluded."
                      "\\`\\(?:[[:alpha:]_][[:alnum:]_]*\\)?\\'" prefix)
                 (list :open open :current current :ranges ranges
                       :prefix prefix)))))))))
-
-(defun ac-php--callable-tag (tags-data open)
-  "Resolve the function, method or constructor called at OPEN in TAGS-DATA."
-  (save-excursion
-    (goto-char open)
-    (forward-comment (- (buffer-size)))
-    (let ((name-end (point)))
-      (skip-chars-backward "a-zA-Z0-9_\\\\")
-      (let* ((name-start (point))
-             (name (buffer-substring-no-properties name-start name-end))
-             (function-map (ac-php-g--function-map tags-data))
-             (previous-word
-              (save-excursion
-                (forward-comment (- (buffer-size)))
-                (when (eq (char-before) ?&)
-                  (backward-char)
-                  (forward-comment (- (buffer-size))))
-                (let ((word-end (point)))
-                  (skip-chars-backward "a-zA-Z_")
-                  (downcase (buffer-substring-no-properties
-                             (point) word-end)))))
-             (constructor-p (string= previous-word "new")))
-        (when (and (not (string= name ""))
-                   (not (eq (char-before name-start) ?$))
-                   (not (member previous-word '("function" "fn"))))
-          (goto-char name-end)
-          (let ((chain (unless constructor-p
-                         (ac-php-get-class-at-point tags-data))))
-            (if chain
-                (let ((class-name
-                       (ac-php-get-class-name-by-key-list
-                        tags-data (replace-regexp-in-string
-                                   "\\.[^.]*$" "" chain))))
-                  (ac-php-get-class-member-info
-                   (ac-php-g--class-map tags-data)
-                   (ac-php-g--inherit-map tags-data)
-                   class-name (concat name "(") tags-data))
-              (let* ((class-name
-                      (when constructor-p
-                        (if (member (downcase name) '("self" "static" "parent"))
-                            (ac-php-get-class-name-by-key-list
-                             tags-data
-                             (concat (ac-php-get-cur-full-class-name)
-                                     (if (string= (downcase name) "parent")
-                                         ".__parent__" "")))
-                          (ac-php--get-class-full-name-in-cur-buffer
-                           name function-map nil))))
-                     (full-name
-                      (ac-php--get-class-full-name-in-cur-buffer
-                       (concat (or class-name name) "(") function-map nil)))
-                (or (and full-name (gethash full-name function-map))
-                    (and class-name
-                         (ac-php-get-class-member-info
-                          (ac-php-g--class-map tags-data)
-                          (ac-php-g--inherit-map tags-data)
-                          class-name "__construct(" tags-data)))))))))))
-
-(defun ac-php--signature-parameters (signature)
-  "Return (NAME . DECLARATION) pairs from a tagged PHP SIGNATURE."
-  (when (and (stringp signature) (not (string= signature "")))
-    (let ((table (syntax-table)))
-      (with-temp-buffer
-        (set-syntax-table table)
-        (insert (ac-php-clean-document signature))
-        (let (parameters)
-          (dolist (range (ac-php--argument-ranges (point-min) (point-max)))
-            (let ((declaration (s-trim (ac-php--code-without-comments
-                                      (car range) (cdr range)))))
-              (when (string-match
-                     "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" declaration)
-                (push (cons (match-string 1 declaration) declaration)
-                      parameters))))
-          (nreverse parameters))))))
 
 (defun ac-php--named-argument-symbol (tags-data)
   "Return symbol information for a named argument label at point in TAGS-DATA."
@@ -4809,6 +4447,169 @@ is searched, excluding attributes, comments, literals and default values."
                         candidates))))
             (nreverse candidates)))))))
 
+;;;; General candidates and completion dispatch
+
+(defvar ac-php-prefix-str "")
+
+(defvar ac-php-extra-completion-functions nil
+  "Functions providing project-specific completion at point.
+
+Each function is called with TAGS-DATA, which is nil while a frontend asks
+only for a prefix.  It should return nil when inactive, or a plist containing
+`:prefix' and, when TAGS-DATA is non-nil, `:candidates'.  Candidate strings
+may carry the same text properties as regular ac-php candidates.")
+
+(defun ac-php-extra-completion-at-point (&optional tags-data)
+  "Return the first extra completion result at point using TAGS-DATA."
+  (save-excursion
+    (run-hook-with-args-until-success
+     'ac-php-extra-completion-functions tags-data)))
+
+(defun ac-php-candidate-class (tags-data key-str-list)
+  "Doc TAGS-DATA KEY-STR-LIST."
+  ;; 得到变量
+  (let (ret-list output-list class-name
+                 (class-map (ac-php-g--class-map tags-data))
+                 (inherit-map (ac-php-g--inherit-map tags-data)))
+    (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list))
+    (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
+
+    (setq output-list
+          (ac-php-get-class-member-list
+           class-map inherit-map class-name tags-data))
+    (ac-php--debug "22 class-name:%s output-list= %S" class-name output-list)
+    (dolist (member output-list)
+      (let* ((member-length (length member))
+             (member-kind
+              (ac-php--get-array-string member member-length 0))
+             (key-word (aref member 1)))
+        (when (and (string= member-kind "p")
+                   (string=
+                    (ac-php--get-array-string member member-length 7) "1"))
+          (setq key-word (concat "$" key-word)))
+
+        (ac-php--debug "ITEM:%S" member)
+        (push
+         (propertize
+          key-word
+          'ac-php-help (ac-php--get-array-string member member-length 2)
+          'ac-php-return-type (ac-php--get-array-string member member-length 4)
+          'ac-php-tag-type member-kind
+          'ac-php-access (ac-php--get-array-string member member-length 6)
+          'ac-php-static (ac-php--get-array-string member member-length 7)
+          'ac-php-from (ac-php--get-array-string member member-length 5)
+          'summary (ac-php--get-array-string member member-length 4))
+         ret-list)))
+
+    (ac-php--debug "ret-list = %S" ret-list)
+    ret-list))
+
+(defvar ac-php--function-prefix-indexes
+  (make-hash-table :test #'eq :weakness 'key)
+  "Sorted symbol indexes keyed weakly by tags generation.")
+
+(defun ac-php--function-prefix-matches (tags-data prefix &optional ignore-case)
+  "Return indexed tags matching PREFIX in TAGS-DATA.
+IGNORE-CASE controls exact filtering.  Preserve the original tag order."
+  (let* ((functions (ac-php-g--function-map tags-data))
+         (count (hash-table-count functions))
+         (cached (gethash tags-data ac-php--function-prefix-indexes))
+         (normalized (downcase prefix)))
+    (unless (and (eq functions (nth 0 cached)) (= count (or (nth 1 cached) -1)))
+      (let ((rank 0) entries)
+        (maphash (lambda (_ tag)
+                   (push (list (downcase (aref tag 1)) tag rank) entries)
+                   (setq rank (1+ rank)))
+                 functions)
+        (setq cached
+              (list functions count
+                    (vconcat (sort entries
+                                   (lambda (a b) (string-lessp (car a) (car b)))))))
+        (puthash tags-data cached ac-php--function-prefix-indexes)))
+    (let* ((index (nth 2 cached)) (low 0) (high (length index)) matches)
+      (while (< low high)
+        (let ((middle (/ (+ low high) 2)))
+          (if (string-lessp (car (aref index middle)) normalized)
+              (setq low (1+ middle))
+            (setq high middle))))
+      (while (and (< low (length index))
+                  (string-prefix-p normalized (car (aref index low))))
+        (let* ((entry (aref index low)) (tag (nth 1 entry)))
+          (when (or ignore-case (string-prefix-p prefix (aref tag 1)))
+            (push entry matches)))
+        (setq low (1+ low)))
+      (mapcar (lambda (entry) (nth 1 entry))
+              (sort matches (lambda (a b) (< (nth 2 a) (nth 2 b))))))))
+
+(defun ac-php--completion-string (text kind help return-type)
+  "Build completion TEXT with KIND, HELP and RETURN-TYPE metadata."
+  (propertize text 'ac-php-tag-type kind 'ac-php-help help
+              'ac-php-return-type return-type 'summary return-type))
+
+(defun ac-php--function-candidate (tag text)
+  "Convert TAG to a candidate inserting TEXT using the shared metadata."
+  (let ((length (length tag)))
+    (ac-php--completion-string
+     text (ac-php--get-array-string tag length 0)
+     (ac-php--get-array-string tag length 2)
+     (ac-php--get-array-string tag length 4))))
+
+(defun ac-php-candidate-other (tags-data)
+  "Return global, imported, namespace and local candidates from TAGS-DATA."
+  (let* ((word (ac-php-get-cur-word-without-clean))
+         (offset (- (length word) (length ac-php-prefix-str))) candidates)
+    (unless (string= word "")
+      (if (string-prefix-p "\\" word)
+          (dolist (tag (ac-php--function-prefix-matches tags-data word t))
+            (push (ac-php--function-candidate tag (aref tag 1)) candidates))
+        (let ((first (car (split-string word "\\\\"))))
+          (dolist (import (ac-php--get-all-use-as-name-in-cur-buffer))
+            (let ((target (car import)) (alias (nth 1 import)))
+              (if (string= first word)
+                  (when (string-prefix-p word alias t)
+                    (push (ac-php--completion-string
+                           (substring alias offset) target alias target)
+                          candidates))
+                (when (string= first alias)
+                  (let ((prefix (concat target (substring word (length first)))))
+                    (dolist (tag (ac-php--function-prefix-matches tags-data prefix t))
+                      (push (ac-php--function-candidate
+                             tag (concat word (substring (aref tag 1) (length prefix))))
+                            candidates)))))))
+          (dolist (keyword ac-php--php-key-list)
+            (when (and (string-prefix-p word keyword) (not (string= word keyword)))
+              (push (ac-php--completion-string keyword "k" "" "") candidates)))
+          (dolist (namespace (list (ac-php-get-cur-namespace-name) "\\"))
+            (dolist (tag (ac-php--function-prefix-matches
+                         tags-data (concat namespace word)))
+              (push (ac-php--function-candidate
+                     tag (substring (aref tag 1) (+ offset (length namespace))))
+                    candidates)))
+          (maphash (lambda (name _)
+                     (when (and (string-prefix-p word name) (not (string= name word)))
+                       (push (ac-php--completion-string name "v" "" "") candidates)))
+                   (ac-php--get-cur-function-vars)))))
+    candidates))
+
+(defun ac-php--get-cur-function-vars()
+  "Doc ."
+  (let (txt start-pos end-pos var-list ret-map var-name first-char)
+    (save-excursion
+      (setq end-pos (- (point) 1))
+      (ac-php--beginning-of-defun)
+      (setq start-pos (point))
+      (setq txt (buffer-substring-no-properties start-pos end-pos))
+      (setq var-list (s-match-strings-all "[$\"'][0-9_a-z]*" txt))
+      (setq ret-map (make-hash-table :test 'case-fold))
+      (dolist (item var-list)
+        (setq var-name (nth 0 item))
+        (setq first-char (aref var-name 0))
+        (when (or (= first-char ?\") (= first-char ?'))
+          (setq var-name (substring var-name 1)))
+
+        (puthash var-name nil ret-map))
+      ret-map)))
+
 (defun ac-php-candidate ()
   "Doc."
   (let (key-str-list tags-data array-context literal-context extra-completion)
@@ -4833,98 +4634,312 @@ is searched, excluding attributes, comments, literals and default values."
                   (ac-php-candidate-class tags-data key-str-list)
                 (ac-php-candidate-other tags-data)))))))
 
-;; "Return a 'word' before current point.
+;;; Navigation and documentation
 
-;; The word 'word' means a combination of characters that forms a valid identifier
-;; in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
+;;;; Locations and definition lookup
 
-;; Examples:
+(defvar ac-php-location-stack-index 0)
 
-;;   :-------------------------:--------------------:
-;;   | If the point at the end | Will return        |
-;;   :-------------------------:--------------------:
-;;   | $someVariable           | someWariable       |
-;;   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
-;;   | foo()->bar              | bar                |
-;;   | foo()?->bar             | bar                |
-;;   | foo()                   |                    |
-;;   | 'some string'           |                    |
-;;   :-------------------------:--------------------:
+(defvar ac-php-location-stack nil)
 
-;; Return empty string if there is no valid sequence of characters.
+(defvar ac-php-max-bookmark-count 500)
 
-;; Note: To conveniently describe in the documentation, double quotes (\") have
-;; been replaced by '."
+;; function
+(defun ac-php-goto-line-col (line column)
+  "Doc LINE COLUMN."
+  (goto-char (point-min))
+  (forward-line (1- line))
+  (beginning-of-line)
+  (forward-char (1- column)))
 
-(defun ac-php--get-cur-word ()
-  "Return a `word' before current point.
+(defun ac-php-current-location (&optional offset)
+  "Doc OFFSET."
+  (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
+          (line-number-at-pos offset) (1+ (- (or offset (point)) (line-beginning-position)))))
 
-The word `word' means a combination of characters that forms a valid identifier
-in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
-
-Examples:
-
-Return empty string if there is no valid sequence of characters.
-
-Note: To conveniently describe in the documentation, double quotes (\") have
-been replaced by '."
-  (let (start-pos)
-    (save-excursion
-      (skip-chars-backward "a-z0-9A-Z_\\\\")
-      (setq start-pos (point))
-      (skip-chars-forward "a-z0-9A-Z_\\\\")
-      (buffer-substring-no-properties start-pos (point)))))
-
-
-;; Return empty string if there is no valid sequence of characters."
-
-(defun ac-php--get-cur-word-with-function-flag ()
-  "Return a `function' name before current point.
-
-The word `function' means a combination of characters that forms a valid
-function name.  Meant for `ac-php-find-symbol-at-point-pri'.
-
-Examples:
-
-  :-------------------------:--------------------:
-  | If the point at #       | Will return        |
-  :-------------------------:--------------------:
-  | function foo()#         |                    |
-  | function foo(#          |                    |
-  | function foo#()         | foo(               |
-  | foo()?->bar# ();         | bar(              |
-  | fo#o()->bar ();         | foo(               |
-  :-------------------------:--------------------:
-
-Return empty string if there is no valid sequence of characters."
-  (let (start-pos)
-    (save-excursion
-      (skip-chars-backward "a-z0-9A-Z_\\\\")
-      (setq start-pos (point))
-      (skip-chars-forward "a-z0-9A-Z_\\\\")
-      (skip-chars-forward " \t")
-      (skip-chars-forward "(")
-      (s-replace-all '((" " . "")
-                       ("\t" . ""))
-                     (buffer-substring-no-properties start-pos (point))))))
-
-(defun ac-php-get-cur-word-with-dollar ()
+(defun ac-php-location-stack-push ()
   "Doc."
-  (let (start-pos)
-    (save-excursion
-      (skip-chars-backward "\\$a-z0-9A-Z_")
-      (setq start-pos (point))
-      (skip-chars-forward "\\$a-z0-9A-Z_")
-      (buffer-substring-no-properties start-pos (point)))))
+  (let ((bm (ac-php-current-location)))
+    (if (and (require 'xref nil t) (functionp 'xref-push-marker-stack))
+        (xref-push-marker-stack)
+      (require 'etags)
+      (ring-insert (with-no-warnings find-tag-marker-ring) (point-marker)))
+    (while (> ac-php-location-stack-index 0)
+      (cl-decf ac-php-location-stack-index)
+      (pop ac-php-location-stack))
+    (unless (string= bm (nth 0 ac-php-location-stack))
+      (push bm ac-php-location-stack)
+      (when (> (length ac-php-location-stack) ac-php-max-bookmark-count)
+        (nbutlast ac-php-location-stack
+                  (- (length ac-php-location-stack)
+                     ac-php-max-bookmark-count))))))
 
-(defun ac-php-get-cur-word-without-clean ()
-  "Doc."
-  (let (start-pos)
-    (save-excursion
-      (skip-chars-backward "\\$a-z0-9A-Z_\\\\")
-      (setq start-pos (point))
-      (skip-chars-forward "\\$a-z0-9A-Z_\\\\"))
-    (buffer-substring-no-properties start-pos (point))))
+(defun ac-php-find-file-or-buffer (file-or-buffer &optional other-window)
+  "Doc FILE-OR-BUFFER OTHER-WINDOW."
+  (if (file-exists-p file-or-buffer)
+      (if other-window
+          (find-file-other-window file-or-buffer)
+        (find-file file-or-buffer))
+    (let ((buf (get-buffer file-or-buffer)))
+      (cond ((not buf) (message "No buffer named %s; you can M-x: ac-php-remake-tags-all fix it" file-or-buffer))
+            (other-window (switch-to-buffer-other-window file-or-buffer))
+            (t (switch-to-buffer file-or-buffer))))))
+
+(defun ac-php-goto-location (location &optional other-window)
+  "Go to a location passed in.
+It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
+  ;; (message (format "ac-php-goto-location \"%s\"" location))
+  (when (> (length location) 0)
+    (cond ((string-match "\\(.*\\):\\([0-9]+\\):\\([0-9]+\\)" location)
+           (let ((line (string-to-number (match-string-no-properties 2 location)))
+                 (column (string-to-number (match-string-no-properties 3 location))))
+             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
+             ;; (run-hooks ac-php-after-find-file-hook)
+             (ac-php-goto-line-col line column)
+             t))
+          ((string-match "\\(.*\\):\\([0-9]+\\)" location)
+           (let ((line (string-to-number (match-string-no-properties 2 location))))
+             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
+             ;; (run-hooks ac-php-after-find-file-hook)
+             (goto-char (point-min))
+             (forward-line (1- line))
+             t))
+          ((string-match "\\(.*\\),\\([0-9]+\\)" location)
+           (let ((offset (string-to-number (match-string-no-properties 2 location))))
+             (ac-php-find-file-or-buffer (match-string-no-properties 1 location) other-window)
+             ;; (run-hooks ac-php-after-find-file-hook)
+             (goto-char (1+ offset))
+             t))
+          (t
+           (if (string-match "^ +\\(.*\\)$" location)
+               (setq location (match-string-no-properties 1 location)))
+           (ac-php-find-file-or-buffer location other-window)))
+    ;; (ac-php-location-stack-push)
+    ))
+
+(defun ac-php-find-symbol-at-point-pri (tags-data &optional as-fn-p as-id-p)
+  "Docstring. TAGS-DATA AS-FN-P AS-ID-P."
+  (let (key-str-list
+        cur-word
+        ret)
+
+    ;; TODO: How about new line
+    (if as-id-p
+        (setq cur-word (ac-php--get-cur-word))
+      (if as-fn-p
+          (setq cur-word (concat (ac-php--get-cur-word) "("))
+        (setq cur-word (ac-php--get-cur-word-with-function-flag))))
+
+    (when cur-word
+      (ac-php--debug "Current working string: \"%s\"" cur-word))
+
+    (setq key-str-list (ac-php-get-class-at-point tags-data))
+
+    (ac-php--debug "key-str-list==end:%s" key-str-list)
+
+    (if key-str-list
+        (progn
+          (let (class-name member-info)
+            ;; (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" (concat "." cur-word) key-str-list))
+            (when (string= cur-word "")
+              (let ((key-arr (s-split "\\." key-str-list)))
+                (ac-php--debug "key-arr %S " key-arr)
+                (setq cur-word (nth (1- (length key-arr)) key-arr))))
+
+            (setq key-str-list (replace-regexp-in-string "\\.[^.]*$" "" key-str-list))
+            (ac-php--debug "class. key-str-list = %s " key-str-list)
+            (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
+
+            (ac-php--debug "class.member= %s.%s " class-name cur-word)
+            (if (not (string= class-name ""))
+                (progn
+                  (setq member-info
+                        (ac-php-get-class-member-info
+                         (ac-php-g--class-map tags-data)
+                         (ac-php-g--inherit-map tags-data)
+                         class-name cur-word tags-data))
+                  (if member-info
+                      (progn
+                        (let (return-type)
+                          (setq return-type
+                                (ac-php--resolve-member-return-type
+                                 (aref member-info 4) class-name))
+                          (setq ret (list "class_member" (aref member-info 3) return-type member-info)))
+
+                        )
+                    (progn
+                      (message "no find %s.%s " class-name cur-word))))
+              ;; (message "no find class from key-list %s " key-str-list)
+              )))
+      (progn ;; function
+        (let ((function-map (ac-php-g--function-map tags-data))
+              full-name tmp-ret)
+
+          (when (string= "" cur-word) ;; new
+            (setq tmp-ret (ac-php-get-syntax-backward
+                           (concat "new[ \t]+\\(" ac-php-re-namespace-unit-pattern "\\)")
+                           :sexp 1))
+            (when tmp-ret (setq cur-word tmp-ret)))
+          ;; check "namespace" "use as"
+          (setq full-name (ac-php--get-class-full-name-in-cur-buffer
+                           cur-word
+                           function-map nil))
+
+          (when full-name (setq cur-word full-name))
+
+          ;; TODO FIX namespace function like Test\ff()
+          (ac-php--debug "check user function===%s" cur-word)
+          (when (string=  cur-word "self")
+            (setq cur-word (concat (ac-php-get-cur-class-name))))
+
+          (let (function-item)
+            (setq function-item (ac-php--get-item-from-funtion-map cur-word function-map))
+            (when function-item
+              (setq ret (list "user_function" (aref function-item 3) (aref function-item 4) function-item)))))))
+
+    (ac-php--debug "ac-php-find-symbol-at-point-pri :%S " ret)
+    ret))
+
+(defun ac-php--goto-local-var-def (local-var)
+  "D goto LOCAL-VAR like vim - gd."
+  (ac-php--debug "local-var %s " local-var)
+  (ac-php-location-stack-push)
+  (ac-php--beginning-of-defun)
+
+  (re-search-forward (concat "\\" local-var "\\b")) ; => \\$var\\b
+  (while (ac-php--in-string-or-comment-p (point))
+    (re-search-forward (concat "\\" local-var "\\b")))) ; => \\$var\\b
+
+(defun ac-php-find-symbol-at-point (&optional _prefix)
+  "D PREFIX."
+  (interactive "P")
+  ;; 检查是类还是 符号
+  (let ((tags-data (ac-php-get-tags-data))
+        symbol-ret type jump-pos local-var local-var-flag)
+    (setq local-var (ac-php-get-cur-word-with-dollar))
+    (setq local-var-flag (s-matches-p "^\\$" local-var))
+
+    (setq symbol-ret (or (ac-php--phpstan-type-symbol tags-data)
+                         (ac-php--named-argument-symbol tags-data)
+                         (ac-php-find-symbol-at-point-pri tags-data)))
+
+    (ac-php--debug "11goto %s" symbol-ret)
+    (unless symbol-ret
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data t)))
+    (ac-php--debug "22goto %s" symbol-ret)
+    (unless symbol-ret
+      (setq symbol-ret (ac-php-find-symbol-at-point-pri tags-data nil t)))
+    (ac-php--debug "33goto %s %s" symbol-ret local-var-flag)
+
+    (if symbol-ret
+        (progn
+          (ac-php--debug "goto %s" symbol-ret)
+          (setq type (car symbol-ret))
+          (if (and (not (string= type "class_member")) local-var-flag)
+              (let ((item-info (nth 3 symbol-ret)))
+                (if (string=  (nth 0 item-info) "v")
+                    (progn
+                      (setq jump-pos (nth 1 symbol-ret))
+                      (ac-php-location-stack-push)
+                      (ac-php-goto-location jump-pos)
+                      ;; (ac-php-location-stack-push)
+                      )
+                  (ac-php--goto-local-var-def local-var)))
+            (cond
+             ((string= type "phpstan_type")
+              (ac-php-location-stack-push)
+              (ac-php-goto-location (nth 1 symbol-ret)))
+             ((member type '("class_member" "user_function" "named_argument"))
+              (let ((file-pos (nth 1 symbol-ret)) tmp-arr)
+                (setq tmp-arr (s-split ":" file-pos))
+                (ac-php--debug "tmp-arr %S" tmp-arr)
+                (cond
+                 ((s-matches-p "sys" (nth 0 tmp-arr))
+                  (goto-char (1+ (point)))
+                  (message "need install : composer require jetbrains/phpstorm-stubs "))
+                 (t
+                  (let ((file-list (ac-php-g--file-list tags-data)))
+                    ;; from get index
+                    (setq jump-pos
+                          (concat
+                           (aref file-list (string-to-number (nth 0 tmp-arr)))
+                           ":" (nth 1 tmp-arr)))
+                    (ac-php-location-stack-push)
+                    (ac-php-goto-location jump-pos)
+                    (when (string= type "named_argument")
+                      (let ((parameter-pos
+                             (ac-php--parameter-definition-position
+                              (nth 4 symbol-ret))))
+                        (when parameter-pos
+                          (goto-char parameter-pos))))))))))))
+      (when local-var-flag (ac-php--goto-local-var-def local-var)))))
+
+(defun ac-php-gen-def ()
+  "DOCSTRING."
+  (interactive)
+  (let ((tags-data (ac-php-get-tags-data))
+        line-txt
+        (cur-word (ac-php--get-cur-word)))
+    (setq line-txt (buffer-substring-no-properties
+                    (line-beginning-position)
+                    (line-end-position)))
+    (if (string-match (concat "$" cur-word) line-txt)
+        (let ((class-name "<...>"))
+          (when (string-match (concat cur-word"[\t ]*=[^(]*[(;]") line-txt)
+            ;; call function
+            (let (key-str-list pos)
+              (save-excursion
+                (re-search-forward "[;]")
+                (re-search-backward "[^ \t]" nil t)
+                (setq pos (point)))
+
+              (when pos (setq key-str-list (ac-php-get-class-at-point pos)))
+
+              (if key-str-list ;; class-name
+                  (setq class-name (ac-php-get-class-name-by-key-list tags-data key-str-list))
+                (progn ;; function TODO
+                  ))))
+
+          (kill-new (concat "\n\t/**  @var " class-name " $" cur-word " */\n")))
+      (kill-new (concat "\n * @property " cur-word " $" cur-word "\n")))))
+
+(defun ac-php-location-stack-forward ()
+  "DEFUN."
+  (interactive)
+  (ac-php-location-stack-jump -1))
+
+(defun ac-php-location-stack-back ()
+  "DEFUN."
+  (interactive)
+  (ac-php-location-stack-jump 1))
+
+(defun ac-php-location-stack-jump (by)
+  "D BY."
+  (let ((instack (nth ac-php-location-stack-index ac-php-location-stack))
+        (cur (ac-php-current-location)))
+    (if (not (string= instack cur))
+        (ac-php-goto-location instack)
+      (let ((target (+ ac-php-location-stack-index by)))
+        (when (and (>= target 0) (< target (length ac-php-location-stack)))
+          (setq ac-php-location-stack-index target)
+          (ac-php-goto-location (nth ac-php-location-stack-index ac-php-location-stack)))))))
+
+(defun ac-php-cscope-find-egrep-pattern (symbol)
+  "Set `cscope-initial-directory' and run egrep over the cscope database SYMBOL."
+  (interactive
+   (list
+    (let (cscope-no-mouse-prompts)
+      (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))))
+  (let ((project-root-dir (ac-php--get-project-root-dir)))
+    (if (or ac-php-use-cscope-flag
+            (ac-php--get-use-cscope-from-config-file project-root-dir))
+        (progn
+          (setq cscope-initial-directory
+                (ac-php--get-tags-save-dir project-root-dir))
+          (cscope-find-egrep-pattern symbol))
+      (message "need config: %s -> use-cscope:true" ac-php-config-file))))
+
+;;;; Popup documentation, ElDoc and project information
 
 (defun ac-php-show-tip(&optional _prefix)
   "Doc PREFIX."
@@ -4959,21 +4974,6 @@ Return empty string if there is no valid sequence of characters."
 
         (setq return-type (aref function-item 4))
         (popup-tip (concat "[" (if (string= "sys" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
-
-(defun ac-php-cscope-find-egrep-pattern (symbol)
-  "Set `cscope-initial-directory' and run egrep over the cscope database SYMBOL."
-  (interactive
-   (list
-    (let (cscope-no-mouse-prompts)
-      (cscope-prompt-for-symbol "Find this egrep pattern " nil t t))))
-  (let ((project-root-dir (ac-php--get-project-root-dir)))
-    (if (or ac-php-use-cscope-flag
-            (ac-php--get-use-cscope-from-config-file project-root-dir))
-        (progn
-          (setq cscope-initial-directory
-                (ac-php--get-tags-save-dir project-root-dir))
-          (cscope-find-egrep-pattern symbol))
-      (message "need config: %s -> use-cscope:true" ac-php-config-file))))
 
 (defun ac-php-eldoc-documentation-function ()
   "A function to provide ElDoc support.
@@ -5101,41 +5101,6 @@ call the command `eldoc-mode'."
   (setq-local eldoc-documentation-function
               #'ac-php-eldoc-documentation-function)
   (eldoc-mode +1))
-
-(defun ac-php--array-key-post-completion (candidate)
-  "Quote a bare array-key CANDIDATE just inserted before point.
-Add an array entry arrow unless one already follows the completed key.
-Replace an adjacent identifier suffix only when it precedes an existing arrow.
-Return non-nil when the candidate was handled."
-  (when (and (stringp candidate)
-             (> (length candidate) 0)
-             (eq (get-text-property 0 'ac-php-array-key-style candidate) 'bare)
-             (equal (get-text-property 0 'ac-php-tag-type candidate) "a"))
-    (let* ((key (substring-no-properties candidate))
-           (start (- (point) (length key))))
-      (when (and (>= start (point-min))
-                 (string= (buffer-substring-no-properties start (point)) key))
-        (let ((suffix-end
-               (save-excursion
-                 (let ((suffix-start (point)))
-                   (skip-chars-forward "a-zA-Z0-9_")
-                   (when (> (point) suffix-start)
-                     (let ((end (point)))
-                       (forward-comment (buffer-size))
-                       (when (looking-at "=>") end)))))))
-          (when suffix-end (delete-region (point) suffix-end)))
-        (delete-region start (point))
-        (insert "'" (s-replace "'" "\\'" (s-replace "\\" "\\\\" key)) "'")
-        (let ((arrow-end
-               (save-excursion
-                 (forward-comment (buffer-size))
-                 (when (looking-at "=>") (match-end 0)))))
-          (if arrow-end
-              (progn
-                (goto-char arrow-end)
-                (skip-chars-forward " \t"))
-            (insert " => ")))
-        t))))
 
 ;; Local Variables:
 ;;  flycheck-disabled-checkers: (emacs-lisp-package)

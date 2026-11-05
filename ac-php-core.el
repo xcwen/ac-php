@@ -127,6 +127,13 @@ To use this feature you'll need to set cscope executable path in
   :group 'ac-php
   :type 'integer)
 
+(defcustom ac-php-remote-config-check-interval 5
+  "Seconds between checks for changes to remote project configuration.
+Cached configuration is reused between checks without accessing the file.
+Set to zero to check on every lookup, as for local configuration files."
+  :group 'ac-php
+  :type 'number)
+
 (defcustom ac-php-project-root-dir-use-truename t
   "Non-nil means always expand filenames using function `file-truename'."
   :group 'ac-php
@@ -668,7 +675,8 @@ Return a list of (START . END) buffer positions, preserving empty arguments."
   "Set the Phpctags executable path.  Don't change the value of this variable.")
 
 (defvar ac-php--config-cache (make-hash-table :test #'equal)
-  "Parsed project configuration, keyed by filename and file signature.")
+  "Project configuration cache keyed by expanded filename.
+Each value is (SIGNATURE CONFIG CHECKED-AT), with CHECKED-AT in seconds.")
 
 (defun ac-php--get-project-root-dir ()
   "Get the project root directory of the curent opened buffer."
@@ -723,48 +731,51 @@ Return a list of (START . END) buffer positions, preserving empty arguments."
 
 Reads the configuration located at PROJECT-ROOT-DIR and returns it.
 This function tries to recreate and / or populate configuration
-file in case of its absence, or if it is empty."
+file in case of its absence, or if it is empty, for local projects only.
+Remote checks are limited by `ac-php-remote-config-check-interval'."
   (ac-php--debug "Lookup for per-project configuration file...")
-  (let (config-file-name)
-    (setq config-file-name (f-join project-root-dir ac-php-config-file))
+  (let* ((config-file-name
+          (expand-file-name (f-join project-root-dir ac-php-config-file)))
+         (remote (file-remote-p config-file-name))
+         (cached (gethash config-file-name ac-php--config-cache))
+         (now (float-time)))
+    (if (and remote cached
+             (< (- now (nth 2 cached)) ac-php-remote-config-check-interval))
+        (nth 1 cached)
+      ;; Do not create or populate configuration through any TRAMP method.
+      (when (and
+             (not remote)
+             (or (not (f-exists? config-file-name))
+                 (= (f-size config-file-name) 0)
+                 ;; Use case for "echo '' > `config-file-name'"
+                 (= (f-size config-file-name) 1)))
+        (ac-php--debug "Configuration file either empty or absent. Creating...")
+        (ac-php--json-save-data
+         config-file-name
+         '(:use-cscope nil
+                       :tag-dir nil
+                       :filter (
+                                :php-file-ext-list ("php")
+                                :php-path-list (".")
+                                :ignore-ruleset (
+                                                 "# like .gitignore file "
+                                                 "/vendor/**/[tT]ests/**/*.php"
+                                                 "/vendor/**/[Ee]xamples/**/*.php"
+                                                 "/vendor/composer/*.php"
+                                                 "/vendor/*.php"
 
-    ;; Lookup for `ac-php-config-file'
-    (when (and
-           (not (s-starts-with-p "/ssh:" config-file-name))
-           (not (s-starts-with-p "/server:" config-file-name))
-           (or (not (f-exists? config-file-name))
-               (= (f-size config-file-name) 0)
-               ;; Use case for "echo '' > `config-file-name'"
-               (= (f-size config-file-name) 1)))
-      (ac-php--debug "Configuration file either empty or absent. Creating...")
-      (ac-php--json-save-data
-       config-file-name
-       '(:use-cscope nil
-                     :tag-dir nil
-                     :filter (
-                              :php-file-ext-list ("php")
-                              :php-path-list (".")
-                              :ignore-ruleset (
-                                               "# like .gitignore file "
-                                               "/vendor/**/[tT]ests/**/*.php"
-                                               "/vendor/**/[Ee]xamples/**/*.php"
-                                               "/vendor/composer/*.php"
-                                               "/vendor/*.php"
+                                                 "# not need php_codesniffer"
+                                                 "/vendor/squizlabs/php_codesniffer/**/*.php"
 
-                                               "# not need php_codesniffer"
-                                               "/vendor/squizlabs/php_codesniffer/**/*.php"
+                                                 "#  -- end -- "
 
-                                               "#  -- end -- "
-
-                                               )))))
-    (let* ((key (expand-file-name config-file-name))
-           (signature (ac-php--tags-file-signature key))
-           (cached (gethash key ac-php--config-cache)))
-      (if (and cached (equal signature (car cached)))
-          (cdr cached)
-        (let ((config (json-read-file key)))
-          (puthash key (cons signature config) ac-php--config-cache)
-          config)))))
+                                                 )))))
+      (let* ((signature (ac-php--tags-file-signature config-file-name))
+             (config (if (and cached (equal signature (car cached)))
+                         (nth 1 cached)
+                       (json-read-file config-file-name))))
+        (puthash config-file-name (list signature config now) ac-php--config-cache)
+        config))))
 
 (defun ac-php--get-use-cscope-from-config-file (project-root-dir)
   "Doc PROJECT-ROOT-DIR."

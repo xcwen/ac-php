@@ -249,6 +249,14 @@ vendor test files:
 | `filter.php-path-list-without-subdir` | Directories to scan without descending into subdirectories. |
 | `filter.ignore-ruleset` | Exclusion rules using gitignore-style patterns. |
 
+Parsed configuration is cached and reread only when its file signature changes.
+For projects accessed through TRAMP, ac-php checks the configuration at most once
+every five seconds, so repeated completion requests reuse it without fetching
+the file. External configuration changes become visible on the next check.
+Customize `ac-php-remote-config-check-interval` to adjust this delay, or set it to
+zero to check on every lookup. Remote configuration files are never created or
+populated automatically.
+
 To include additional PHP library declarations, you can install
 [PhpStorm stubs][phpstorm-stubs] in the project:
 

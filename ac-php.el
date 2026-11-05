@@ -102,32 +102,7 @@
 
 (defun ac-php-document (item)
   "Return the signature and source PHPDoc for completion ITEM."
-  (if (stringp item)
-      (let (doc tag-type return-type access from-class)
-        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-        (setq tag-type (get-text-property 0 'ac-php-tag-type item))
-        (setq return-type (get-text-property 0 'ac-php-return-type item))
-        (setq access (get-text-property 0 'ac-php-access item))
-        (setq from-class (get-text-property 0 'ac-php-from item))
-        (if (ac-php--tag-name-is-function item)
-            (setq doc (concat item doc ")"))
-          (setq doc item))
-
-        (ac-php--append-phpdoc
-         (cond
-          ((or (string= tag-type "p")
-               (string= tag-type "m")
-               (string= tag-type "d"))
-           (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s"
-                   doc
-                   return-type
-                   access
-                   from-class))
-          (return-type
-           (format "%s %s " return-type doc))
-          (t
-           doc))
-         (ac-php--candidate-phpdoc item)))))
+  (ac-php--candidate-documentation item))
 
 (defun ac-php-action ()
   "D."

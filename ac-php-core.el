@@ -2970,11 +2970,134 @@ class documentation when no constructor exists.  Missing source yields nil."
     (ac-php--tag-phpdoc (get-text-property 0 'ac-php-tags-data item)
                         (get-text-property 0 'ac-php-source-tag item))))
 
+(defun ac-php--format-phpdoc (phpdoc)
+  "Format PHPDOC as plain text for documentation displays.
+Keep source line breaks and indentation, remove common HTML markup, and
+limit paragraph spacing to one blank line.  Type expressions are preserved."
+  (when phpdoc
+    (save-match-data
+      (let ((text (substring-no-properties phpdoc))
+            (case-fold-search t))
+        (setq text (replace-regexp-in-string "\r\n?" "\n" text))
+        (setq text (replace-regexp-in-string "<br[ \t]*/?>" "\n" text))
+        (setq text (replace-regexp-in-string "</?p\\(?:[ \t]+[^>]*\\)?>" "\n\n" text))
+        (setq text (replace-regexp-in-string "</?pre\\(?:[ \t]+[^>]*\\)?>" "\n" text))
+        (setq text (replace-regexp-in-string
+                    "</?\\(?:code\\|strong\\|em\\|b\\|i\\)\\(?:[ \t]+[^>]*\\)?>"
+                    "" text))
+        (dolist (entity '(("&lt;" . "<") ("&gt;" . ">") ("&quot;" . "\"")
+                          ("&#39;" . "'") ("&apos;" . "'") ("&nbsp;" . " ")
+                          ("&amp;" . "&")))
+          (setq text (replace-regexp-in-string
+                      (regexp-quote (car entity)) (cdr entity) text t t)))
+        (setq text (replace-regexp-in-string "[ \t]+$" "" text))
+        (s-trim (replace-regexp-in-string "\n\n\n+" "\n\n" text))))))
+
+(defun ac-php--documentation-text (document)
+  "Copy DOCUMENT with only its display faces and hard line breaks.
+Completion metadata must not be retained in documentation buffers."
+  (when document
+    (let* ((text (substring-no-properties document))
+           (length (length document)))
+      (dolist (property '(face font-lock-face hard))
+        (let ((start 0))
+          (while (< start length)
+            (let ((end (next-single-property-change start property document length))
+                  (value (get-text-property start property document)))
+              (when value (put-text-property start end property value text))
+              (setq start end)))))
+      text)))
+
+(defun ac-php--format-tag-documentation (tag &optional display-name)
+  "Return a single line documentation header for TAG using DISPLAY-NAME.
+Distinguish the signature, return type, visibility and declaring class by face."
+  (let* ((kind (aref tag 0))
+         (name (or display-name (aref tag 1)))
+         (callable (member kind '("f" "m")))
+         (signature
+          (ac-php-clean-document
+           (if callable (concat name (aref tag 2) ")") name)))
+         (location (aref tag 3))
+         (return-type (aref tag 4))
+         (owner (and (> (length tag) 5) (aref tag 5)))
+         (access (and (> (length tag) 6) (aref tag 6)))
+         (header
+          (concat
+           (when (and (not (and owner (not (string= owner "")))) location)
+             (propertize (if (equal location "sys") "[system] " "[user] ")
+                         'face 'shadow))
+           (propertize (replace-regexp-in-string "[\t\n\r]+" " " signature)
+                       'face (cond (callable 'font-lock-function-name-face)
+                                   ((member kind '("c" "i" "t")) 'font-lock-type-face)
+                                   (t 'font-lock-variable-name-face))))))
+    (when (and return-type (not (string= return-type ""))
+               (not (and (member kind '("c" "i" "t")) (equal return-type name))))
+      (setq header (concat header (propertize " → " 'face 'shadow)
+                           (propertize return-type 'face 'font-lock-type-face))))
+    (dolist (part (list (cons access 'font-lock-keyword-face)
+                        (cons owner 'font-lock-constant-face)))
+      (when (and (car part) (not (string= (car part) "")))
+        (setq header (concat header (propertize " · " 'face 'shadow)
+                             (propertize (car part) 'face (cdr part))))))
+    header))
+
+(defun ac-php--candidate-documentation (item)
+  "Return the colored signature and source PHPDoc for completion ITEM."
+  (when (and (stringp item) (> (length item) 0))
+    (let* ((source (get-text-property 0 'ac-php-source-tag item))
+           (tag (vector
+                 (or (and source (aref source 0))
+                     (get-text-property 0 'ac-php-tag-type item) "v")
+                 (substring-no-properties item)
+                 (or (get-text-property 0 'ac-php-help item) "")
+                 (and source (aref source 3))
+                 (get-text-property 0 'ac-php-return-type item)
+                 (get-text-property 0 'ac-php-from item)
+                 (get-text-property 0 'ac-php-access item))))
+      (ac-php--append-phpdoc (ac-php--format-tag-documentation tag)
+                            (ac-php--candidate-phpdoc item)))))
+
 (defun ac-php--append-phpdoc (document phpdoc)
-  "Append nonempty PHPDOC to DOCUMENT, separated by a blank line."
-  (if (and phpdoc (not (string= phpdoc "")))
-      (concat document "\n\n" phpdoc)
-    document))
+  "Append formatted PHPDOC to DOCUMENT, separated by a blank line.
+Do not carry completion metadata into documentation strings."
+  (let ((text (ac-php--format-phpdoc phpdoc))
+        (document (ac-php--documentation-text document)))
+    (if (and text (not (string= text "")))
+        (concat document "\n\n" text)
+      document)))
+
+(defun ac-php--popup-documentation (document)
+  "Show DOCUMENT while preserving its explicit line breaks when wrapping.
+Use the tooltip background behind colored text as well as unstyled text.
+`popup-tip' may refill text when the window cannot fit its preferred width."
+  (save-match-data
+    (let ((text (ac-php--documentation-text document))
+          (background (face-background 'popup-tip-face nil t))
+          (use-hard-newlines t)
+          (start 0))
+      (while (< start (length text))
+        (let ((end (next-single-property-change start 'face text (length text)))
+              (face (get-text-property start 'face text)))
+          (cond
+           ((eq face 'shadow)
+            ;; Leave gaps between colored spans for popup's face merging.
+            (remove-text-properties start end '(face nil) text))
+           ((and face background)
+            ;; A text face can otherwise fall back to the buffer background
+            ;; instead of the surrounding tooltip's background.
+            (put-text-property
+             start end 'face
+             (cons (list :background background)
+                   (if (and (listp face) (not (keywordp (car face))))
+                       face
+                     (list face)))
+             text)))
+          (setq start end)))
+      (setq start 0)
+      (while (string-match "\n" text start)
+        (setq start (match-end 0))
+        (put-text-property (1- start) start 'hard t text))
+      (popup-tip text :nostrip t :margin t :scroll-bar t))))
 
 ;;;; PHPStan aliases, imports and type references
 
@@ -5192,49 +5315,19 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
 ;;;; Popup documentation, ElDoc and project information
 
 (defun ac-php-show-tip (&optional _prefix)
-  "Show the signature, type information and source PHPDoc of the symbol at point."
+  "Show a colored signature and source PHPDoc for the symbol at point."
   (interactive "P")
-  ;; 检查是类还是 符号
-  (let ((tags-data (ac-php-get-tags-data))
-        symbol-ret
-        type doc class-name access return-type member-info tag-name function-item file-pos)
-    (when tags-data
-      (setq symbol-ret (or (ac-php-find-symbol-at-point-pri tags-data)
-                           (ac-php-find-symbol-at-point-pri tags-data t)
-                           (ac-php-find-symbol-at-point-pri tags-data nil t))))
-    (when symbol-ret
-      (setq type (car symbol-ret))
-      (setq member-info (nth 3 symbol-ret))
-      (cond
-       ((string= type "class_member")
-        (setq tag-name (aref member-info 1))
-        (if (string= (aref member-info 0) "m")
-            (setq doc (concat tag-name (aref member-info 2) ")"))
-          (setq doc tag-name))
-
-        (setq class-name (aref member-info 5))
-        (setq return-type (aref member-info 4))
-        (setq access (aref member-info 6))
-        (popup-tip
-         (ac-php--append-phpdoc
-          (concat (ac-php-clean-document doc) "\n\t[  type]:" return-type
-                  "\n\t[access]:" access "\n\t[  from]:" class-name)
-          (ac-php--tag-phpdoc tags-data member-info))))
-       ((string= type "user_function")
-        (setq function-item (nth 3 symbol-ret))
-        (setq tag-name (aref function-item 1))
-        (if (ac-php--tag-name-is-function tag-name)
-            (setq doc (concat tag-name (aref function-item 2) ")"))
-          (setq doc (aref function-item 2)))
-
-        (setq file-pos (aref function-item 3))
-
-        (setq return-type (aref function-item 4))
-        (popup-tip
-         (ac-php--append-phpdoc
-          (concat "[" (if (string= "sys" file-pos) "system" "user") "]:"
-                  (ac-php-clean-document doc) "\n[  type]:" return-type)
-          (ac-php--tag-phpdoc tags-data function-item))))))))
+  (let* ((tags-data (ac-php-get-tags-data))
+         (symbol
+          (when tags-data
+            (or (ac-php-find-symbol-at-point-pri tags-data)
+                (ac-php-find-symbol-at-point-pri tags-data t)
+                (ac-php-find-symbol-at-point-pri tags-data nil t))))
+         (tag (nth 3 symbol)))
+    (when tag
+      (ac-php--popup-documentation
+       (ac-php--append-phpdoc (ac-php--format-tag-documentation tag)
+                             (ac-php--tag-phpdoc tags-data tag))))))
 
 (defun ac-php-eldoc-documentation-function ()
   "A function to provide ElDoc support.

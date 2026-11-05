@@ -97,6 +97,8 @@ class Widget {
            (should (equal (get-text-property 0 'ac-php-return-type candidate) "string"))
            (let ((doc (ac-php-test--documentation-frontend-text candidate frontend)))
              (should (> reads 0))
+             (should (equal (car (split-string doc "\n"))
+                            "[user] lookup($id) → string"))
              (should (string-match-p "lookup(\\$id)" doc))
              (should (string-match-p "Look up one item\\." doc))
              (should (string-match-p "@param int \\$id Item identifier\\." doc))
@@ -117,8 +119,10 @@ class Widget {
                   frontend (nth 1 entry)))
                 (doc (ac-php-test--documentation-frontend-text candidate frontend)))
            (should (string-match-p (regexp-quote (nth 2 entry)) doc))
-           (should (string-match-p (regexp-quote "[access]:public") doc))
-           (should (string-match-p (regexp-quote "[  from]:\\Demo\\Widget") doc))
+           (should (equal (car (split-string doc "\n"))
+                          (concat (if (equal (nth 1 entry) "fetch(")
+                                      "fetch($id)" "name")
+                                  " → string · public · \\Demo\\Widget")))
            (should (equal (get-text-property 0 'ac-php-help candidate) (nth 3 entry)))
            (should (equal (get-text-property 0 'ac-php-from candidate) "\\Demo\\Widget"))
            (should (equal (get-text-property 0 'summary candidate) "string"))))))))
@@ -139,8 +143,29 @@ class Widget {
 (ert-deftest ac-php-documentation-frontends/fallback-without-source-metadata ()
   (let ((candidate (propertize "unknown(" 'ac-php-help "$id"
                                'ac-php-tag-type "f" 'ac-php-return-type "string")))
-    (should (equal (ac-php-document candidate) "string unknown($id) "))
-    (should (equal (company-ac-php-document candidate) "string unknown($id)"))))
+    (should (equal (ac-php-document candidate) "unknown($id) → string"))
+    (should (equal (company-ac-php-document candidate) "unknown($id) → string"))))
+
+(ert-deftest ac-php-documentation-frontends/header-keeps-colors-without-completion-metadata ()
+  (ac-php-test--with-documentation-frontends
+   (lambda (tags)
+     (dolist (frontend '(auto-complete company))
+       (let* ((candidate
+               (ac-php-test--documentation-frontend-candidate
+                tags "<?php\nfunction run(\\Demo\\Widget $widget) {\n$widget->fe|CURSOR|;\n}"
+                frontend "fetch("))
+              (doc (ac-php-test--documentation-frontend-text candidate frontend)))
+         (dolist (element '(("fetch" . font-lock-function-name-face)
+                            ("string" . font-lock-type-face)
+                            ("public" . font-lock-keyword-face)
+                            ("\\Demo\\Widget" . font-lock-constant-face)
+                            ("→" . shadow)))
+           (let ((position (string-match (regexp-quote (car element)) doc)))
+             (should position)
+             (should (eq (get-text-property position 'face doc) (cdr element)))))
+         (should-not (string-match-p "\t\\|\\[access\\]\\|\\[ *from\\]" doc))
+         (should-not (text-property-not-all 0 (length doc) 'ac-php-tags-data nil doc))
+         (should-not (text-property-not-all 0 (length doc) 'ac-php-source-tag nil doc)))))))
 
 (ert-deftest ac-php-documentation-frontends/phpdoc-does-not-change-insertion ()
   (ac-php-test--with-documentation-frontends

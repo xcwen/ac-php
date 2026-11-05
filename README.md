@@ -407,7 +407,11 @@ Run these commands with `M-x`:
 | `helm-ac-php-apropos-at-point` | Search with the symbol at point as the initial query. |
 
 `ac-php-show-tip` and the documentation views in auto-complete and company-mode
-include source PHPDoc below the signature and type information. Documentation
+include source PHPDoc below a compact signature, return type, visibility, and
+declaring class. The symbol tooltip distinguishes the header elements with
+colors on its normal background, keeps them on one logical line, and wraps when
+space is limited.
+PHPDoc displays remove common HTML markup and excess blank lines. Documentation
 is read on demand from project or dependency sources, preferring unsaved Emacs
 buffers. Inherited members use their declaring class's documentation; magic
 members show the matching `@method` or `@property` annotation. Constructor
@@ -521,6 +525,17 @@ make test EMACS=/path/to/emacs CASK=/path/to/cask
 
 `CASK_EMACS` defaults to the selected `EMACS`, keeping dependency installation
 and tests on the same version.
+
+To copy local sources into existing package installations, run `./cp2elpa.sh`.
+It scans `~/.emacs.d/elpa/*/*/` by default. To select a specific package directory:
+
+```sh
+PACKAGE_USER_DIR="$HOME/.emacs.d/elpa/31.1/develop" ./cp2elpa.sh
+```
+
+The script updates installed packages and removes their stale bytecode. Restart
+Emacs or use `M-x load-file` to reload the updated `ac-php-core.el` and installed
+frontend files; copying files does not replace functions already loaded in memory.
 
 ### Rust generator
 

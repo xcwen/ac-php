@@ -3028,19 +3028,14 @@ Distinguish the signature, return type, visibility and declaring class by face."
          (signature
           (ac-php-clean-document
            (if callable (concat name (aref tag 2) ")") name)))
-         (location (aref tag 3))
          (return-type (aref tag 4))
          (owner (and (> (length tag) 5) (aref tag 5)))
          (access (and (> (length tag) 6) (aref tag 6)))
          (header
-          (concat
-           (when (and (not (and owner (not (string= owner "")))) location)
-             (propertize (if (equal location "sys") "[system] " "[user] ")
-                         'face 'shadow))
-           (propertize (replace-regexp-in-string "[\t\n\r]+" " " signature)
+          (propertize (replace-regexp-in-string "[\t\n\r]+" " " signature)
                        'face (cond (callable 'font-lock-function-name-face)
                                    ((member kind '("c" "i" "t")) 'font-lock-type-face)
-                                   (t 'font-lock-variable-name-face))))))
+                                   (t 'font-lock-variable-name-face)))))
     (when (and return-type (not (string= return-type ""))
                (not (and (member kind '("c" "i" "t")) (equal return-type name))))
       (setq header (concat header (propertize " → " 'face 'shadow)

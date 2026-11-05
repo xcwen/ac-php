@@ -98,7 +98,7 @@ class Widget {
            (let ((doc (ac-php-test--documentation-frontend-text candidate frontend)))
              (should (> reads 0))
              (should (equal (car (split-string doc "\n"))
-                            "[user] lookup($id) → string"))
+                            "lookup($id) → string"))
              (should (string-match-p "lookup(\\$id)" doc))
              (should (string-match-p "Look up one item\\." doc))
              (should (string-match-p "@param int \\$id Item identifier\\." doc))

@@ -318,13 +318,13 @@ class Service {
        (puthash "\\strlen(" system (ac-php-g--function-map tags))
        (should (equal (ac-php-test--documentation-popup
                        "<?php\nstrlen|CURSOR|('value');" tags)
-                      "[system] \\strlen($value) → int"))
+                      "\\strlen($value) → int"))
        (delete-file file)
        (should-not (ac-php--tag-phpdoc tags tag))
        (puthash "\\fetch(" tag (ac-php-g--function-map tags))
        (should (equal (ac-php-test--documentation-popup
                        "<?php\nfetch|CURSOR|('value');" tags)
-                      "[user] \\fetch($value) → string"))))))
+                      "\\fetch($value) → string"))))))
 
 (ert-deftest ac-php-documentation/show-tip-formats-generated-phpdoc ()
   (ac-php-test--with-documentation-source

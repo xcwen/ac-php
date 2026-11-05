@@ -418,7 +418,7 @@ Run these commands with `M-x`:
 include source PHPDoc below a compact signature, return type, visibility, and
 declaring class. The symbol tooltip distinguishes the header elements with
 colors on its normal background, keeps them on one logical line, and wraps when
-space is limited.
+space is limited. Headers omit the `[system]` and `[user]` origin labels.
 PHPDoc displays remove common HTML markup and excess blank lines. Documentation
 is read on demand from project or dependency sources, preferring unsaved Emacs
 buffers. Inherited members use their declaring class's documentation; magic

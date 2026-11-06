@@ -3033,9 +3033,9 @@ Distinguish the signature, return type, visibility and declaring class by face."
          (access (and (> (length tag) 6) (aref tag 6)))
          (header
           (propertize (replace-regexp-in-string "[\t\n\r]+" " " signature)
-                       'face (cond (callable 'font-lock-function-name-face)
-                                   ((member kind '("c" "i" "t")) 'font-lock-type-face)
-                                   (t 'font-lock-variable-name-face)))))
+                      'face (cond (callable 'font-lock-function-name-face)
+                                  ((member kind '("c" "i" "t")) 'font-lock-type-face)
+                                  (t 'font-lock-variable-name-face)))))
     (when (and return-type (not (string= return-type ""))
                (not (and (member kind '("c" "i" "t")) (equal return-type name))))
       (setq header (concat header (propertize " → " 'face 'shadow)

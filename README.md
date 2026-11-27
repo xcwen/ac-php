@@ -410,6 +410,7 @@ Run these commands with `M-x`:
 | `ac-php-location-stack-back` | Return to the previous location. |
 | `ac-php-location-stack-forward` | Move forward through navigation history. |
 | `ac-php-show-tip` | Show documentation for the symbol at point. |
+| `ac-php-show-hierarchy` | List parent and child classes, or corresponding member definitions. |
 | `ac-php-toggle-debug` | Toggle debug messages. |
 | `helm-ac-php-apropos` | Search the project index with Helm. |
 | `helm-ac-php-apropos-at-point` | Search with the symbol at point as the initial query. |
@@ -426,6 +427,33 @@ members show the matching `@method` or `@property` annotation. Constructor
 candidates show the constructor's PHPDoc, or the class PHPDoc when there is no
 constructor. Symbols without available source keep their signature information.
 `@inheritdoc` references are displayed as written rather than expanded.
+
+Run `ac-php-show-hierarchy` on a class declaration/reference or an object
+variable to browse its current class, all ancestors, and all descendants,
+with each class's own methods, properties, and constants. On a method,
+property, or constant declaration/reference, the list shows the corresponding
+member in each related class, including the declaring class of inherited
+members. `C-u M-x ac-php-show-hierarchy` lists all own members instead.
+The list includes indexed interfaces and traits. Press `TAB` to move between
+definitions, `RET` to visit one, and `q` to close the list;
+`ac-php-location-stack-back` returns to the original PHP location after a jump.
+Local variables need an inferable object type or a `class-string` bound;
+standalone functions have no class hierarchy. Results use the loaded project
+index, so rebuild tags after adding or changing inheritance.
+
+On a local variable, `ac-php-show-tip` shows its PHPDoc or inferred type,
+falling back to its native parameter type. PHPStan type aliases (including
+`@phpstan-import-type`) are resolved, and array shapes display one field per
+line. For example, a parameter annotated `@param ResourceDefinition $definition`
+shows `$definition → ResourceDefinition` followed by the alias's array fields.
+On a quoted offset such as `$definition['read_fields']`,
+`ac-php-find-symbol-at-point` jumps to that field in the PHPStan array-shape
+alias, including aliases imported from another class.
+Variables assigned from `class-string<Model>` fields also support static member
+completion, documentation, and definition jumps, such as
+`$class::FIELD_META_CONFIG`. Named class bounds use the namespace and imports
+of the PHPDoc source that declares them. Variable tooltips also work on the
+left side of a complete assignment.
 
 The Helm commands require Helm and `helm-ac-php-apropros.el`. When loading it
 explicitly, use `(require 'helm-ac-php-apropros)`; the filename and feature name

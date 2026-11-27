@@ -580,5 +580,62 @@ class Service {
            (should (= minimum (point-min)))
            (should (= maximum (point-max)))))))))
 
+(ert-deftest ac-php-documentation/local-variable-types-without-tags ()
+  (dolist (example
+           '(("/** @param array{read_fields: list<string>, nested: array{id:int, name:string}} $definition */\nfunction run(array $definition) {\narray_fill_keys($def|CURSOR|inition['read_fields'], true);\n}"
+              "$definition → array{" "\n  read_fields: list<string>,\n  nested: array{id:int, name:string}\n}")
+             ("function run(string $name) { $name|CURSOR|; }"
+              "$name → string" nil)
+             ("function run() { /** @var list<string> $names */\n$na|CURSOR|mes; }"
+              "$names → list<string>" nil)))
+    (let ((popup (ac-php-test--documentation-popup
+                  (concat "<?php\n" (car example)) nil)))
+      (should (string-prefix-p (nth 1 example) popup))
+      (when (nth 2 example)
+        (should (string-match-p (regexp-quote (nth 2 example)) popup))))))
+
+(ert-deftest ac-php-documentation/imported-variable-shape ()
+  (ac-php-test--with-documentation-source
+   (concat "<?php\nnamespace App;\n/**\n"
+           " * @phpstan-type ResourceDefinition array{model: class-string,\n"
+           " *     read_fields: list<string>, options?: array{id:int, name:string}}\n"
+           " */\nfinal class Types {}\n")
+   (lambda (tags file)
+     (puthash "\\App\\Types"
+              (ac-php-test--documentation-tag file "c" "\\App\\Types" "class Types")
+              (ac-php-g--function-map tags))
+     (dolist (cursor '("|CURSOR|$definition" "$def|CURSOR|inition" "$definition|CURSOR|"))
+       (let ((popup
+              (ac-php-test--documentation-popup
+               (concat "<?php\nnamespace App;\n"
+                       "/** @phpstan-import-type ResourceDefinition from Types */\n"
+                       "class QueryService {\n/** @param ResourceDefinition $definition */\n"
+                       "private function visible_row(array $row, array $definition): array {\n"
+                       "$row = array_intersect_key($row, array_fill_keys("
+                       cursor "['read_fields'], true));\n}\n}") tags)))
+         (should (string-prefix-p "$definition → ResourceDefinition\n\narray{\n" popup))
+         (should (string-match-p "\n  read_fields: list<string>,\n" popup)))))))
+
+(ert-deftest ac-php-documentation/variable-tip-preserves-restriction-and-match-data ()
+  (with-ac-php-buffer-test
+      "<?php\n/** @param array{id:int} $value */\nfunction run(array $value) {\n$value;\n}"
+    (search-forward "$value;")
+    (backward-char)
+    (narrow-to-region (line-beginning-position) (line-end-position))
+    (string-match "keep" "keep")
+    (let ((position (point)) (minimum (point-min)) (maximum (point-max))
+          (matches (match-data)))
+      (should (ac-php--variable-documentation-at-point nil))
+      (should (= position (point)))
+      (should (= minimum (point-min)))
+      (should (= maximum (point-max)))
+      (should (equal matches (match-data))))))
+
+(ert-deftest ac-php-documentation/unknown-and-nonlocal-variables-have-no-local-tip ()
+  (dolist (content '("<?php\nfunction run() { $un|CURSOR|known; }"
+                     "<?php\n/** @param int $value */\nfunction run($value) { Example::$va|CURSOR|lue; }"
+                     "<?php\n/** @param int $value */\nfunction run($value) { '$va|CURSOR|lue'; }"))
+    (should-not (ac-php-test--documentation-popup content nil))))
+
 (provide 'ac-php-documentation-test)
 ;;; ac-php-documentation-test.el ends here

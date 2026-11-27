@@ -269,5 +269,115 @@ When provided, EXPRESSION must occur on the destination's definition line."
            (should (= (point) position))
            (should-not ac-php-location-stack)))))))
 
+(ert-deftest ac-php-type-definition/imported-array-key-jumps-to-field ()
+  (dolist (reference '("|CURSOR|read_fields" "read_|CURSOR|fields" "read_fields|CURSOR|"))
+    (ac-php-test--with-type-definition-project
+     (list
+      (list "Types.php" '("\\Acme\\Types")
+            (concat "<?php\nnamespace Acme;\n/**\n"
+                    " * @phpstan-type ResourceDefinition array{nested: array{read_fields: int},\n"
+                    " *     read_fields: list<string>, model: class-string}\n"
+                    " */\nfinal class Types {}\n"))
+      (list "Consumer.php" '("\\Acme\\Consumer")
+            (concat "<?php\nnamespace Acme;\n"
+                    "/** @phpstan-import-type ResourceDefinition from Types as Definition */\n"
+                    "class Consumer {\n/** @param Definition $definition */\n"
+                    "private function visible_row(array $row, array $definition): array {\n"
+                    "$row = array_intersect_key($row, array_fill_keys($definition['"
+                    reference "'], true));\n}\n}\n")))
+     (lambda (tags directory)
+       (ac-php-test--visit-type-definition-reference directory)
+       (let ((source (current-buffer)) (position (point))
+             (ac-php-location-stack nil) (ac-php-location-stack-index 0))
+         (cl-letf (((symbol-function 'ac-php-get-tags-data) (lambda () tags)))
+           (ac-php-find-symbol-at-point)
+           (should (equal (buffer-file-name) (expand-file-name "Types.php" directory)))
+           (should (looking-at "read_fields: list<string>"))
+           (ac-php-location-stack-back)
+           (should (eq source (current-buffer)))
+           (should (= position (point)))))))))
+
+(ert-deftest ac-php-type-definition/array-key-ignores-unknown-field ()
+  (ac-php-test--with-type-definition-project
+   (list
+    (list "Types.php" '("\\Acme\\Types") ac-php-test--type-definition-source)
+    (list "Consumer.php" '("\\Acme\\Consumer")
+          (concat "<?php\nnamespace Acme;\n"
+                  "/** @phpstan-import-type Config from Types */\nclass Consumer {\n"
+                  "/** @param Config $config */\nfunction run($config) {\n"
+                  "$config['miss|CURSOR|ing'];\n}\n}\n")))
+   (lambda (tags directory)
+     (ac-php-test--visit-type-definition-reference directory)
+     (let ((position (point)))
+       (should-not (ac-php--array-key-symbol tags))
+       (should (= position (point)))))))
+
+(defun ac-php-test--with-class-string-project (reference function)
+  "Call FUNCTION with a class-string project and cursor REFERENCE."
+  (ac-php-test--with-type-definition-project
+   (list
+    '("Model.php" ("\\Vendor\\Model")
+      "<?php\nnamespace Vendor;\nclass Model {\n/** Field metadata for records. */\npublic const FIELD_META_CONFIG = [];\n}\n")
+    '("Types.php" ("\\Definitions\\Types")
+      "<?php\nnamespace Definitions;\nuse Vendor\\Model as BaseModel;\n/** @phpstan-type ResourceDefinition array{model: class-string<BaseModel>} */\nclass Types {}\n")
+    (list "Consumer.php" '("\\Client\\Consumer")
+          (concat "<?php\nnamespace Client;\nuse Wrong\\Model as BaseModel;\n"
+                  "use Definitions\\Types;\n"
+                  "/** @phpstan-import-type ResourceDefinition from Types */\n"
+                  "class Consumer {\n/** @param ResourceDefinition $definition */\n"
+                  "function visible_row(array $definition) {\n" reference "\n}\n}\n")))
+   (lambda (tags directory)
+     (puthash "\\Vendor\\Model"
+              [["d" "FIELD_META_CONFIG" "" "0:5" "array" "\\Vendor\\Model" "public" "static"]]
+              (ac-php-g--class-map tags))
+     (ac-php-test--visit-type-definition-reference directory)
+     (funcall function tags directory))))
+
+(ert-deftest ac-php-type-definition/class-string-variable-tip-at-assignment-and-use ()
+  (dolist (reference '("$cl|CURSOR|ass = $definition['model'];"
+                       "$class = $definition['model'];\n$cl|CURSOR|ass::FIELD_META_CONFIG;"))
+    (ac-php-test--with-class-string-project
+     reference
+     (lambda (tags _directory)
+       (let ((position (point)) popup)
+         (cl-letf (((symbol-function 'ac-php-get-tags-data) (lambda () tags))
+                   ((symbol-function 'popup-tip) (lambda (text &rest _) (setq popup text))))
+           (ac-php-show-tip))
+         (should (string-prefix-p "$class → class-string<\\Vendor\\Model>" popup))
+         (should (= position (point))))))))
+
+(ert-deftest ac-php-type-definition/class-string-constant-tip-and-jump ()
+  (ac-php-test--with-class-string-project
+   "$class = $definition['model'];\n$class::FIELD_META_|CURSOR|CONFIG[$field]['type'];"
+   (lambda (tags directory)
+     (let ((position (point)) (source (current-buffer)) popup
+           (ac-php-location-stack nil) (ac-php-location-stack-index 0))
+       (cl-letf (((symbol-function 'ac-php-get-tags-data) (lambda () tags))
+                 ((symbol-function 'popup-tip) (lambda (text &rest _) (setq popup text))))
+         (ac-php-show-tip)
+         (should (string-match-p "FIELD_META_CONFIG → array" popup))
+         (should (string-match-p (regexp-quote "\\Vendor\\Model") popup))
+         (should (string-match-p "Field metadata for records\\." popup))
+         (should (= position (point)))
+         (ac-php-find-symbol-at-point)
+         (should (equal (buffer-file-name) (expand-file-name "Model.php" directory)))
+         (should (string-match-p "FIELD_META_CONFIG" (thing-at-point 'line t)))
+         (ac-php-location-stack-back)
+         (should (eq source (current-buffer)))
+         (should (= position (point))))))))
+
+(ert-deftest ac-php-type-definition/class-string-constant-completion-all-frontends ()
+  (dolist (frontend '(core company auto-complete))
+    (ac-php-test--with-class-string-project
+     "$class = $definition['model'];\n$class::FIELD_META_|CURSOR|"
+     (lambda (tags _directory)
+       (cl-letf (((symbol-function 'ac-php-get-tags-data) (lambda () tags)))
+         (let ((candidates
+                (pcase frontend
+                  ('core (ac-php-candidate))
+                  ('company (company-ac-php-candidate "FIELD_META_"))
+                  (_ (let ((ac-prefix "FIELD_META_")) (ac-php-candidate-ac))))))
+           (should (member "FIELD_META_CONFIG" (mapcar #'substring-no-properties candidates)))))))))
+
 (provide 'ac-php-type-definition-test)
 ;;; ac-php-type-definition-test.el ends here

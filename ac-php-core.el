@@ -81,6 +81,7 @@
 (require 'popup)   ; `popup-tip'
 (require 'dash)
 (require 'eldoc)
+(require 'button)
 
 (require 'cl-lib) ; `cl-reduce', `cl-decf'
 
@@ -2410,6 +2411,12 @@ within the current function."
           (unless first-class-name
             (setq first-class-name (ac-php-get-annotated-var-class first-key pos)))
 
+          ;; A dynamic static receiver may come from a PHPDoc array field,
+          ;; such as `$class = $definition['model']' with class-string<Model>.
+          (when (string-suffix-p "::" first-key-str)
+            (let ((bound (ac-php--class-string-variable-class first-key pos tags-data)))
+              (when bound (setq first-class-name bound))))
+
           ;; Scan for function like calls or catch statements like:
           ;;
           ;;   - function hello (Request $request)
@@ -3282,6 +3289,21 @@ When non-nil, LOCATIONS records the aliases' declaration locations."
               (ac-php--phpstan-collect-aliases
                class-name tags-data aliases scopes locations)))))))
 
+(defun ac-php--qualify-class-string-bounds (type &optional aliases)
+  "Qualify named class-string bounds in TYPE in the current source scope.
+Leave references to known type ALIASES for the alias resolver."
+  (save-match-data
+    (let ((start 0) names)
+      (while (string-match
+              (concat "\\_<class-string[ \t]*<[ \t]*\\("
+                      ac-php-re-namespace-unit-pattern "\\)[ \t]*>")
+              type start)
+        (let ((name (match-string 1 type)))
+          (setq start (match-end 0))
+          (unless (assoc name aliases)
+            (push (cons name (ac-php--phpstan-import-class-name name)) names))))
+      (ac-php--phpstan-qualify-type type names))))
+
 (defun ac-php--phpstan-type-definition-location (name doc)
   "Return NAME's @phpstan-type declaration location within DOC, or nil.
 When DOC is nil, search PHPDoc comments throughout the current buffer."
@@ -3344,7 +3366,9 @@ When non-nil, LOCATIONS records each local type's declaration location."
               (dolist (definition (nreverse definitions))
                 (let ((qualified (cdr (assoc (car definition) names))))
                   (puthash qualified
-                           (ac-php--phpstan-qualify-type (cdr definition) names)
+                           (ac-php--phpstan-qualify-type
+                            (ac-php--qualify-class-string-bounds (cdr definition) names)
+                            names)
                            aliases)
                   (when locations
                     (puthash qualified
@@ -3481,6 +3505,80 @@ variables, qualified class names and class constants."
                     name (gethash name aliases)))
             (when location
               (list "phpstan_type" location (plist-get context :name)))))))))
+
+(defun ac-php--shape-key-source-location (location path)
+  "Find the array-shape field at PATH in the alias declared at LOCATION."
+  (when (and location
+             (string-match "\\`\\(.*\\):\\([0-9]+\\):\\([0-9]+\\)\\'" location))
+    (let ((file (match-string 1 location))
+          (line (string-to-number (match-string 2 location)))
+          (column (string-to-number (match-string 3 location))))
+      (ac-php--call-with-source
+       file
+       (lambda ()
+         (ac-php-goto-line-col line column)
+         (skip-chars-forward "a-zA-Z0-9_")
+         (let* ((start (point))
+                (end (save-excursion (search-forward "*/" nil t)))
+                (text (and end (buffer-substring-no-properties start (- end 2))))
+                result)
+           (when text
+             ;; Keep offsets into the source while removing PHPDoc line stars.
+             (setq text (replace-regexp-in-string
+                         "^[ \t]*\\*" (lambda (s) (make-string (length s) ?\s))
+                         text t t))
+             (while (and path text)
+               (let ((key (car path)) found)
+                 (when (string-match "\\`[ \t\n\r]*array[ \t\n\r]*{" text)
+                   (let* ((open (1- (match-end 0)))
+                          (close (ac-php--matching-delimiter-in-string text open ?{ ?}))
+                          (offset (1+ open)))
+                     (when close
+                       (dolist (entry (ac-php--split-top-level-type
+                                       (substring text offset close) ?,))
+                         (let* ((colon (ac-php--top-level-colon entry))
+                                (fields (ac-php--array-shape-fields
+                                         (concat "array{" entry "}"))))
+                           (when (and (not found) colon (equal key (caar fields)))
+                             (setq found t)
+                             (goto-char (+ start offset
+                                           (string-match "[^ \t\n\r'\"]" entry)))
+                             (setq result (ac-php-current-location))
+                             (setq text (substring entry (1+ colon))
+                                   start (+ start offset (1+ colon))))
+                           (setq offset (+ offset (length entry) 1)))))))
+                 (setq path (cdr path))
+                 (unless found (setq text nil result nil))))
+             result)))))))
+
+(defun ac-php--array-key-symbol (tags-data)
+  "Return the PHPDoc shape field definition for the array key at point."
+  (save-match-data
+    (save-excursion
+      (let* ((context (ac-php--array-key-context))
+             (state (syntax-ppss))
+             (quote (and (nth 3 state) (nth 8 state)))
+             (end (and quote (condition-case nil (scan-sexps quote 1)
+                              (scan-error nil)))))
+        (when (and context end (plist-get context :variable))
+          (let* ((key (buffer-substring-no-properties (1+ quote) (1- end)))
+                 (aliases (make-hash-table :test #'equal))
+                 (scopes (make-hash-table :test #'equal))
+                 (locations (make-hash-table :test #'equal))
+                 (names (ac-php--phpstan-collect-aliases
+                         (ac-php--phpstan-current-class-name)
+                         tags-data aliases scopes locations))
+                 (type (ac-php--array-variable-type
+                        (plist-get context :variable) (point) tags-data))
+                 (name (cdr (assoc type names)))
+                 seen location)
+            (while (and name (not (member name seen)))
+              (push name seen)
+              (setq location (or (gethash name locations) location)
+                    name (gethash name aliases)))
+            (let ((target (ac-php--shape-key-source-location
+                           location (append (plist-get context :path) (list key)))))
+              (when target (list "phpstan_type" target key)))))))))
 
 ;;;; Type expressions, array shapes and delimiters
 
@@ -4514,6 +4612,27 @@ positions remain valid even when comments were removed from :text."
                    tags-data aliases seen)
                   (ac-php--assignment-return-type assignment tags-data))))))))
 
+(defvar ac-php--class-string-resolution-stack nil
+  "Dynamic guard against recursive dynamic static receiver inference.")
+
+(defun ac-php--class-string-variable-class (variable pos tags-data)
+  "Resolve VARIABLE's class-string bound at POS using TAGS-DATA."
+  (let ((key (cons (current-buffer) variable)))
+    (unless (member key ac-php--class-string-resolution-stack)
+      (let* ((ac-php--class-string-resolution-stack
+              (cons key ac-php--class-string-resolution-stack))
+             (aliases (ac-php--phpstan-type-aliases tags-data))
+             (type (ac-php--array-variable-type variable pos tags-data nil aliases))
+             seen)
+        (while (and (assoc type aliases) (not (member type seen)))
+          (push type seen)
+          (setq type (cdr (assoc type aliases))))
+        (when (and type
+                   (string-match
+                    (concat "\\`class-string[ \t]*<[ \t]*\\("
+                            ac-php-re-namespace-unit-pattern "\\)[ \t]*>\\'") type))
+          (ac-php--phpstan-import-class-name (match-string 1 type)))))))
+
 (defun ac-php-candidate-array-key (tags-data &optional context)
   "Return array-shape key candidates at point using TAGS-DATA.
 CONTEXT may be supplied from `ac-php--array-key-context'."
@@ -5198,7 +5317,8 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
     (setq local-var (ac-php-get-cur-word-with-dollar))
     (setq local-var-flag (s-matches-p "^\\$" local-var))
 
-    (setq symbol-ret (or (ac-php--phpstan-type-symbol tags-data)
+    (setq symbol-ret (or (ac-php--array-key-symbol tags-data)
+                         (ac-php--phpstan-type-symbol tags-data)
                          (ac-php--named-argument-symbol tags-data)
                          (ac-php-find-symbol-at-point-pri tags-data)))
 
@@ -5318,22 +5438,260 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
           (cscope-find-egrep-pattern symbol))
       (message "need config: %s -> use-cscope:true" ac-php-config-file))))
 
+;;;; Class and member hierarchy
+
+(defun ac-php--hierarchy-context (tags-data)
+  "Return (CLASS MEMBER-TAG) for the hierarchy target at point."
+  (save-match-data
+    (save-excursion
+      (let* ((word (ac-php-get-cur-word-with-dollar))
+             (class (ac-php--phpstan-current-class-name))
+             (symbol (or (ac-php-find-symbol-at-point-pri tags-data)
+                         (ac-php-find-symbol-at-point-pri tags-data t)
+                         (ac-php-find-symbol-at-point-pri tags-data nil t)))
+             (tag (nth 3 symbol))
+             (kind (and tag (aref tag 0)))
+             (members (and class (gethash class (ac-php-g--class-map tags-data)))))
+        (cond
+         ((member kind '("c" "i" "t")) (list (aref tag 1) nil))
+         ((and (member kind '("m" "p" "d")) (> (length tag) 5))
+          (let* ((chain (ac-php-get-class-at-point tags-data))
+                 (receiver (and chain
+                                (ac-php-get-class-name-by-key-list
+                                 tags-data (replace-regexp-in-string "\\.[^.]*$" "" chain)))))
+            (list (or receiver (aref tag 5)) tag)))
+         ((member kind '("f" "d")) nil)
+         (t
+          (let ((name (if (string-prefix-p "$" word) (substring word 1) word))
+                member)
+            (dotimes (index (length members))
+              (let* ((item (aref members index))
+                     (method (equal (aref item 0) "m"))
+                     (item-name (if method (substring (aref item 1) 0 -1) (aref item 1))))
+                (when (and (eq (string-prefix-p "$" word) (equal (aref item 0) "p"))
+                           (if method (string-equal (downcase name) (downcase item-name))
+                             (equal name item-name)))
+                  (setq member item))))
+            (cond
+             (member (list class member))
+             ((string-prefix-p "$" word)
+              (let ((type (if (equal word "$this") class
+                            (or (ac-php--class-string-variable-class
+                                 name (ac-php--variable-type-position) tags-data)
+                                (ac-php--get-type-hinted-variable-class name)
+                                (ac-php-get-annotated-var-class name)))))
+                (when type (list (ac-php--phpstan-import-class-name type) nil))))
+             ((and class (not (equal kind "f"))) (list class nil))))))))))
+
+(defun ac-php--hierarchy-relations (class tags-data)
+  "Return (CURRENT PARENTS CHILDREN) for CLASS using TAGS-DATA.
+Include transitive relations once, with stable ordering and cycle protection."
+  (let ((names (make-hash-table :test #'equal))
+        (parents (make-hash-table :test #'equal))
+        (children (make-hash-table :test #'equal)))
+    (maphash (lambda (name _) (puthash (downcase name) name names))
+             (ac-php-g--class-map tags-data))
+    (maphash (lambda (name tag)
+               (when (member (aref tag 0) '("c" "i" "t"))
+                 (puthash (downcase name) name names)))
+             (ac-php-g--function-map tags-data))
+    (maphash (lambda (name _)
+               (unless (gethash (downcase name) names)
+                 (puthash (downcase name) name names)))
+             (ac-php-g--inherit-map tags-data))
+    (maphash
+     (lambda (child bases)
+       (setq child (gethash (downcase child) names))
+       (mapc
+        (lambda (base)
+          (let* ((relative (concat (ac-php--get-namespace-from-classname child) "\\" base))
+                 (parent (if (ac-php--check-global-name base)
+                             (gethash (downcase base) names)
+                           (or (gethash (downcase relative) names)
+                               (gethash (downcase (concat "\\" base)) names)))))
+            (when parent
+              (puthash child (cons parent (gethash child parents)) parents)
+              (puthash parent (cons child (gethash parent children)) children))))
+        bases))
+     (ac-php-g--inherit-map tags-data))
+    (let ((current (gethash (downcase class) names)))
+      (unless current (user-error "Class is not indexed: %s" class))
+      (cons current
+            (mapcar
+             (lambda (graph)
+               (let ((seen (make-hash-table :test #'equal))
+                     (queue (list current)) result)
+                 (puthash current t seen)
+                 (while queue
+                   (dolist (name (sort (copy-sequence (gethash (pop queue) graph)) #'string<))
+                     (unless (gethash name seen)
+                       (puthash name t seen)
+                       (setq queue (append queue (list name)))
+                       (push name result))))
+                 (nreverse result)))
+             (list parents children))))))
+
+(defun ac-php--hierarchy-follow (button)
+  "Visit BUTTON's declaration, recording its originating PHP location."
+  (let ((origin (button-get button 'ac-php-origin)))
+    (when (marker-buffer origin)
+      (with-current-buffer (marker-buffer origin)
+        (save-excursion (goto-char origin) (ac-php-location-stack-push))))
+    (ac-php-goto-location (button-get button 'ac-php-location))))
+
+(defun ac-php--hierarchy-insert-tag (label tag tags-data origin)
+  "Insert LABEL linked to TAG in TAGS-DATA, with ORIGIN for navigation."
+  (let ((file (ac-php--tag-source-file tags-data tag)))
+    (if (and file (string-match ":\\([0-9]+\\)\\'" (aref tag 3)))
+        (insert-text-button label 'follow-link t 'action #'ac-php--hierarchy-follow
+                            'ac-php-location (concat file ":" (match-string 1 (aref tag 3)))
+                            'ac-php-origin origin)
+      (insert label))
+    (insert "\n")))
+
+(define-derived-mode ac-php-hierarchy-mode special-mode "PHP Hierarchy"
+  "Browse PHP inheritance and member definitions.
+Use RET to visit a declaration, TAB to move between links, and q to quit.")
+
+(define-key ac-php-hierarchy-mode-map (kbd "RET") #'push-button)
+(define-key ac-php-hierarchy-mode-map (kbd "TAB") #'forward-button)
+(define-key ac-php-hierarchy-mode-map (kbd "<backtab>") #'backward-button)
+
+;;;###autoload
+(defun ac-php-show-hierarchy (&optional all-members)
+  "List parents and children of the class or member at point.
+On a class or object variable, list each related class's own members.
+On a method, property or constant, show its corresponding member and declaring
+class in each related class.  With prefix ALL-MEMBERS, show all own members.
+Relations include interfaces and traits recorded in the project index."
+  (interactive "P")
+  (let* ((tags (ac-php-get-tags-data))
+         (context (and tags (ac-php--hierarchy-context tags)))
+         (class (car context))
+         (member (and (not all-members) (cadr context)))
+         (origin (point-marker)))
+    (unless tags (user-error "No PHP tags available; rebuild the project index"))
+    (unless class (user-error "No indexed class or class member at point"))
+    (let ((relations (ac-php--hierarchy-relations class tags))
+          (buffer (get-buffer-create "*ac-php hierarchy*")))
+      (with-current-buffer buffer
+        (ac-php-hierarchy-mode)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert (format "PHP hierarchy: %s%s\n\nRET: visit definition    TAB: next link    q: quit\n"
+                          (car relations)
+                          (if member (concat "::" (aref member 1)) "")))
+          (cl-mapc
+           (lambda (title classes)
+             (insert "\n" title "\n")
+             (unless classes (insert "  (none)\n"))
+             (dolist (name classes)
+               (ac-php--hierarchy-insert-tag
+                name (gethash name (ac-php-g--function-map tags)) tags origin)
+               (let ((items
+                      (if member
+                          (let ((key (ac-php--class-member-key member)))
+                            (cl-remove-if-not
+                             (lambda (item) (equal key (ac-php--class-member-key item)))
+                             (ac-php-get-class-member-list
+                              (ac-php-g--class-map tags) (ac-php-g--inherit-map tags) name tags)))
+                        (append (gethash name (ac-php-g--class-map tags)) nil))))
+                 (if (not items) (insert "  (no matching members)\n")
+                   (dolist (item items)
+                     (ac-php--hierarchy-insert-tag
+                      (concat "  " (ac-php--format-tag-documentation
+                                     item (and (equal (aref item 0) "p")
+                                               (concat "$" (aref item 1)))))
+                      item tags origin))))))
+           '("Current class" "Parent classes / interfaces / traits" "Child classes / implementors / users")
+           (list (list (car relations)) (nth 1 relations) (nth 2 relations)))
+          (goto-char (point-min))))
+      (pop-to-buffer buffer))))
+
 ;;;; Popup documentation, ElDoc and project information
 
+(defun ac-php--variable-type-documentation (type aliases)
+  "Format TYPE for a variable tooltip, resolving its ALIASES.
+Expand outer alias chains and put each array-shape field on its own line."
+  (let ((resolved type) seen names)
+    (while (and (assoc resolved aliases) (not (member resolved seen)))
+      (push resolved seen)
+      (setq resolved (cdr (assoc resolved aliases))))
+    ;; Internal scope-qualified aliases are useful for inference, but should
+    ;; retain their PHPDoc spelling in the display, including recursive types.
+    (dolist (alias aliases)
+      (when (string-match "::\\([^:]+\\)\\'" (car alias))
+        (push (cons (car alias) (match-string 1 (car alias))) names)))
+    (setq resolved (ac-php--phpstan-qualify-type resolved names))
+    (if (string-match "\\`array[ \t\n\r]*{\\(.*\\)}\\'" resolved)
+        (concat "array{\n  "
+                (mapconcat #'s-trim
+                           (ac-php--split-top-level-type
+                            (match-string 1 resolved) ?,)
+                           ",\n  ")
+                "\n}")
+      resolved)))
+
+(defun ac-php--variable-type-position ()
+  "Return the inference position for the variable at point.
+On the left side of a complete assignment, include its right-hand side."
+  (save-excursion
+    (let ((position (point)))
+      (skip-chars-forward "$a-zA-Z0-9_")
+      (skip-chars-forward " \t\n\r")
+      (when (and (eq (char-after) ?=) (not (memq (char-after (1+ (point))) '(?= ?>))))
+        (let ((depth (car (syntax-ppss))) end)
+          (while (and (not end) (search-forward ";" nil t))
+            (let ((state (save-excursion (syntax-ppss (1- (point))))))
+              (when (and (= depth (car state)) (not (nth 3 state)) (not (nth 4 state)))
+                (setq end (point)))))
+          (when end (setq position end))))
+      position)))
+
+(defun ac-php--variable-documentation-at-point (tags-data)
+  "Return local variable documentation at point using TAGS-DATA, or nil."
+  (save-match-data
+    (save-excursion
+      (save-restriction
+        (widen)
+        (let ((position (point))
+              (word (ac-php-get-cur-word-with-dollar)))
+          (when (and (string-match-p "\\`\\$[[:alpha:]_][[:alnum:]_]*\\'" word)
+                     (not (ac-php--in-string-or-comment-p position))
+                     (not (save-excursion
+                            (skip-chars-backward "$a-zA-Z0-9_")
+                            (ac-php--chain-operator-before (point) (point-min)))))
+            (let* ((aliases (ac-php--phpstan-type-aliases tags-data))
+                   (type-position (ac-php--variable-type-position))
+                   (type (or (ac-php--array-variable-type
+                              (substring word 1) type-position tags-data nil aliases)
+                             (ac-php--get-type-hinted-variable-class
+                              (substring word 1) position))))
+              (when type
+                (let ((header (ac-php--format-tag-documentation
+                               (vector "v" word "" nil type)))
+                      (expanded (ac-php--variable-type-documentation type aliases)))
+                  (if (equal type expanded) header
+                    (concat header "\n\n"
+                            (propertize expanded 'face 'font-lock-type-face))))))))))))
+
 (defun ac-php-show-tip (&optional _prefix)
-  "Show a colored signature and source PHPDoc for the symbol at point."
+  "Show a symbol's signature and PHPDoc, or a local variable's type at point."
   (interactive "P")
   (let* ((tags-data (ac-php-get-tags-data))
+         (variable-doc (ac-php--variable-documentation-at-point tags-data))
          (symbol
-          (when tags-data
+          (when (and tags-data (not variable-doc))
             (or (ac-php-find-symbol-at-point-pri tags-data)
                 (ac-php-find-symbol-at-point-pri tags-data t)
                 (ac-php-find-symbol-at-point-pri tags-data nil t))))
          (tag (nth 3 symbol)))
-    (when tag
+    (cond
+     (variable-doc (ac-php--popup-documentation variable-doc))
+     (tag
       (ac-php--popup-documentation
        (ac-php--append-phpdoc (ac-php--format-tag-documentation tag)
-                             (ac-php--tag-phpdoc tags-data tag))))))
+                             (ac-php--tag-phpdoc tags-data tag)))))))
 
 (defun ac-php-eldoc-documentation-function ()
   "A function to provide ElDoc support.
